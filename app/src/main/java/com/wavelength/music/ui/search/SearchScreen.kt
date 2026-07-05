@@ -81,7 +81,10 @@ fun SearchScreen(
                 modifier = Modifier.padding(padding),
                 message = state.message
             )
-            is ScreenState.Empty -> EmptyView(modifier = Modifier.padding(padding))
+            is ScreenState.Empty -> EmptyView(
+                modifier = Modifier.padding(padding),
+                message = if (query.isBlank()) stringResource(R.string.empty_results) else stringResource(R.string.search_empty_hint)
+            )
             is ScreenState.Success -> {
                 val data = state.data
                 LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {

@@ -38,7 +38,8 @@ fun TrackListScreen(
     onBack: () -> Unit,
     onRetry: () -> Unit,
     onPlayAll: () -> Unit,
-    onTrackClick: (Int) -> Unit
+    onTrackClick: (Int) -> Unit,
+    emptyMessage: String? = null
 ) {
     Scaffold(
         topBar = {
@@ -59,7 +60,11 @@ fun TrackListScreen(
                 modifier = Modifier.padding(padding),
                 message = state.message
             )
-            is ScreenState.Empty -> EmptyView(modifier = Modifier.padding(padding))
+            is ScreenState.Empty -> if (emptyMessage != null) {
+                EmptyView(modifier = Modifier.padding(padding), message = emptyMessage)
+            } else {
+                EmptyView(modifier = Modifier.padding(padding))
+            }
             is ScreenState.Success -> LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
                 item {
                     Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {

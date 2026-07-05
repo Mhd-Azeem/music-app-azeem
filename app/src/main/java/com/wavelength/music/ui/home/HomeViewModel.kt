@@ -16,7 +16,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 val genreShortcuts = listOf(
-    "pop", "rock", "electronic", "jazz", "classical", "hiphop", "chillout", "ambient"
+    "pop", "rock", "electronic", "jazz", "classical", "hiphop", "chillout", "ambient",
+    "world", "indian", "carnatic", "instrumental"
 )
 
 @HiltViewModel
