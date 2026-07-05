@@ -6,6 +6,9 @@ on:
       - "**"
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -40,3 +43,18 @@ jobs:
           name: wavelength-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      - name: Publish to Releases
+        if: github.ref == 'refs/heads/claude/wavelength-music-app-hm1q2a'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest build
+          body: |
+            Automatically rebuilt from commit ${{ github.sha }}.
+
+            This is a debug APK — download `app-debug.apk` below and install it directly
+            (you'll need to allow "install unknown apps" for whichever app you use to open it).
+          prerelease: true
+          make_latest: true
+          files: app/build/outputs/apk/debug/app-debug.apk

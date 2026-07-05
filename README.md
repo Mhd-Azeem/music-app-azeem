@@ -43,10 +43,12 @@ personal-use app: no login, no backend server, single user.
 
 ### Building an APK without Android Studio
 
-A GitHub Actions workflow (`.github/workflows/build-apk.yml`) builds a debug APK on every push and
-uploads it as a downloadable build artifact (Actions tab → latest run → Artifacts →
-`wavelength-debug-apk`). By default it uses the free demo client ID; add a repository secret named
-`JAMENDO_CLIENT_ID` to build with your own.
+A GitHub Actions workflow (`.github/workflows/build-apk.yml`) builds a debug APK on every push.
+The easiest way to get it: open the repo's **Releases** tab — every push to this branch republishes
+the **"Latest build"** release with `app-debug.apk` attached directly (no zip, just download and
+install). It's also uploaded as a build artifact under Actions → latest run → Artifacts, if you
+want a specific commit's build. By default it uses the free demo client ID; add a repository
+secret named `JAMENDO_CLIENT_ID` to build with your own.
 
 > This project's Gradle build depends on the Android SDK and Google's Maven repository
 > (`dl.google.com`) to resolve the Android Gradle Plugin and AndroidX libraries. If you're building
