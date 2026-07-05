@@ -1,0 +1,42 @@
+name: Build APK
+
+on:
+  push:
+    branches:
+      - "**"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Write local.properties
+        # JAMENDO_CLIENT_ID can be overridden by adding a repository secret with that name.
+        # Falls back to the free demo client ID used throughout this project's README.
+        run: |
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties
+          echo "JAMENDO_CLIENT_ID=${JAMENDO_CLIENT_ID:-d18642e1}" >> local.properties
+        env:
+          JAMENDO_CLIENT_ID: ${{ secrets.JAMENDO_CLIENT_ID }}
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wavelength-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
