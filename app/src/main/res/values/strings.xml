@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Wavelength</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_library">Library</string>
+    <string name="no_internet_title">No internet connection</string>
+    <string name="no_internet_message">Check your connection and try again.</string>
+    <string name="retry">Retry</string>
+    <string name="empty_results">Nothing here yet</string>
+    <string name="search_hint">Search tracks, artists, albums</string>
+    <string name="recently_played">Recently Played</string>
+    <string name="featured_tracks">Featured Tracks</string>
+    <string name="genres_moods">Genres &amp; Moods</string>
+    <string name="favorites">Favorites</string>
+    <string name="play_all">Play All</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
+</resources>

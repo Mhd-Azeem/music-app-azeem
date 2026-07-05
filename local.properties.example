@@ -1,0 +1,6 @@
+# Copy this file to "local.properties" (which is git-ignored) and fill in your values.
+# The Android SDK location is normally added here automatically by Android Studio.
+sdk.dir=/path/to/your/Android/sdk
+
+# Get a free client ID at https://devportal.jamendo.com/
+JAMENDO_CLIENT_ID=your_jamendo_client_id
