@@ -16,4 +16,9 @@
     <string name="play_all">Play All</string>
     <string name="error_generic">Something went wrong. Please try again.</string>
     <string name="search_empty_hint">No matches in Jamendo\'s free, independent/Creative-Commons catalog. Mainstream film soundtracks (like Bollywood or Tamil movie songs) generally aren\'t available here — try an artist, album, or genre instead.</string>
+    <string name="my_device">My Device</string>
+    <string name="rescan_library">Rescan library</string>
+    <string name="local_permission_rationale">Wavelength needs access to your device\'s audio files to show songs stored locally.</string>
+    <string name="grant_permission">Grant access</string>
+    <string name="jiosaavn_unavailable">JioSaavn results are unavailable right now (unofficial API) — showing Jamendo results only.</string>
 </resources>

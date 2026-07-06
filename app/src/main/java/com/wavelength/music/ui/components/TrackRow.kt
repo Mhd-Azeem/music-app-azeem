@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.wavelength.music.data.model.Track
+import com.wavelength.music.data.model.TrackSource
 
 @Composable
 fun TrackRow(
@@ -65,6 +66,13 @@ fun TrackRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            if (track.source != TrackSource.JAMENDO) {
+                Text(
+                    text = if (track.source == TrackSource.LOCAL) "On device" else "JioSaavn",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
         if (onFavoriteClick != null) {
             IconButton(onClick = onFavoriteClick) {

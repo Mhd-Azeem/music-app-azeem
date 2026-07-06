@@ -116,6 +116,16 @@ fun SearchScreen(
                     }
                     if (data.tracks.isNotEmpty()) {
                         item { SectionHeader("Tracks") }
+                        if (data.jioSaavnUnavailable) {
+                            item {
+                                Text(
+                                    text = stringResource(R.string.jiosaavn_unavailable),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
                         itemsIndexed(data.tracks) { index, track ->
                             TrackRow(
                                 track = track,

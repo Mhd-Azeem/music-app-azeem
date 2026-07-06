@@ -36,7 +36,8 @@ fun LoadingView(modifier: Modifier = Modifier) {
 fun ErrorView(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
-    message: String = stringResource(R.string.error_generic)
+    message: String = stringResource(R.string.error_generic),
+    actionLabel: String = stringResource(R.string.retry)
 ) {
     Column(
         modifier = modifier.fillMaxSize().padding(24.dp),
@@ -56,7 +57,7 @@ fun ErrorView(
             modifier = Modifier.padding(top = 16.dp, bottom = 16.dp)
         )
         Button(onClick = onRetry) {
-            Text(stringResource(R.string.retry))
+            Text(actionLabel)
         }
     }
 }

@@ -21,7 +21,8 @@ import javax.inject.Inject
 data class SearchResults(
     val tracks: List<Track> = emptyList(),
     val artists: List<Artist> = emptyList(),
-    val albums: List<Album> = emptyList()
+    val albums: List<Album> = emptyList(),
+    val jioSaavnUnavailable: Boolean = false
 )
 
 @HiltViewModel
@@ -53,24 +54,33 @@ class SearchViewModel @Inject constructor(
     }
 
     private suspend fun runSearch(q: String) {
-        val tracksDeferred = viewModelScope.async { repository.searchTracks(q) }
         val artistsDeferred = viewModelScope.async { repository.searchArtists(q) }
         val albumsDeferred = viewModelScope.async { repository.searchAlbums(q) }
+        // Tracks come from Jamendo + JioSaavn together, each tagged with its Track.source so
+        // playback and the UI know where a given result came from.
+        val multiSourceDeferred = viewModelScope.async { repository.searchAllSources(q) }
 
-        val tracksResult = tracksDeferred.await()
         val artistsResult = artistsDeferred.await()
         val albumsResult = albumsDeferred.await()
+        val multiSource = multiSourceDeferred.await()
 
-        val failure = tracksResult.exceptionOrNull() ?: artistsResult.exceptionOrNull() ?: albumsResult.exceptionOrNull()
-        val tracks = tracksResult.getOrNull().orEmpty()
+        val tracks = multiSource.tracks
         val artists = artistsResult.getOrNull().orEmpty()
         val albums = albumsResult.getOrNull().orEmpty()
 
+        // A JioSaavn-only failure never counts as a hard failure — it's an unofficial API that's
+        // expected to be flaky, so the search just quietly falls back to whatever else succeeded.
+        val hardFailure = artistsResult.exceptionOrNull()
+            ?: albumsResult.exceptionOrNull()
+            ?: multiSource.error.takeIf { multiSource.jamendoFailed }
+
         _results.value = when {
-            tracks.isEmpty() && artists.isEmpty() && albums.isEmpty() && failure != null ->
-                ScreenState.Error(failure.message ?: "Something went wrong")
+            tracks.isEmpty() && artists.isEmpty() && albums.isEmpty() && hardFailure != null ->
+                ScreenState.Error(hardFailure.message ?: "Something went wrong")
             tracks.isEmpty() && artists.isEmpty() && albums.isEmpty() -> ScreenState.Empty
-            else -> ScreenState.Success(SearchResults(tracks, artists, albums))
+            else -> ScreenState.Success(
+                SearchResults(tracks, artists, albums, jioSaavnUnavailable = multiSource.jioSaavnFailed)
+            )
         }
     }
 
