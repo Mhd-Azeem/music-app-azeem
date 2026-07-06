@@ -14,9 +14,9 @@
     <application
         android:name=".WavelengthApp"
         android:allowBackup="true"
-        android:icon="@drawable/ic_launcher"
+        android:icon="@drawable/ic_launcher_photo"
         android:label="@string/app_name"
-        android:roundIcon="@drawable/ic_launcher"
+        android:roundIcon="@drawable/ic_launcher_photo"
         android:supportsRtl="true"
         android:theme="@style/Theme.Wavelength"
         android:usesCleartextTraffic="false">
