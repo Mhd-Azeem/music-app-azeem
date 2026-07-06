@@ -23,13 +23,19 @@ jobs:
           java-version: "17"
 
       - name: Write local.properties
-        # JAMENDO_CLIENT_ID can be overridden by adding a repository secret with that name.
-        # Falls back to the free demo client ID used throughout this project's README.
+        # JAMENDO_CLIENT_ID/JIOSAAVN_BASE_URL can be overridden by adding repository secrets
+        # with those names. JAMENDO_CLIENT_ID falls back to the free demo client ID used
+        # throughout this project's README; JIOSAAVN_BASE_URL falls back to an unconfigured
+        # placeholder (JioSaavn search just comes back empty until you set your own deployment).
         run: |
           echo "sdk.dir=${ANDROID_HOME}" > local.properties
           echo "JAMENDO_CLIENT_ID=${JAMENDO_CLIENT_ID:-d18642e1}" >> local.properties
+          if [ -n "$JIOSAAVN_BASE_URL" ]; then
+            echo "JIOSAAVN_BASE_URL=${JIOSAAVN_BASE_URL}" >> local.properties
+          fi
         env:
           JAMENDO_CLIENT_ID: ${{ secrets.JAMENDO_CLIENT_ID }}
+          JIOSAAVN_BASE_URL: ${{ secrets.JIOSAAVN_BASE_URL }}
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
