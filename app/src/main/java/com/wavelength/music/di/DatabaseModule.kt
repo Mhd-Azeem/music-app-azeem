@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.wavelength.music.data.local.AppDatabase
 import com.wavelength.music.data.local.FavoriteDao
+import com.wavelength.music.data.local.LocalSongDao
 import com.wavelength.music.data.local.RecentlyPlayedDao
 import dagger.Module
 import dagger.Provides
@@ -29,4 +30,7 @@ object DatabaseModule {
     @Provides
     fun provideRecentlyPlayedDao(database: AppDatabase): RecentlyPlayedDao =
         database.recentlyPlayedDao()
+
+    @Provides
+    fun provideLocalSongDao(database: AppDatabase): LocalSongDao = database.localSongDao()
 }
