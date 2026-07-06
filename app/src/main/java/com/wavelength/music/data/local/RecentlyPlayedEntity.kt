@@ -11,5 +11,6 @@ data class RecentlyPlayedEntity(
     val artist: String,
     val albumArtUrl: String,
     val audioUrl: String,
+    val source: String = "JAMENDO",
     val timestamp: Long = System.currentTimeMillis()
 )
