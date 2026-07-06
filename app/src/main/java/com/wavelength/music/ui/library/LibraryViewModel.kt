@@ -6,8 +6,10 @@ import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.repository.MusicRepository
 import com.wavelength.music.playback.PlayerController
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,11 +26,28 @@ class LibraryViewModel @Inject constructor(
     val recentlyPlayed: StateFlow<List<Track>> = repository.observeRecentlyPlayed(50)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val localSongs: StateFlow<List<Track>> = repository.observeLocalSongs()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _isScanning = MutableStateFlow(false)
+    val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
+
     fun playFrom(queue: List<Track>, index: Int) {
         playerController.playQueue(queue, index)
     }
 
     fun removeFavorite(track: Track) {
         viewModelScope.launch { repository.toggleFavorite(track, isCurrentlyFavorite = true) }
+    }
+
+    /** Re-scans MediaStore for on-device audio. Call once permission is granted, and whenever
+     * the user taps "Rescan library" afterwards. */
+    fun rescanLocalLibrary() {
+        if (_isScanning.value) return
+        viewModelScope.launch {
+            _isScanning.value = true
+            repository.rescanLocalLibrary()
+            _isScanning.value = false
+        }
     }
 }
