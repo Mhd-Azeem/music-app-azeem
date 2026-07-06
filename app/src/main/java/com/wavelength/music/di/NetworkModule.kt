@@ -4,6 +4,7 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.wavelength.music.BuildConfig
 import com.wavelength.music.data.remote.JamendoApiService
+import com.wavelength.music.data.remote.jiosaavn.JioSaavnApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,6 +28,12 @@ object NetworkModule {
         .add(KotlinJsonAdapterFactory())
         .build()
 
+    private fun loggingInterceptor(): HttpLoggingInterceptor = HttpLoggingInterceptor().apply {
+        level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC else HttpLoggingInterceptor.Level.NONE
+    }
+
+    // --- Jamendo -------------------------------------------------------------------------------
+
     @Provides
     @Singleton
     fun provideClientIdInterceptor(): Interceptor = Interceptor { chain ->
@@ -40,25 +47,18 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(clientIdInterceptor: Interceptor): OkHttpClient {
-        val logging = HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) {
-                HttpLoggingInterceptor.Level.BASIC
-            } else {
-                HttpLoggingInterceptor.Level.NONE
-            }
-        }
-        return OkHttpClient.Builder()
+    fun provideJamendoOkHttpClient(clientIdInterceptor: Interceptor): OkHttpClient =
+        OkHttpClient.Builder()
             .addInterceptor(clientIdInterceptor)
-            .addInterceptor(logging)
+            .addInterceptor(loggingInterceptor())
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
             .build()
-    }
 
     @Provides
     @Singleton
-    fun provideRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit =
+    @JamendoRetrofit
+    fun provideJamendoRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit =
         Retrofit.Builder()
             .baseUrl(BuildConfig.JAMENDO_BASE_URL.toHttpUrl())
             .client(okHttpClient)
@@ -67,6 +67,29 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideJamendoApiService(retrofit: Retrofit): JamendoApiService =
+    fun provideJamendoApiService(@JamendoRetrofit retrofit: Retrofit): JamendoApiService =
         retrofit.create(JamendoApiService::class.java)
+
+    // --- JioSaavn (unofficial, self-hosted deployment) ------------------------------------------
+
+    @Provides
+    @Singleton
+    @JioSaavnRetrofit
+    fun provideJioSaavnRetrofit(moshi: Moshi): Retrofit {
+        val client = OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor())
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .build()
+        return Retrofit.Builder()
+            .baseUrl(BuildConfig.JIOSAAVN_BASE_URL)
+            .client(client)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideJioSaavnApiService(@JioSaavnRetrofit retrofit: Retrofit): JioSaavnApiService =
+        retrofit.create(JioSaavnApiService::class.java)
 }

@@ -4,3 +4,8 @@ sdk.dir=/path/to/your/Android/sdk
 
 # Get a free client ID at https://devportal.jamendo.com/
 JAMENDO_CLIENT_ID=your_jamendo_client_id
+
+# Optional: base URL of your own self-hosted https://github.com/sumitkolhe/jiosaavn-api
+# deployment. Must end with /api/. Leave unset and JioSaavn search results are simply
+# unavailable (handled gracefully) rather than breaking the app.
+JIOSAAVN_BASE_URL=https://your-deployment.vercel.app/api/

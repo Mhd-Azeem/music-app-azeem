@@ -31,6 +31,13 @@ android {
         val jamendoClientId = localProperties.getProperty("JAMENDO_CLIENT_ID") ?: ""
         buildConfigField("String", "JAMENDO_CLIENT_ID", "\"$jamendoClientId\"")
         buildConfigField("String", "JAMENDO_BASE_URL", "\"https://api.jamendo.com/v3.0/\"")
+
+        // Point this at your own self-hosted https://github.com/sumitkolhe/jiosaavn-api
+        // deployment via local.properties' JIOSAAVN_BASE_URL. Left unconfigured, JioSaavn
+        // requests simply fail (handled gracefully) rather than crashing the build/app.
+        val jioSaavnBaseUrl = localProperties.getProperty("JIOSAAVN_BASE_URL")
+            ?: "https://jiosaavn-api-unconfigured.example.com/api/"
+        buildConfigField("String", "JIOSAAVN_BASE_URL", "\"$jioSaavnBaseUrl\"")
     }
 
     buildTypes {
