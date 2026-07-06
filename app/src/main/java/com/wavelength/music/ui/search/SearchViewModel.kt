@@ -2,28 +2,18 @@ package com.wavelength.music.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.wavelength.music.data.model.Album
-import com.wavelength.music.data.model.Artist
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.repository.MusicRepository
 import com.wavelength.music.playback.PlayerController
 import com.wavelength.music.ui.components.ScreenState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-data class SearchResults(
-    val tracks: List<Track> = emptyList(),
-    val artists: List<Artist> = emptyList(),
-    val albums: List<Album> = emptyList(),
-    val jioSaavnUnavailable: Boolean = false
-)
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
@@ -34,8 +24,8 @@ class SearchViewModel @Inject constructor(
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
-    private val _results = MutableStateFlow<ScreenState<SearchResults>>(ScreenState.Empty)
-    val results: StateFlow<ScreenState<SearchResults>> = _results.asStateFlow()
+    private val _results = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Empty)
+    val results: StateFlow<ScreenState<List<Track>>> = _results.asStateFlow()
 
     private var searchJob: Job? = null
 
@@ -47,41 +37,21 @@ class SearchViewModel @Inject constructor(
             return
         }
         searchJob = viewModelScope.launch {
-            kotlinx.coroutines.delay(350)
+            delay(350)
             _results.value = ScreenState.Loading
             runSearch(newQuery)
         }
     }
 
     private suspend fun runSearch(q: String) {
-        val artistsDeferred = viewModelScope.async { repository.searchArtists(q) }
-        val albumsDeferred = viewModelScope.async { repository.searchAlbums(q) }
-        // Tracks come from Jamendo + JioSaavn together, each tagged with its Track.source so
-        // playback and the UI know where a given result came from.
-        val multiSourceDeferred = viewModelScope.async { repository.searchAllSources(q) }
-
-        val artistsResult = artistsDeferred.await()
-        val albumsResult = albumsDeferred.await()
-        val multiSource = multiSourceDeferred.await()
-
-        val tracks = multiSource.tracks
-        val artists = artistsResult.getOrNull().orEmpty()
-        val albums = albumsResult.getOrNull().orEmpty()
-
-        // A JioSaavn-only failure never counts as a hard failure — it's an unofficial API that's
-        // expected to be flaky, so the search just quietly falls back to whatever else succeeded.
-        val hardFailure = artistsResult.exceptionOrNull()
-            ?: albumsResult.exceptionOrNull()
-            ?: multiSource.error.takeIf { multiSource.jamendoFailed }
-
-        _results.value = when {
-            tracks.isEmpty() && artists.isEmpty() && albums.isEmpty() && hardFailure != null ->
-                ScreenState.Error(hardFailure.message ?: "Something went wrong")
-            tracks.isEmpty() && artists.isEmpty() && albums.isEmpty() -> ScreenState.Empty
-            else -> ScreenState.Success(
-                SearchResults(tracks, artists, albums, jioSaavnUnavailable = multiSource.jioSaavnFailed)
-            )
-        }
+        repository.searchTracks(q).fold(
+            onSuccess = { tracks ->
+                _results.value = if (tracks.isEmpty()) ScreenState.Empty else ScreenState.Success(tracks)
+            },
+            onFailure = { e ->
+                _results.value = ScreenState.Error(e.message ?: "Something went wrong")
+            }
+        )
     }
 
     fun retry() {

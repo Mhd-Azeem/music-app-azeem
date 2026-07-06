@@ -22,8 +22,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.wavelength.music.ui.album.AlbumDetailScreen
-import com.wavelength.music.ui.artist.ArtistDetailScreen
 import com.wavelength.music.ui.components.MiniPlayerBar
 import com.wavelength.music.ui.home.GenreScreen
 import com.wavelength.music.ui.home.HomeScreen
@@ -91,9 +89,7 @@ fun WavelengthNavHost() {
             }
             composable(Screen.Search.route) {
                 SearchScreen(
-                    onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
-                    onArtistClick = { id -> navController.navigate(Screen.ArtistDetail.createRoute(id)) },
-                    onAlbumClick = { id -> navController.navigate(Screen.AlbumDetail.createRoute(id)) }
+                    onTrackClick = { navController.navigate(Screen.NowPlaying.route) }
                 )
             }
             composable(Screen.Library.route) {
@@ -103,24 +99,6 @@ fun WavelengthNavHost() {
                 NowPlayingScreen(
                     onCollapse = { navController.popBackStack() },
                     viewModel = playerViewModel
-                )
-            }
-            composable(
-                route = Screen.ArtistDetail.route,
-                arguments = listOf(navArgument("artistId") { type = NavType.StringType })
-            ) {
-                ArtistDetailScreen(
-                    onBack = { navController.popBackStack() },
-                    onTrackClick = { navController.navigate(Screen.NowPlaying.route) }
-                )
-            }
-            composable(
-                route = Screen.AlbumDetail.route,
-                arguments = listOf(navArgument("albumId") { type = NavType.StringType })
-            ) {
-                AlbumDetailScreen(
-                    onBack = { navController.popBackStack() },
-                    onTrackClick = { navController.navigate(Screen.NowPlaying.route) }
                 )
             }
             composable(

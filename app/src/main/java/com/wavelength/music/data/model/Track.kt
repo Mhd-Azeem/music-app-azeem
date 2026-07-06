@@ -1,7 +1,7 @@
 package com.wavelength.music.data.model
 
 enum class TrackSource {
-    JAMENDO, JIOSAAVN, LOCAL
+    JIOSAAVN, LOCAL
 }
 
 data class Track(
@@ -14,5 +14,5 @@ data class Track(
     val albumArtUrl: String,
     val audioUrl: String,
     val durationSeconds: Int,
-    val source: TrackSource = TrackSource.JAMENDO
+    val source: TrackSource = TrackSource.JIOSAAVN
 )

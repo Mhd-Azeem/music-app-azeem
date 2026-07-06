@@ -15,9 +15,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+// JioSaavn search already returns language-relevant results for these terms, so "genre" here
+// really means "language" — the thing that actually matters for this catalog.
 val genreShortcuts = listOf(
-    "pop", "rock", "electronic", "jazz", "classical", "hiphop", "chillout", "ambient",
-    "world", "indian", "carnatic", "instrumental"
+    "tamil", "hindi", "telugu", "english", "punjabi", "malayalam", "kannada", "bengali"
 )
 
 @HiltViewModel

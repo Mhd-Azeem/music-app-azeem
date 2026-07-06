@@ -2,10 +2,7 @@
 # The Android SDK location is normally added here automatically by Android Studio.
 sdk.dir=/path/to/your/Android/sdk
 
-# Get a free client ID at https://devportal.jamendo.com/
-JAMENDO_CLIENT_ID=your_jamendo_client_id
-
-# Optional: base URL of your own self-hosted https://github.com/sumitkolhe/jiosaavn-api
-# deployment. Must end with /api/. Leave unset and JioSaavn search results are simply
-# unavailable (handled gracefully) rather than breaking the app.
+# Base URL of your own self-hosted https://github.com/sumitkolhe/jiosaavn-api deployment
+# (e.g. a free Vercel deployment). Must end with /api/. This is the app's only music source —
+# leave it unset and search/browse just come back empty (handled gracefully, not a crash).
 JIOSAAVN_BASE_URL=https://your-deployment.vercel.app/api/

@@ -66,9 +66,9 @@ fun TrackRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            if (track.source != TrackSource.JAMENDO) {
+            if (track.source == TrackSource.LOCAL) {
                 Text(
-                    text = if (track.source == TrackSource.LOCAL) "On device" else "JioSaavn",
+                    text = "On device",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
