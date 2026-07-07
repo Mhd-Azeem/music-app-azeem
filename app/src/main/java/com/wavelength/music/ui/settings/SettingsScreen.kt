@@ -35,10 +35,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.widget.Toast
 import coil.compose.AsyncImage
 import com.wavelength.music.R
 import com.wavelength.music.ui.theme.AppTheme
@@ -50,10 +52,26 @@ fun SettingsScreen(
     viewModel: AppSettingsViewModel = hiltViewModel()
 ) {
     val settings by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     val pickBackgroundLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri -> uri?.let { viewModel.pickBackground(it) } }
+
+    val pickIconPhotoLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        if (HomeScreenShortcut.isSupported(context)) {
+            HomeScreenShortcut.pinPhotoAsShortcut(context, uri, "Azeem's Music")
+        } else {
+            Toast.makeText(
+                context,
+                "Your home screen doesn't support pinned shortcuts.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -84,6 +102,24 @@ fun SettingsScreen(
                     }
                     Text(
                         text = "Changing the icon may take a few seconds to show on your home screen.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    OutlinedButton(
+                        onClick = {
+                            pickIconPhotoLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        },
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    ) {
+                        Text("Use a gallery photo instead")
+                    }
+                    Text(
+                        text = "Android can't replace the app's real icon with an arbitrary photo, " +
+                            "so this adds a separate pinned icon to your home screen using that " +
+                            "photo (your launcher will ask you to confirm).",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
