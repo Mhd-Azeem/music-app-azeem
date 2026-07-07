@@ -2,6 +2,7 @@ package com.wavelength.music.ui.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.repository.MusicRepository
 import com.wavelength.music.playback.PlayerController
@@ -29,8 +30,21 @@ class LibraryViewModel @Inject constructor(
     val localSongs: StateFlow<List<Track>> = repository.observeLocalSongs()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val playlists: StateFlow<List<PlaylistSummary>> = repository.observePlaylists()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     private val _isScanning = MutableStateFlow(false)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
+
+    fun createPlaylist(name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch { repository.createPlaylist(trimmed) }
+    }
+
+    fun deletePlaylist(playlistId: Long) {
+        viewModelScope.launch { repository.deletePlaylist(playlistId) }
+    }
 
     fun playFrom(queue: List<Track>, index: Int) {
         playerController.playQueue(queue, index)

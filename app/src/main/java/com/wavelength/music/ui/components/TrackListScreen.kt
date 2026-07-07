@@ -39,7 +39,8 @@ fun TrackListScreen(
     onRetry: () -> Unit,
     onPlayAll: () -> Unit,
     onTrackClick: (Int) -> Unit,
-    emptyMessage: String? = null
+    emptyMessage: String? = null,
+    onTrackMoreClick: ((Track) -> Unit)? = null
 ) {
     Scaffold(
         topBar = {
@@ -99,7 +100,11 @@ fun TrackListScreen(
                     }
                 }
                 itemsIndexed(state.data) { index, track ->
-                    TrackRow(track = track, onClick = { onTrackClick(index) })
+                    TrackRow(
+                        track = track,
+                        onClick = { onTrackClick(index) },
+                        onMoreClick = onTrackMoreClick?.let { { it(track) } }
+                    )
                 }
             }
         }

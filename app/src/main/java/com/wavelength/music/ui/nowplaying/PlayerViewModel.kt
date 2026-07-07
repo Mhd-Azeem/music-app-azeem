@@ -2,6 +2,7 @@ package com.wavelength.music.ui.nowplaying
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.repository.MusicRepository
 import com.wavelength.music.playback.PlaybackUiState
 import com.wavelength.music.playback.PlayerController
@@ -31,6 +32,9 @@ class PlayerViewModel @Inject constructor(
         .flatMapLatest { id -> if (id == null) flowOf(false) else repository.isFavorite(id) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val playlists: StateFlow<List<PlaylistSummary>> = repository.observePlaylists()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     init {
         playerController.connect()
     }
@@ -45,5 +49,18 @@ class PlayerViewModel @Inject constructor(
     fun toggleFavorite() {
         val track = state.value.currentTrack ?: return
         viewModelScope.launch { repository.toggleFavorite(track, isCurrentFavorite.value) }
+    }
+
+    fun addCurrentTrackToPlaylist(playlistId: Long) {
+        val track = state.value.currentTrack ?: return
+        viewModelScope.launch { repository.addTrackToPlaylist(playlistId, track) }
+    }
+
+    fun createPlaylistWithCurrentTrack(name: String) {
+        val track = state.value.currentTrack ?: return
+        viewModelScope.launch {
+            val id = repository.createPlaylist(name)
+            repository.addTrackToPlaylist(id, track)
+        }
     }
 }

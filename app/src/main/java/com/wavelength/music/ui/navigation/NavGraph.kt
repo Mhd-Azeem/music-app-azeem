@@ -28,6 +28,7 @@ import com.wavelength.music.ui.home.HomeScreen
 import com.wavelength.music.ui.library.LibraryScreen
 import com.wavelength.music.ui.nowplaying.NowPlayingScreen
 import com.wavelength.music.ui.nowplaying.PlayerViewModel
+import com.wavelength.music.ui.playlist.PlaylistDetailScreen
 import com.wavelength.music.ui.search.SearchScreen
 import com.wavelength.music.ui.settings.SettingsScreen
 
@@ -95,7 +96,12 @@ fun WavelengthNavHost() {
                 )
             }
             composable(Screen.Library.route) {
-                LibraryScreen(onTrackClick = { navController.navigate(Screen.NowPlaying.route) })
+                LibraryScreen(
+                    onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
+                    onPlaylistClick = { id ->
+                        navController.navigate(Screen.PlaylistDetail.createRoute(id))
+                    }
+                )
             }
             composable(Screen.NowPlaying.route) {
                 NowPlayingScreen(
@@ -114,6 +120,15 @@ fun WavelengthNavHost() {
                 )
             ) {
                 GenreScreen(
+                    onBack = { navController.popBackStack() },
+                    onTrackClick = { navController.navigate(Screen.NowPlaying.route) }
+                )
+            }
+            composable(
+                route = Screen.PlaylistDetail.route,
+                arguments = listOf(navArgument("playlistId") { type = NavType.LongType })
+            ) {
+                PlaylistDetailScreen(
                     onBack = { navController.popBackStack() },
                     onTrackClick = { navController.navigate(Screen.NowPlaying.route) }
                 )

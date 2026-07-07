@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
@@ -29,6 +30,9 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +44,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.wavelength.music.playback.RepeatMode
+import com.wavelength.music.ui.playlist.AddToPlaylistDialog
 import java.util.concurrent.TimeUnit
 
 @Composable
@@ -49,7 +54,18 @@ fun NowPlayingScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isFavorite by viewModel.isCurrentFavorite.collectAsStateWithLifecycle()
+    val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     val track = state.currentTrack
+    var showAddToPlaylist by remember { mutableStateOf(false) }
+
+    if (showAddToPlaylist) {
+        AddToPlaylistDialog(
+            playlists = playlists,
+            onDismiss = { showAddToPlaylist = false },
+            onSelect = viewModel::addCurrentTrackToPlaylist,
+            onCreateNew = viewModel::createPlaylistWithCurrentTrack
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -88,6 +104,13 @@ fun NowPlayingScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
+                    )
+                }
+                IconButton(onClick = { showAddToPlaylist = true }) {
+                    Icon(
+                        imageVector = Icons.Filled.PlaylistAdd,
+                        contentDescription = "Add to playlist",
+                        tint = Color.White
                     )
                 }
                 IconButton(onClick = viewModel::toggleFavorite) {

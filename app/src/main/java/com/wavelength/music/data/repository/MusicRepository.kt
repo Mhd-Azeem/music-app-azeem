@@ -2,8 +2,12 @@ package com.wavelength.music.data.repository
 
 import com.wavelength.music.data.local.FavoriteDao
 import com.wavelength.music.data.local.FavoriteTrackEntity
+import com.wavelength.music.data.local.PlaylistDao
+import com.wavelength.music.data.local.PlaylistEntity
+import com.wavelength.music.data.local.PlaylistTrackEntity
 import com.wavelength.music.data.local.RecentlyPlayedDao
 import com.wavelength.music.data.local.RecentlyPlayedEntity
+import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.model.TrackSource
 import kotlinx.coroutines.flow.Flow
@@ -22,7 +26,8 @@ class MusicRepository @Inject constructor(
     private val jioSaavnRepository: JioSaavnRepository,
     private val localSongRepository: LocalSongRepository,
     private val favoriteDao: FavoriteDao,
-    private val recentlyPlayedDao: RecentlyPlayedDao
+    private val recentlyPlayedDao: RecentlyPlayedDao,
+    private val playlistDao: PlaylistDao
 ) {
 
     // --- JioSaavn (the only online source) ------------------------------------------------------
@@ -87,6 +92,38 @@ class MusicRepository @Inject constructor(
         )
     }
 
+    // --- User-created playlists -----------------------------------------------------------------
+
+    fun observePlaylists(): Flow<List<PlaylistSummary>> = playlistDao.observePlaylistsWithCount()
+        .map { list -> list.map { PlaylistSummary(it.id, it.name, it.trackCount) } }
+
+    suspend fun createPlaylist(name: String): Long =
+        playlistDao.insertPlaylist(PlaylistEntity(name = name))
+
+    suspend fun deletePlaylist(playlistId: Long) = playlistDao.deletePlaylist(playlistId)
+
+    suspend fun getPlaylistName(playlistId: Long): String? = playlistDao.getPlaylist(playlistId)?.name
+
+    fun observePlaylistTracks(playlistId: Long): Flow<List<Track>> =
+        playlistDao.observePlaylistTracks(playlistId).map { list -> list.map { it.toTrack() } }
+
+    suspend fun addTrackToPlaylist(playlistId: Long, track: Track) {
+        playlistDao.addTrack(
+            PlaylistTrackEntity(
+                playlistId = playlistId,
+                trackId = track.id,
+                name = track.name,
+                artist = track.artistName,
+                albumArtUrl = track.albumArtUrl,
+                audioUrl = track.audioUrl,
+                source = track.source.name
+            )
+        )
+    }
+
+    suspend fun removeTrackFromPlaylist(playlistId: Long, trackId: String) =
+        playlistDao.removeTrack(playlistId, trackId)
+
     private companion object {
         const val FEATURED_SEED_QUERY = "top hits"
     }
@@ -106,6 +143,19 @@ private fun FavoriteTrackEntity.toTrack(): Track = Track(
 )
 
 private fun RecentlyPlayedEntity.toTrack(): Track = Track(
+    id = trackId,
+    name = name,
+    artistId = "",
+    artistName = artist,
+    albumId = "",
+    albumName = "",
+    albumArtUrl = albumArtUrl,
+    audioUrl = audioUrl,
+    durationSeconds = 0,
+    source = source.toTrackSource()
+)
+
+private fun PlaylistTrackEntity.toTrack(): Track = Track(
     id = trackId,
     name = name,
     artistId = "",

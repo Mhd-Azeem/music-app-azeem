@@ -19,7 +19,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 data class AppSettingsState(
-    val iconPreset: IconPreset = IconPreset.PHOTO_2,
+    val iconPreset: IconPreset = IconPreset.CLASSIC,
     val theme: AppTheme = AppTheme.CLASSIC,
     val hasCustomBackground: Boolean = false
 )
@@ -37,8 +37,8 @@ class SettingsRepository @Inject constructor(
 
     private fun loadState(): AppSettingsState = AppSettingsState(
         iconPreset = runCatching {
-            IconPreset.valueOf(prefs.getString(KEY_ICON, null) ?: IconPreset.PHOTO_2.name)
-        }.getOrDefault(IconPreset.PHOTO_2),
+            IconPreset.valueOf(prefs.getString(KEY_ICON, null) ?: IconPreset.CLASSIC.name)
+        }.getOrDefault(IconPreset.CLASSIC),
         theme = runCatching {
             AppTheme.valueOf(prefs.getString(KEY_THEME, null) ?: AppTheme.CLASSIC.name)
         }.getOrDefault(AppTheme.CLASSIC),

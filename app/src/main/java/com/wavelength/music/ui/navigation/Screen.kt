@@ -10,6 +10,10 @@ sealed class Screen(val route: String) {
     data object Genre : Screen("genre/{tag}/{label}") {
         fun createRoute(tag: String, label: String) = "genre/$tag/$label"
     }
+
+    data object PlaylistDetail : Screen("playlist/{playlistId}") {
+        fun createRoute(playlistId: Long) = "playlist/$playlistId"
+    }
 }
 
 val bottomNavScreens = listOf(Screen.Home, Screen.Search, Screen.Library)

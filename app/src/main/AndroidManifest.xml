@@ -14,9 +14,9 @@
     <application
         android:name=".WavelengthApp"
         android:allowBackup="true"
-        android:icon="@drawable/ic_launcher_photo2"
+        android:icon="@drawable/ic_launcher_classic"
         android:label="@string/app_name"
-        android:roundIcon="@drawable/ic_launcher_photo2"
+        android:roundIcon="@drawable/ic_launcher_classic"
         android:supportsRtl="true"
         android:theme="@style/Theme.Wavelength"
         android:usesCleartextTraffic="false">
@@ -33,7 +33,7 @@
 
         <activity-alias
             android:name=".IconClassic"
-            android:enabled="false"
+            android:enabled="true"
             android:exported="true"
             android:icon="@drawable/ic_launcher_classic"
             android:roundIcon="@drawable/ic_launcher_classic"
@@ -59,7 +59,7 @@
 
         <activity-alias
             android:name=".IconPhoto2"
-            android:enabled="true"
+            android:enabled="false"
             android:exported="true"
             android:icon="@drawable/ic_launcher_photo2"
             android:roundIcon="@drawable/ic_launcher_photo2"

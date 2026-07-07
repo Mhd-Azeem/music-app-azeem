@@ -5,17 +5,25 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -32,15 +40,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wavelength.music.R
+import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.ui.components.EmptyView
 import com.wavelength.music.ui.components.ErrorView
 import com.wavelength.music.ui.components.TrackRow
+import com.wavelength.music.ui.playlist.CreatePlaylistDialog
 
 private val audioPermission: String
     get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -52,17 +63,21 @@ private val audioPermission: String
 @Composable
 fun LibraryScreen(
     onTrackClick: () -> Unit,
+    onPlaylistClick: (Long) -> Unit,
     viewModel: LibraryViewModel = hiltViewModel()
 ) {
     val favorites by viewModel.favorites.collectAsStateWithLifecycle()
     val recentlyPlayed by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
     val localSongs by viewModel.localSongs.collectAsStateWithLifecycle()
+    val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     val isScanning by viewModel.isScanning.collectAsStateWithLifecycle()
 
     var selectedTab by remember { mutableIntStateOf(0) }
+    var showCreateDialog by remember { mutableStateOf(false) }
     val tabs = listOf(
         stringResource(R.string.favorites),
         stringResource(R.string.recently_played),
+        "Playlists",
         stringResource(R.string.my_device)
     )
 
@@ -85,18 +100,32 @@ fun LibraryScreen(
         }
     }
 
+    if (showCreateDialog) {
+        CreatePlaylistDialog(
+            onDismiss = { showCreateDialog = false },
+            onCreate = viewModel::createPlaylist
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.nav_library)) },
                 actions = {
-                    if (selectedTab == 2 && hasPermission) {
+                    if (selectedTab == 3 && hasPermission) {
                         IconButton(onClick = viewModel::rescanLocalLibrary) {
                             Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.rescan_library))
                         }
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            if (selectedTab == 2) {
+                FloatingActionButton(onClick = { showCreateDialog = true }) {
+                    Icon(Icons.Filled.Add, contentDescription = "New playlist")
+                }
+            }
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
@@ -128,6 +157,11 @@ fun LibraryScreen(
                         onTrackClick()
                     },
                     onFavoriteClick = null
+                )
+                2 -> PlaylistList(
+                    playlists = playlists,
+                    onClick = onPlaylistClick,
+                    onDelete = viewModel::deletePlaylist
                 )
                 else -> when {
                     !hasPermission -> PermissionPrompt { permissionLauncher.launch(audioPermission) }
@@ -171,6 +205,46 @@ private fun TrackList(
                     isFavorite = isFavoriteTab,
                     onFavoriteClick = onFavoriteClick?.let { { it(track) } }
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaylistList(
+    playlists: List<PlaylistSummary>,
+    onClick: (Long) -> Unit,
+    onDelete: (Long) -> Unit
+) {
+    if (playlists.isEmpty()) {
+        EmptyView(modifier = Modifier.fillMaxSize(), message = "No playlists yet — tap + to create one")
+    } else {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(playlists, key = { it.id }) { playlist ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onClick(playlist.id) }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = playlist.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "${playlist.trackCount} tracks",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(onClick = { onDelete(playlist.id) }) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Delete playlist")
+                    }
+                }
             }
         }
     }
