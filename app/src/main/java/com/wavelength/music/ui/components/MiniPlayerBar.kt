@@ -1,6 +1,7 @@
 package com.wavelength.music.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,11 +25,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.wavelength.music.playback.PlaybackUiState
+import com.wavelength.music.ui.theme.LiquidGlassStyle
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeChild
 
 @Composable
 fun MiniPlayerBar(
@@ -36,20 +41,34 @@ fun MiniPlayerBar(
     onClick: () -> Unit,
     onPlayPause: () -> Unit,
     onSkipNext: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    hazeState: HazeState? = null
 ) {
     val track = state.currentTrack ?: return
     val density = LocalDensity.current
     val expandThresholdPx = with(density) { 40.dp.toPx() }
+    val isLiquid = hazeState != null
+    val shape = RoundedCornerShape(28.dp)
+
+    var barModifier = modifier.fillMaxWidth()
+    if (isLiquid) {
+        barModifier = barModifier.padding(horizontal = 12.dp, vertical = 8.dp)
+    }
+    barModifier = barModifier.height(64.dp).clip(shape)
+    if (hazeState != null) {
+        barModifier = barModifier.hazeChild(state = hazeState, style = LiquidGlassStyle)
+    }
+    if (isLiquid) {
+        barModifier = barModifier.border(1.dp, Color.White.copy(alpha = 0.25f), shape)
+    }
+    barModifier = barModifier
+        .clickable(onClick = onClick)
+        .swipeVertical(thresholdPx = expandThresholdPx, onSwipeUp = onClick)
 
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(64.dp)
-            .clickable(onClick = onClick)
-            .swipeVertical(thresholdPx = expandThresholdPx, onSwipeUp = onClick),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 4.dp
+        modifier = barModifier,
+        color = if (isLiquid) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = if (isLiquid) 0.dp else 4.dp
     ) {
         Row(
             modifier = Modifier

@@ -1,6 +1,8 @@
 package com.wavelength.music.ui.navigation
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -8,12 +10,15 @@ import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
@@ -22,6 +27,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.wavelength.music.ui.components.AppBackground
 import com.wavelength.music.ui.components.MiniPlayerBar
 import com.wavelength.music.ui.home.GenreScreen
 import com.wavelength.music.ui.home.HomeScreen
@@ -30,13 +36,23 @@ import com.wavelength.music.ui.nowplaying.NowPlayingScreen
 import com.wavelength.music.ui.nowplaying.PlayerViewModel
 import com.wavelength.music.ui.playlist.PlaylistDetailScreen
 import com.wavelength.music.ui.search.SearchScreen
+import com.wavelength.music.ui.settings.AppSettingsViewModel
 import com.wavelength.music.ui.settings.SettingsScreen
+import com.wavelength.music.ui.theme.AppTheme
+import com.wavelength.music.ui.theme.LiquidGlassStyle
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeChild
 
 @Composable
 fun WavelengthNavHost() {
     val navController = rememberNavController()
     val playerViewModel: PlayerViewModel = hiltViewModel()
     val playbackState by playerViewModel.state.collectAsStateWithLifecycle()
+    val settingsViewModel: AppSettingsViewModel = hiltViewModel()
+    val settings by settingsViewModel.state.collectAsStateWithLifecycle()
+    val isLiquid = settings.theme == AppTheme.LIQUID
+    val hazeState = remember { HazeState() }
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -45,14 +61,22 @@ fun WavelengthNavHost() {
     Scaffold(
         bottomBar = {
             if (showChrome) {
+                var navBarModifier: Modifier = Modifier
+                if (isLiquid) {
+                    navBarModifier = navBarModifier.hazeChild(state = hazeState, style = LiquidGlassStyle)
+                }
                 Column {
                     MiniPlayerBar(
                         state = playbackState,
                         onClick = { navController.navigate(Screen.NowPlaying.route) },
                         onPlayPause = playerViewModel::playPause,
-                        onSkipNext = playerViewModel::skipNext
+                        onSkipNext = playerViewModel::skipNext,
+                        hazeState = if (isLiquid) hazeState else null
                     )
-                    NavigationBar {
+                    NavigationBar(
+                        modifier = navBarModifier,
+                        containerColor = if (isLiquid) Color.Transparent else NavigationBarDefaults.containerColor
+                    ) {
                         bottomNavScreens.forEach { screen ->
                             NavigationBarItem(
                                 selected = currentRoute == screen.route,
@@ -76,72 +100,84 @@ fun WavelengthNavHost() {
             }
         }
     ) { padding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Home.route,
-            modifier = Modifier.padding(padding)
-        ) {
-            composable(Screen.Home.route) {
-                HomeScreen(
-                    onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
-                    onGenreClick = { tag, label ->
-                        navController.navigate(Screen.Genre.createRoute(tag, label))
-                    },
-                    onSettingsClick = { navController.navigate(Screen.Settings.route) },
-                    onPlaylistClick = { id ->
-                        navController.navigate(Screen.PlaylistDetail.createRoute(id))
-                    },
-                    onSearchClick = {
-                        navController.navigate(Screen.Search.route) {
-                            popUpTo(navController.graph.startDestinationId) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+        var contentModifier: Modifier = Modifier.fillMaxSize()
+        if (isLiquid) {
+            contentModifier = contentModifier.haze(state = hazeState)
+        }
+        Box(modifier = contentModifier) {
+            AppBackground(
+                hasCustomBackground = settings.hasCustomBackground,
+                customBackgroundFile = settingsViewModel.customBackgroundFile,
+                opacity = settings.backgroundOpacity
+            )
+            NavHost(
+                navController = navController,
+                startDestination = Screen.Home.route,
+                modifier = Modifier.padding(padding)
+            ) {
+                composable(Screen.Home.route) {
+                    HomeScreen(
+                        onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
+                        onGenreClick = { tag, label ->
+                            navController.navigate(Screen.Genre.createRoute(tag, label))
+                        },
+                        onSettingsClick = { navController.navigate(Screen.Settings.route) },
+                        onPlaylistClick = { id ->
+                            navController.navigate(Screen.PlaylistDetail.createRoute(id))
+                        },
+                        onSearchClick = {
+                            navController.navigate(Screen.Search.route) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
-                    }
-                )
-            }
-            composable(Screen.Search.route) {
-                SearchScreen(
-                    onTrackClick = { navController.navigate(Screen.NowPlaying.route) }
-                )
-            }
-            composable(Screen.Library.route) {
-                LibraryScreen(
-                    onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
-                    onPlaylistClick = { id ->
-                        navController.navigate(Screen.PlaylistDetail.createRoute(id))
-                    }
-                )
-            }
-            composable(Screen.NowPlaying.route) {
-                NowPlayingScreen(
-                    onCollapse = { navController.popBackStack() },
-                    viewModel = playerViewModel
-                )
-            }
-            composable(Screen.Settings.route) {
-                SettingsScreen(onBack = { navController.popBackStack() })
-            }
-            composable(
-                route = Screen.Genre.route,
-                arguments = listOf(
-                    navArgument("tag") { type = NavType.StringType },
-                    navArgument("label") { type = NavType.StringType }
-                )
-            ) {
-                GenreScreen(
-                    onBack = { navController.popBackStack() },
-                    onTrackClick = { navController.navigate(Screen.NowPlaying.route) }
-                )
-            }
-            composable(
-                route = Screen.PlaylistDetail.route,
-                arguments = listOf(navArgument("playlistId") { type = NavType.LongType })
-            ) {
-                PlaylistDetailScreen(
-                    onBack = { navController.popBackStack() },
-                    onTrackClick = { navController.navigate(Screen.NowPlaying.route) }
-                )
+                    )
+                }
+                composable(Screen.Search.route) {
+                    SearchScreen(
+                        onTrackClick = { navController.navigate(Screen.NowPlaying.route) }
+                    )
+                }
+                composable(Screen.Library.route) {
+                    LibraryScreen(
+                        onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
+                        onPlaylistClick = { id ->
+                            navController.navigate(Screen.PlaylistDetail.createRoute(id))
+                        }
+                    )
+                }
+                composable(Screen.NowPlaying.route) {
+                    NowPlayingScreen(
+                        onCollapse = { navController.popBackStack() },
+                        viewModel = playerViewModel,
+                        hazeState = if (isLiquid) hazeState else null
+                    )
+                }
+                composable(Screen.Settings.route) {
+                    SettingsScreen(onBack = { navController.popBackStack() })
+                }
+                composable(
+                    route = Screen.Genre.route,
+                    arguments = listOf(
+                        navArgument("tag") { type = NavType.StringType },
+                        navArgument("label") { type = NavType.StringType }
+                    )
+                ) {
+                    GenreScreen(
+                        onBack = { navController.popBackStack() },
+                        onTrackClick = { navController.navigate(Screen.NowPlaying.route) }
+                    )
+                }
+                composable(
+                    route = Screen.PlaylistDetail.route,
+                    arguments = listOf(navArgument("playlistId") { type = NavType.LongType })
+                ) {
+                    PlaylistDetailScreen(
+                        onBack = { navController.popBackStack() },
+                        onTrackClick = { navController.navigate(Screen.NowPlaying.route) }
+                    )
+                }
             }
         }
     }

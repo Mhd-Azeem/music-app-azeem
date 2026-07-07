@@ -111,5 +111,7 @@ dependencies {
 
     implementation(libs.coil.compose)
 
+    implementation(libs.haze)
+
     implementation(libs.kotlinx.coroutines.android)
 }

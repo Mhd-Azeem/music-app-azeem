@@ -1,6 +1,7 @@
 package com.wavelength.music.ui.nowplaying
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,13 +56,19 @@ import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.components.TrackRow
 import com.wavelength.music.ui.components.swipeVertical
 import com.wavelength.music.ui.playlist.AddToPlaylistDialog
+import com.wavelength.music.ui.theme.LiquidGlassStyle
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeChild
 import java.util.concurrent.TimeUnit
 
 @Composable
 fun NowPlayingScreen(
     onCollapse: () -> Unit,
-    viewModel: PlayerViewModel = hiltViewModel()
+    viewModel: PlayerViewModel = hiltViewModel(),
+    hazeState: HazeState? = null
 ) {
+    val isLiquid = hazeState != null
+    val pillShape = RoundedCornerShape(28.dp)
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isFavorite by viewModel.isCurrentFavorite.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
@@ -164,30 +171,39 @@ fun NowPlayingScreen(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                IconButton(onClick = { showSleepTimerDialog = true }) {
-                    Icon(
-                        imageVector = Icons.Filled.Timer,
-                        contentDescription = "Sleep timer",
-                        tint = if (sleepTimerRemaining != null || sleepTimerEndOfTrack) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            Color.White
-                        }
-                    )
+                var topIconRowModifier: Modifier = Modifier
+                if (isLiquid) {
+                    topIconRowModifier = topIconRowModifier
+                        .clip(pillShape)
+                        .hazeChild(state = hazeState!!, style = LiquidGlassStyle)
+                        .border(1.dp, Color.White.copy(alpha = 0.25f), pillShape)
                 }
-                IconButton(onClick = { showAddToPlaylist = true }) {
-                    Icon(
-                        imageVector = Icons.Filled.PlaylistAdd,
-                        contentDescription = "Add to playlist",
-                        tint = Color.White
-                    )
-                }
-                IconButton(onClick = viewModel::toggleFavorite) {
-                    Icon(
-                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = "Favorite",
-                        tint = if (isFavorite) MaterialTheme.colorScheme.primary else Color.White
-                    )
+                Row(modifier = topIconRowModifier) {
+                    IconButton(onClick = { showSleepTimerDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.Timer,
+                            contentDescription = "Sleep timer",
+                            tint = if (sleepTimerRemaining != null || sleepTimerEndOfTrack) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                Color.White
+                            }
+                        )
+                    }
+                    IconButton(onClick = { showAddToPlaylist = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.PlaylistAdd,
+                            contentDescription = "Add to playlist",
+                            tint = Color.White
+                        )
+                    }
+                    IconButton(onClick = viewModel::toggleFavorite) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = "Favorite",
+                            tint = if (isFavorite) MaterialTheme.colorScheme.primary else Color.White
+                        )
+                    }
                 }
             }
         }
@@ -211,8 +227,15 @@ fun NowPlayingScreen(
             }
         }
 
+        var transportRowModifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+        if (isLiquid) {
+            transportRowModifier = transportRowModifier
+                .clip(pillShape)
+                .hazeChild(state = hazeState!!, style = LiquidGlassStyle)
+                .border(1.dp, Color.White.copy(alpha = 0.25f), pillShape)
+        }
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+            modifier = transportRowModifier,
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -245,8 +268,16 @@ fun NowPlayingScreen(
             }
         }
 
+        var volumeRowModifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+        if (isLiquid) {
+            volumeRowModifier = volumeRowModifier
+                .clip(pillShape)
+                .hazeChild(state = hazeState!!, style = LiquidGlassStyle)
+                .border(1.dp, Color.White.copy(alpha = 0.25f), pillShape)
+                .padding(horizontal = 8.dp)
+        }
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+            modifier = volumeRowModifier,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(

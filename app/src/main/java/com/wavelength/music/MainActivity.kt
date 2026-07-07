@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.wavelength.music.ui.components.AppBackground
 import com.wavelength.music.ui.components.OfflineBanner
 import com.wavelength.music.ui.navigation.WavelengthNavHost
 import com.wavelength.music.ui.settings.AppSettingsViewModel
@@ -52,11 +51,6 @@ class MainActivity : ComponentActivity() {
                 Column(modifier = Modifier.fillMaxSize()) {
                     OfflineBanner()
                     Box(modifier = Modifier.fillMaxWidth().weight(1f).background(Color.Black)) {
-                        AppBackground(
-                            hasCustomBackground = settings.hasCustomBackground,
-                            customBackgroundFile = settingsViewModel.customBackgroundFile,
-                            opacity = settings.backgroundOpacity
-                        )
                         WavelengthNavHost()
                     }
                 }
