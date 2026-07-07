@@ -6,6 +6,7 @@ import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.repository.MusicRepository
 import com.wavelength.music.playback.PlaybackUiState
 import com.wavelength.music.playback.PlayerController
+import com.wavelength.music.playback.SleepTimerController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,10 +21,13 @@ import javax.inject.Inject
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
     private val playerController: PlayerController,
-    private val repository: MusicRepository
+    private val repository: MusicRepository,
+    private val sleepTimerController: SleepTimerController
 ) : ViewModel() {
 
     val state: StateFlow<PlaybackUiState> = playerController.state
+    val sleepTimerRemainingMs: StateFlow<Long?> = sleepTimerController.remainingMs
+    val sleepTimerIsEndOfTrack: StateFlow<Boolean> = sleepTimerController.isEndOfTrack
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val isCurrentFavorite: StateFlow<Boolean> = state
@@ -48,6 +52,10 @@ class PlayerViewModel @Inject constructor(
     fun playQueueItem(index: Int) = playerController.playQueueItem(index)
     fun moveQueueItem(from: Int, to: Int) = playerController.moveQueueItem(from, to)
     fun setVolume(volume: Float) = playerController.setVolume(volume)
+
+    fun startSleepTimer(minutes: Int) = sleepTimerController.startCountdown(minutes * 60_000L)
+    fun startSleepTimerEndOfTrack() = sleepTimerController.startEndOfTrack()
+    fun cancelSleepTimer() = sleepTimerController.cancel()
 
     fun toggleFavorite() {
         val track = state.value.currentTrack ?: return

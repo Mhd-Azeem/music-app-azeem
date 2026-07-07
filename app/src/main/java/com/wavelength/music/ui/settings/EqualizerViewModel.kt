@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.wavelength.music.playback.EqualizerBand
 import com.wavelength.music.playback.EqualizerController
 import com.wavelength.music.playback.EqualizerMode
+import com.wavelength.music.playback.EqualizerPreset
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
@@ -28,4 +29,8 @@ class EqualizerViewModel @Inject constructor(
     fun setBassBoostStrength(strength: Int) = equalizerController.setBassBoostStrength(strength)
 
     fun setMode(mode: EqualizerMode) = equalizerController.setMode(mode)
+
+    fun reset() = equalizerController.reset()
+
+    fun applyPreset(preset: EqualizerPreset) = equalizerController.applyPreset(preset)
 }

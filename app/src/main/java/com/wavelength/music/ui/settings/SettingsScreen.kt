@@ -54,8 +54,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.widget.Toast
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.wavelength.music.R
 import com.wavelength.music.playback.EqualizerMode
+import com.wavelength.music.playback.EqualizerPreset
 import com.wavelength.music.ui.components.CircularKnob
 import com.wavelength.music.ui.components.ImageCropDialog
 import com.wavelength.music.ui.theme.AppTheme
@@ -202,8 +204,13 @@ fun SettingsScreen(
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         if (settings.hasCustomBackground) {
+                            val backgroundFile = viewModel.customBackgroundFile
                             AsyncImage(
-                                model = viewModel.customBackgroundFile,
+                                model = ImageRequest.Builder(context)
+                                    .data(backgroundFile)
+                                    .memoryCacheKey("${backgroundFile.absolutePath}_${backgroundFile.lastModified()}")
+                                    .diskCacheKey("${backgroundFile.absolutePath}_${backgroundFile.lastModified()}")
+                                    .build(),
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
@@ -298,6 +305,11 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Enable equalizer", modifier = Modifier.weight(1f))
+                        if (eqSupported || bassSupported) {
+                            TextButton(onClick = { equalizerViewModel.reset() }) {
+                                Text("Reset")
+                            }
+                        }
                         Switch(
                             checked = eqEnabled,
                             onCheckedChange = { equalizerViewModel.setEnabled(it) },
@@ -326,6 +338,27 @@ fun SettingsScreen(
                                 onClick = { equalizerViewModel.setMode(EqualizerMode.ADVANCED) },
                                 label = { Text("Advanced") }
                             )
+                        }
+
+                        if (eqBands.isNotEmpty()) {
+                            Text(
+                                text = "Presets",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                            )
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(EqualizerPreset.entries) { preset ->
+                                    FilterChip(
+                                        selected = false,
+                                        onClick = { equalizerViewModel.applyPreset(preset) },
+                                        label = { Text(preset.label) }
+                                    )
+                                }
+                            }
                         }
 
                         if (eqMode == EqualizerMode.SIMPLE) {

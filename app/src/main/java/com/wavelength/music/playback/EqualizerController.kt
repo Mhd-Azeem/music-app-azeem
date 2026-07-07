@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.roundToInt
 
 data class EqualizerBand(
     val index: Int,
@@ -20,6 +21,18 @@ data class EqualizerBand(
 )
 
 enum class EqualizerMode { ADVANCED, SIMPLE }
+
+/** Each curve is 5 gain fractions (-1..1) sampled evenly from the lowest to the highest band;
+ * devices with a different band count get these interpolated across whatever bands they have. */
+enum class EqualizerPreset(val label: String, val curve: List<Float>) {
+    FLAT("Flat", listOf(0f, 0f, 0f, 0f, 0f)),
+    ROCK("Rock", listOf(0.6f, 0.3f, -0.2f, 0.2f, 0.5f)),
+    POP("Pop", listOf(-0.1f, 0.3f, 0.4f, 0.2f, -0.1f)),
+    CLASSICAL("Classical", listOf(0.2f, 0.1f, -0.1f, 0.1f, 0.3f)),
+    JAZZ("Jazz", listOf(0.3f, 0.2f, 0f, 0.2f, 0.3f)),
+    BASS_BOOSTER("Bass Booster", listOf(0.9f, 0.6f, 0.1f, 0f, 0f)),
+    VOCAL("Vocal", listOf(-0.2f, 0f, 0.5f, 0.4f, -0.1f))
+}
 
 /** Wraps the platform Equalizer/BassBoost AudioEffects, (re)attached to whichever audio session
  * the ExoPlayer instance in [PlaybackService] is currently using. Devices vary wildly in how many
@@ -126,6 +139,56 @@ class EqualizerController @Inject constructor(
         runCatching { bassBoost?.setStrength(strength.toShort()) }
         prefs.edit { putInt(KEY_BASS, strength) }
         _bassBoostStrength.value = strength
+    }
+
+    /** Flattens every band and bass boost back to 0, without changing the enabled/mode state. */
+    fun reset() {
+        val currentBands = _bands.value
+        prefs.edit {
+            currentBands.forEach { band ->
+                runCatching { equalizer?.setBandLevel(band.index.toShort(), 0) }
+                putInt(bandKey(band.index), 0)
+            }
+            putInt(KEY_BASS, 0)
+        }
+        _bands.value = currentBands.map { it.copy(levelMillibel = 0) }
+        runCatching { bassBoost?.setStrength(0) }
+        _bassBoostStrength.value = 0
+    }
+
+    /** Maps [preset]'s 5-point curve proportionally across however many bands this device
+     * actually reports, since band count varies by hardware. */
+    fun applyPreset(preset: EqualizerPreset) {
+        val currentBands = _bands.value
+        if (currentBands.isEmpty()) return
+        val curve = preset.curve
+        val updated = currentBands.mapIndexed { position, band ->
+            val fraction = sampleCurve(curve, if (currentBands.size > 1) {
+                position.toFloat() / (currentBands.size - 1)
+            } else {
+                0f
+            })
+            val magnitude = if (fraction >= 0f) band.maxLevelMillibel else -band.minLevelMillibel
+            val level = (fraction * magnitude).roundToInt().coerceIn(band.minLevelMillibel, band.maxLevelMillibel)
+            runCatching { equalizer?.setBandLevel(band.index.toShort(), level.toShort()) }
+            band.copy(levelMillibel = level)
+        }
+        prefs.edit { updated.forEach { putInt(bandKey(it.index), it.levelMillibel) } }
+        _bands.value = updated
+
+        val bassFraction = curve.first().coerceAtLeast(0f)
+        val bassStrength = (bassFraction * 1000).roundToInt().coerceIn(0, 1000)
+        runCatching { bassBoost?.setStrength(bassStrength.toShort()) }
+        prefs.edit { putInt(KEY_BASS, bassStrength) }
+        _bassBoostStrength.value = bassStrength
+    }
+
+    private fun sampleCurve(curve: List<Float>, position: Float): Float {
+        val scaledPosition = position * (curve.size - 1)
+        val lowerIndex = scaledPosition.toInt().coerceIn(0, curve.size - 1)
+        val upperIndex = (lowerIndex + 1).coerceAtMost(curve.size - 1)
+        val t = scaledPosition - lowerIndex
+        return curve[lowerIndex] * (1 - t) + curve[upperIndex] * t
     }
 
     private fun release() {

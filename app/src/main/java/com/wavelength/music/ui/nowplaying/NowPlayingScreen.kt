@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.VolumeDown
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
@@ -62,8 +63,11 @@ fun NowPlayingScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isFavorite by viewModel.isCurrentFavorite.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+    val sleepTimerRemaining by viewModel.sleepTimerRemainingMs.collectAsStateWithLifecycle()
+    val sleepTimerEndOfTrack by viewModel.sleepTimerIsEndOfTrack.collectAsStateWithLifecycle()
     val track = state.currentTrack
     var showAddToPlaylist by remember { mutableStateOf(false) }
+    var showSleepTimerDialog by remember { mutableStateOf(false) }
     var menuQueueIndex by remember { mutableStateOf<Int?>(null) }
 
     if (showAddToPlaylist) {
@@ -72,6 +76,26 @@ fun NowPlayingScreen(
             onDismiss = { showAddToPlaylist = false },
             onSelect = viewModel::addCurrentTrackToPlaylist,
             onCreateNew = viewModel::createPlaylistWithCurrentTrack
+        )
+    }
+
+    if (showSleepTimerDialog) {
+        SleepTimerDialog(
+            remainingMs = sleepTimerRemaining,
+            isEndOfTrack = sleepTimerEndOfTrack,
+            onDismiss = { showSleepTimerDialog = false },
+            onSelectMinutes = { minutes ->
+                viewModel.startSleepTimer(minutes)
+                showSleepTimerDialog = false
+            },
+            onSelectEndOfTrack = {
+                viewModel.startSleepTimerEndOfTrack()
+                showSleepTimerDialog = false
+            },
+            onCancelTimer = {
+                viewModel.cancelSleepTimer()
+                showSleepTimerDialog = false
+            }
         )
     }
 
@@ -127,6 +151,17 @@ fun NowPlayingScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
+                    )
+                }
+                IconButton(onClick = { showSleepTimerDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Filled.Timer,
+                        contentDescription = "Sleep timer",
+                        tint = if (sleepTimerRemaining != null || sleepTimerEndOfTrack) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            Color.White
+                        }
                     )
                 }
                 IconButton(onClick = { showAddToPlaylist = true }) {

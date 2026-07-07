@@ -149,6 +149,10 @@ class PlayerController @Inject constructor(
         if (c.isPlaying) c.pause() else c.play()
     }
 
+    fun pause() {
+        controller?.pause()
+    }
+
     fun seekTo(positionMs: Long) {
         controller?.seekTo(positionMs)
         _state.update { it.copy(positionMs = positionMs) }
