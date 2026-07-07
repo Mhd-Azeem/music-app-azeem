@@ -10,8 +10,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -26,6 +28,9 @@ class SearchViewModel @Inject constructor(
 
     private val _results = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Empty)
     val results: StateFlow<ScreenState<List<Track>>> = _results.asStateFlow()
+
+    val searchHistory: StateFlow<List<String>> = repository.observeSearchHistory()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var searchJob: Job? = null
 
@@ -66,5 +71,25 @@ class SearchViewModel @Inject constructor(
 
     fun playTrack(queue: List<Track>, index: Int) {
         playerController.playQueue(queue, index)
+    }
+
+    fun commitSearch() {
+        val q = _query.value.trim()
+        if (q.isNotEmpty()) {
+            viewModelScope.launch { repository.recordSearch(q) }
+        }
+    }
+
+    fun onHistoryItemClick(historyQuery: String) {
+        onQueryChange(historyQuery)
+        commitSearch()
+    }
+
+    fun removeHistoryEntry(historyQuery: String) {
+        viewModelScope.launch { repository.removeSearchHistoryEntry(historyQuery) }
+    }
+
+    fun clearHistory() {
+        viewModelScope.launch { repository.clearSearchHistory() }
     }
 }

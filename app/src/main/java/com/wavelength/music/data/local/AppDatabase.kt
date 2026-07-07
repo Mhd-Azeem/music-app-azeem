@@ -9,9 +9,11 @@ import androidx.room.RoomDatabase
         RecentlyPlayedEntity::class,
         LocalSongEntity::class,
         PlaylistEntity::class,
-        PlaylistTrackEntity::class
+        PlaylistTrackEntity::class,
+        DownloadedTrackEntity::class,
+        SearchHistoryEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -19,4 +21,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun recentlyPlayedDao(): RecentlyPlayedDao
     abstract fun localSongDao(): LocalSongDao
     abstract fun playlistDao(): PlaylistDao
+    abstract fun downloadDao(): DownloadDao
+    abstract fun searchHistoryDao(): SearchHistoryDao
 }

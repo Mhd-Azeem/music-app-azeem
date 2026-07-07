@@ -21,6 +21,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
@@ -40,8 +44,23 @@ fun TrackListScreen(
     onPlayAll: () -> Unit,
     onTrackClick: (Int) -> Unit,
     emptyMessage: String? = null,
-    onTrackMoreClick: ((Track) -> Unit)? = null
+    onRemoveFromPlaylist: ((Track) -> Unit)? = null
 ) {
+    var trackForMenu by remember { mutableStateOf<Track?>(null) }
+
+    trackForMenu?.let { track ->
+        TrackOptionsSheet(
+            track = track,
+            onDismiss = { trackForMenu = null },
+            onRemoveFromPlaylist = onRemoveFromPlaylist?.let {
+                {
+                    it(track)
+                    trackForMenu = null
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -103,7 +122,7 @@ fun TrackListScreen(
                     TrackRow(
                         track = track,
                         onClick = { onTrackClick(index) },
-                        onMoreClick = onTrackMoreClick?.let { { it(track) } }
+                        onMoreClick = { trackForMenu = track }
                     )
                 }
             }

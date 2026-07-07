@@ -87,7 +87,10 @@ fun WavelengthNavHost() {
                     onGenreClick = { tag, label ->
                         navController.navigate(Screen.Genre.createRoute(tag, label))
                     },
-                    onSettingsClick = { navController.navigate(Screen.Settings.route) }
+                    onSettingsClick = { navController.navigate(Screen.Settings.route) },
+                    onPlaylistClick = { id ->
+                        navController.navigate(Screen.PlaylistDetail.createRoute(id))
+                    }
                 )
             }
             composable(Screen.Search.route) {

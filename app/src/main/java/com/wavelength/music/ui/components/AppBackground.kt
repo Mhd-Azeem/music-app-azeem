@@ -24,7 +24,7 @@ fun AppBackground(hasCustomBackground: Boolean, customBackgroundFile: File) {
         )
     } else {
         Image(
-            painter = painterResource(R.drawable.bg_photo),
+            painter = painterResource(R.drawable.ic_launcher_photo),
             contentDescription = null,
             modifier = Modifier.fillMaxSize().alpha(0.25f),
             contentScale = ContentScale.Crop

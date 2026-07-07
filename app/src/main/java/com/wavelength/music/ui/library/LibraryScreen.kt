@@ -50,6 +50,7 @@ import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.ui.components.EmptyView
 import com.wavelength.music.ui.components.ErrorView
+import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.components.TrackRow
 import com.wavelength.music.ui.playlist.CreatePlaylistDialog
 
@@ -70,15 +71,18 @@ fun LibraryScreen(
     val recentlyPlayed by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
     val localSongs by viewModel.localSongs.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+    val downloadedTracks by viewModel.downloadedTracks.collectAsStateWithLifecycle()
     val isScanning by viewModel.isScanning.collectAsStateWithLifecycle()
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var showCreateDialog by remember { mutableStateOf(false) }
+    var trackForMenu by remember { mutableStateOf<Track?>(null) }
     val tabs = listOf(
         stringResource(R.string.favorites),
         stringResource(R.string.recently_played),
         "Playlists",
-        stringResource(R.string.my_device)
+        stringResource(R.string.my_device),
+        "Downloads"
     )
 
     val context = LocalContext.current
@@ -105,6 +109,10 @@ fun LibraryScreen(
             onDismiss = { showCreateDialog = false },
             onCreate = viewModel::createPlaylist
         )
+    }
+
+    trackForMenu?.let { track ->
+        TrackOptionsSheet(track = track, onDismiss = { trackForMenu = null })
     }
 
     Scaffold(
@@ -147,7 +155,8 @@ fun LibraryScreen(
                         viewModel.playFrom(favorites, index)
                         onTrackClick()
                     },
-                    onFavoriteClick = viewModel::removeFavorite
+                    onFavoriteClick = viewModel::removeFavorite,
+                    onMoreClick = { trackForMenu = it }
                 )
                 1 -> TrackList(
                     tracks = recentlyPlayed,
@@ -156,14 +165,15 @@ fun LibraryScreen(
                         viewModel.playFrom(recentlyPlayed, index)
                         onTrackClick()
                     },
-                    onFavoriteClick = null
+                    onFavoriteClick = null,
+                    onMoreClick = { trackForMenu = it }
                 )
                 2 -> PlaylistList(
                     playlists = playlists,
                     onClick = onPlaylistClick,
                     onDelete = viewModel::deletePlaylist
                 )
-                else -> when {
+                3 -> when {
                     !hasPermission -> PermissionPrompt { permissionLauncher.launch(audioPermission) }
                     isScanning -> Column(
                         modifier = Modifier.fillMaxSize(),
@@ -179,9 +189,21 @@ fun LibraryScreen(
                             viewModel.playFrom(localSongs, index)
                             onTrackClick()
                         },
-                        onFavoriteClick = null
+                        onFavoriteClick = null,
+                        onMoreClick = { trackForMenu = it }
                     )
                 }
+                else -> TrackList(
+                    tracks = downloadedTracks,
+                    isFavoriteTab = false,
+                    onTrackClick = { index ->
+                        viewModel.playFrom(downloadedTracks, index)
+                        onTrackClick()
+                    },
+                    onFavoriteClick = null,
+                    onMoreClick = { trackForMenu = it },
+                    emptyMessage = "No downloads yet — use a track's three-dot menu to download it"
+                )
             }
         }
     }
@@ -192,10 +214,16 @@ private fun TrackList(
     tracks: List<Track>,
     isFavoriteTab: Boolean,
     onTrackClick: (Int) -> Unit,
-    onFavoriteClick: ((Track) -> Unit)?
+    onFavoriteClick: ((Track) -> Unit)?,
+    onMoreClick: (Track) -> Unit,
+    emptyMessage: String? = null
 ) {
     if (tracks.isEmpty()) {
-        EmptyView(modifier = Modifier.fillMaxSize())
+        if (emptyMessage != null) {
+            EmptyView(modifier = Modifier.fillMaxSize(), message = emptyMessage)
+        } else {
+            EmptyView(modifier = Modifier.fillMaxSize())
+        }
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             itemsIndexed(tracks) { index, track ->
@@ -203,7 +231,8 @@ private fun TrackList(
                     track = track,
                     onClick = { onTrackClick(index) },
                     isFavorite = isFavoriteTab,
-                    onFavoriteClick = onFavoriteClick?.let { { it(track) } }
+                    onFavoriteClick = onFavoriteClick?.let { { it(track) } },
+                    onMoreClick = { onMoreClick(track) }
                 )
             }
         }

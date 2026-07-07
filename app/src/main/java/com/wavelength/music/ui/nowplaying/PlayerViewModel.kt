@@ -45,6 +45,7 @@ class PlayerViewModel @Inject constructor(
     fun skipPrevious() = playerController.skipPrevious()
     fun toggleShuffle() = playerController.toggleShuffle()
     fun cycleRepeatMode() = playerController.cycleRepeatMode()
+    fun playQueueItem(index: Int) = playerController.playQueueItem(index)
 
     fun toggleFavorite() {
         val track = state.value.currentTrack ?: return

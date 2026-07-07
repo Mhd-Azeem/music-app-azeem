@@ -1,7 +1,7 @@
 package com.wavelength.music.data.model
 
 enum class TrackSource {
-    JIOSAAVN, LOCAL
+    JIOSAAVN, LOCAL, DOWNLOADED
 }
 
 data class Track(

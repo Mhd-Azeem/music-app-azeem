@@ -33,6 +33,9 @@ class LibraryViewModel @Inject constructor(
     val playlists: StateFlow<List<PlaylistSummary>> = repository.observePlaylists()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val downloadedTracks: StateFlow<List<Track>> = repository.observeDownloadedTracks()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     private val _isScanning = MutableStateFlow(false)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
 

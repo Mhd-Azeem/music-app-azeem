@@ -1,5 +1,6 @@
 package com.wavelength.music.data.repository
 
+import com.wavelength.music.data.local.DownloadedTrackEntity
 import com.wavelength.music.data.local.FavoriteDao
 import com.wavelength.music.data.local.FavoriteTrackEntity
 import com.wavelength.music.data.local.PlaylistDao
@@ -7,9 +8,13 @@ import com.wavelength.music.data.local.PlaylistEntity
 import com.wavelength.music.data.local.PlaylistTrackEntity
 import com.wavelength.music.data.local.RecentlyPlayedDao
 import com.wavelength.music.data.local.RecentlyPlayedEntity
+import com.wavelength.music.data.local.SearchHistoryDao
+import com.wavelength.music.data.local.SearchHistoryEntity
 import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.model.TrackSource
+import android.net.Uri
+import java.io.File
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -27,7 +32,9 @@ class MusicRepository @Inject constructor(
     private val localSongRepository: LocalSongRepository,
     private val favoriteDao: FavoriteDao,
     private val recentlyPlayedDao: RecentlyPlayedDao,
-    private val playlistDao: PlaylistDao
+    private val playlistDao: PlaylistDao,
+    private val downloadRepository: DownloadRepository,
+    private val searchHistoryDao: SearchHistoryDao
 ) {
 
     // --- JioSaavn (the only online source) ------------------------------------------------------
@@ -124,6 +131,32 @@ class MusicRepository @Inject constructor(
     suspend fun removeTrackFromPlaylist(playlistId: Long, trackId: String) =
         playlistDao.removeTrack(playlistId, trackId)
 
+    // --- Offline downloads -----------------------------------------------------------------------
+
+    fun observeDownloadedTracks(): Flow<List<Track>> = downloadRepository.observeDownloads()
+        .map { list -> list.map { it.toTrack() } }
+
+    fun isDownloaded(trackId: String): Flow<Boolean> = downloadRepository.isDownloaded(trackId)
+
+    suspend fun downloadTrack(track: Track): Result<Unit> = downloadRepository.download(track)
+
+    suspend fun removeDownload(trackId: String) = downloadRepository.removeDownload(trackId)
+
+    // --- Search history ----------------------------------------------------------------------------
+
+    fun observeSearchHistory(limit: Int = 15): Flow<List<String>> =
+        searchHistoryDao.observeRecent(limit).map { list -> list.map { it.query } }
+
+    suspend fun recordSearch(query: String) {
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) return
+        searchHistoryDao.insert(SearchHistoryEntity(query = trimmed))
+    }
+
+    suspend fun removeSearchHistoryEntry(query: String) = searchHistoryDao.delete(query)
+
+    suspend fun clearSearchHistory() = searchHistoryDao.clearAll()
+
     private companion object {
         const val FEATURED_SEED_QUERY = "top hits"
     }
@@ -166,6 +199,19 @@ private fun PlaylistTrackEntity.toTrack(): Track = Track(
     audioUrl = audioUrl,
     durationSeconds = 0,
     source = source.toTrackSource()
+)
+
+private fun DownloadedTrackEntity.toTrack(): Track = Track(
+    id = id,
+    name = name,
+    artistId = "",
+    artistName = artist,
+    albumId = "",
+    albumName = "",
+    albumArtUrl = albumArtUrl,
+    audioUrl = Uri.fromFile(File(filePath)).toString(),
+    durationSeconds = 0,
+    source = TrackSource.DOWNLOADED
 )
 
 private fun String.toTrackSource(): TrackSource = runCatching { TrackSource.valueOf(this) }

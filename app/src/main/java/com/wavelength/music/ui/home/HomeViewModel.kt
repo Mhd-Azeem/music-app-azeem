@@ -2,6 +2,7 @@ package com.wavelength.music.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.repository.MusicRepository
 import com.wavelength.music.playback.PlayerController
@@ -31,6 +32,9 @@ class HomeViewModel @Inject constructor(
     val featured: StateFlow<ScreenState<List<Track>>> = _featured.asStateFlow()
 
     val recentlyPlayed: StateFlow<List<Track>> = repository.observeRecentlyPlayed(10)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val playlists: StateFlow<List<PlaylistSummary>> = repository.observePlaylists()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {

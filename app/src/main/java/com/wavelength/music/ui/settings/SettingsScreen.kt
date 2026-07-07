@@ -145,7 +145,7 @@ fun SettingsScreen(
                             )
                         } else {
                             Image(
-                                painter = painterResource(R.drawable.bg_photo),
+                                painter = painterResource(R.drawable.ic_launcher_photo),
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
@@ -208,7 +208,6 @@ private fun IconPresetOption(preset: IconPreset, selected: Boolean, onClick: () 
     val previewRes = when (preset) {
         IconPreset.CLASSIC -> R.drawable.ic_launcher_classic
         IconPreset.PHOTO_1 -> R.drawable.ic_launcher_photo
-        IconPreset.PHOTO_2 -> R.drawable.ic_launcher_photo2
     }
     Column(
         modifier = Modifier.clickable(onClick = onClick),

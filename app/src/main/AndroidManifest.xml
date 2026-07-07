@@ -57,19 +57,6 @@
             </intent-filter>
         </activity-alias>
 
-        <activity-alias
-            android:name=".IconPhoto2"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@drawable/ic_launcher_photo2"
-            android:roundIcon="@drawable/ic_launcher_photo2"
-            android:targetActivity=".MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
         <service
             android:name=".playback.PlaybackService"
             android:exported="true"

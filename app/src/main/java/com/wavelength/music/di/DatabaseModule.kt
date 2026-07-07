@@ -3,10 +3,12 @@ package com.wavelength.music.di
 import android.content.Context
 import androidx.room.Room
 import com.wavelength.music.data.local.AppDatabase
+import com.wavelength.music.data.local.DownloadDao
 import com.wavelength.music.data.local.FavoriteDao
 import com.wavelength.music.data.local.LocalSongDao
 import com.wavelength.music.data.local.PlaylistDao
 import com.wavelength.music.data.local.RecentlyPlayedDao
+import com.wavelength.music.data.local.SearchHistoryDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -37,4 +39,10 @@ object DatabaseModule {
 
     @Provides
     fun providePlaylistDao(database: AppDatabase): PlaylistDao = database.playlistDao()
+
+    @Provides
+    fun provideDownloadDao(database: AppDatabase): DownloadDao = database.downloadDao()
+
+    @Provides
+    fun provideSearchHistoryDao(database: AppDatabase): SearchHistoryDao = database.searchHistoryDao()
 }

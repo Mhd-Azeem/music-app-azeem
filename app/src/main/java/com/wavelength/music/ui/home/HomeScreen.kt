@@ -1,6 +1,7 @@
 package com.wavelength.music.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,11 +11,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -22,10 +30,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wavelength.music.R
+import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.ui.components.EmptyView
 import com.wavelength.music.ui.components.ErrorView
@@ -39,10 +49,12 @@ fun HomeScreen(
     onTrackClick: () -> Unit,
     onGenreClick: (tag: String, label: String) -> Unit,
     onSettingsClick: () -> Unit,
+    onPlaylistClick: (Long) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val featured by viewModel.featured.collectAsStateWithLifecycle()
     val recentlyPlayed by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
+    val playlists by viewModel.playlists.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -68,11 +80,13 @@ fun HomeScreen(
                 padding = padding,
                 featuredTracks = state.data,
                 recentlyPlayed = recentlyPlayed,
+                playlists = playlists,
                 onTrackClick = { index, queue ->
                     viewModel.playTrack(queue, index)
                     onTrackClick()
                 },
-                onGenreClick = onGenreClick
+                onGenreClick = onGenreClick,
+                onPlaylistClick = onPlaylistClick
             )
         }
     }
@@ -83,8 +97,10 @@ private fun HomeContent(
     padding: PaddingValues,
     featuredTracks: List<Track>,
     recentlyPlayed: List<Track>,
+    playlists: List<PlaylistSummary>,
     onTrackClick: (Int, List<Track>) -> Unit,
-    onGenreClick: (String, String) -> Unit
+    onGenreClick: (String, String) -> Unit,
+    onPlaylistClick: (Long) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -116,6 +132,20 @@ private fun HomeContent(
             }
         }
 
+        if (playlists.isNotEmpty()) {
+            item { SectionHeader("Your playlists") }
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(playlists, key = { it.id }) { playlist ->
+                        PlaylistCard(playlist = playlist, onClick = { onPlaylistClick(playlist.id) })
+                    }
+                }
+            }
+        }
+
         if (recentlyPlayed.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.recently_played)) }
             item {
@@ -131,5 +161,32 @@ private fun HomeContent(
         }
 
         item { Spacer(modifier = Modifier.height(96.dp)) }
+    }
+}
+
+@Composable
+private fun PlaylistCard(playlist: PlaylistSummary, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .width(140.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Icon(Icons.Filled.QueueMusic, contentDescription = null)
+            Text(
+                text = playlist.name,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Text(
+                text = "${playlist.trackCount} tracks",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }

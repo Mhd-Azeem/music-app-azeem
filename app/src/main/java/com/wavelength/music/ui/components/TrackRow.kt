@@ -66,9 +66,14 @@ fun TrackRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            if (track.source == TrackSource.LOCAL) {
+            val sourceTag = when (track.source) {
+                TrackSource.LOCAL -> "On device"
+                TrackSource.DOWNLOADED -> "Downloaded"
+                else -> null
+            }
+            if (sourceTag != null) {
                 Text(
-                    text = "On device",
+                    text = sourceTag,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary
                 )

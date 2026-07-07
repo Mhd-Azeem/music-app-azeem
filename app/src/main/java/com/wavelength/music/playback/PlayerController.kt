@@ -182,6 +182,13 @@ class PlayerController @Inject constructor(
         _state.update { it.copy(queue = currentQueue) }
     }
 
+    fun playQueueItem(index: Int) {
+        val c = controller ?: return
+        if (index !in currentQueue.indices) return
+        c.seekToDefaultPosition(index)
+        c.play()
+    }
+
     fun playNext(track: Track) {
         val c = controller ?: return
         val insertIndex = (c.currentMediaItemIndex + 1).coerceIn(0, c.mediaItemCount)

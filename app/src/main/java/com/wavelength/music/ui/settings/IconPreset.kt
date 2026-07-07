@@ -7,6 +7,5 @@ package com.wavelength.music.ui.settings
  */
 enum class IconPreset(val aliasSuffix: String, val label: String) {
     CLASSIC(".IconClassic", "Classic"),
-    PHOTO_1(".IconPhoto1", "Photo 1"),
-    PHOTO_2(".IconPhoto2", "Photo 2")
+    PHOTO_1(".IconPhoto1", "Photo 1")
 }

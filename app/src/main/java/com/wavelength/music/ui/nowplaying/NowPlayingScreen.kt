@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -43,7 +45,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.wavelength.music.data.model.Track
 import com.wavelength.music.playback.RepeatMode
+import com.wavelength.music.ui.components.TrackOptionsSheet
+import com.wavelength.music.ui.components.TrackRow
 import com.wavelength.music.ui.playlist.AddToPlaylistDialog
 import java.util.concurrent.TimeUnit
 
@@ -57,6 +62,7 @@ fun NowPlayingScreen(
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     val track = state.currentTrack
     var showAddToPlaylist by remember { mutableStateOf(false) }
+    var trackForMenu by remember { mutableStateOf<Track?>(null) }
 
     if (showAddToPlaylist) {
         AddToPlaylistDialog(
@@ -65,6 +71,10 @@ fun NowPlayingScreen(
             onSelect = viewModel::addCurrentTrackToPlaylist,
             onCreateNew = viewModel::createPlaylistWithCurrentTrack
         )
+    }
+
+    trackForMenu?.let { menuTrack ->
+        TrackOptionsSheet(track = menuTrack, onDismiss = { trackForMenu = null })
     }
 
     Column(
@@ -184,6 +194,24 @@ fun NowPlayingScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().padding(top = 24.dp)
             )
+        }
+
+        val upcoming = state.queue.drop(state.currentIndex + 1)
+        if (upcoming.isNotEmpty()) {
+            Text(
+                text = "Up next",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
+            )
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                itemsIndexed(upcoming) { offset, upcomingTrack ->
+                    TrackRow(
+                        track = upcomingTrack,
+                        onClick = { viewModel.playQueueItem(state.currentIndex + 1 + offset) },
+                        onMoreClick = { trackForMenu = upcomingTrack }
+                    )
+                }
+            }
         }
     }
 }

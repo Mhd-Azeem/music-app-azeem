@@ -20,4 +20,5 @@
     <string name="rescan_library">Rescan library</string>
     <string name="local_permission_rationale">Wavelength needs access to your device\'s audio files to show songs stored locally.</string>
     <string name="grant_permission">Grant access</string>
+    <string name="no_recent_searches">Search for a song, artist, or language to get started</string>
 </resources>
