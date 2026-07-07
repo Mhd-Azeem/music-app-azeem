@@ -46,11 +46,63 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".IconPhoto1"
+            android:name=".IconHeadphones"
             android:enabled="false"
             android:exported="true"
-            android:icon="@drawable/ic_launcher_photo"
-            android:roundIcon="@drawable/ic_launcher_photo"
+            android:icon="@drawable/ic_launcher_headphones"
+            android:roundIcon="@drawable/ic_launcher_headphones"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".IconVinyl"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_vinyl"
+            android:roundIcon="@drawable/ic_launcher_vinyl"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".IconEqualizer"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_equalizer"
+            android:roundIcon="@drawable/ic_launcher_equalizer"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".IconLetterAPurple"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_letter_a_purple"
+            android:roundIcon="@drawable/ic_launcher_letter_a_purple"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".IconLetterADark"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_letter_a_dark"
+            android:roundIcon="@drawable/ic_launcher_letter_a_dark"
             android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -11,11 +11,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -152,11 +155,11 @@ fun SettingsScreen(
         LazyColumn(modifier = Modifier.fillMaxWidth().padding(padding)) {
             item {
                 SettingsSection(title = "App icon") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        IconPreset.entries.forEach { preset ->
+                        items(IconPreset.entries) { preset ->
                             IconPresetOption(
                                 preset = preset,
                                 selected = settings.iconPreset == preset,
@@ -414,7 +417,11 @@ private fun SettingsSection(title: String, content: @Composable () -> Unit) {
 private fun IconPresetOption(preset: IconPreset, selected: Boolean, onClick: () -> Unit) {
     val previewRes = when (preset) {
         IconPreset.CLASSIC -> R.drawable.ic_launcher_classic
-        IconPreset.PHOTO_1 -> R.drawable.ic_launcher_photo
+        IconPreset.HEADPHONES -> R.drawable.ic_launcher_headphones
+        IconPreset.VINYL -> R.drawable.ic_launcher_vinyl
+        IconPreset.EQUALIZER -> R.drawable.ic_launcher_equalizer
+        IconPreset.LETTER_A_PURPLE -> R.drawable.ic_launcher_letter_a_purple
+        IconPreset.LETTER_A_DARK -> R.drawable.ic_launcher_letter_a_dark
     }
     Column(
         modifier = Modifier.clickable(onClick = onClick),
