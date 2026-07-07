@@ -63,6 +63,7 @@ class SettingsRepository @Inject constructor(
             input.use { stream ->
                 customBackgroundFile.outputStream().use { output -> stream.copyTo(output) }
             }
+            Unit
         }.onSuccess {
             _state.update { it.copy(hasCustomBackground = true) }
         }
