@@ -29,6 +29,7 @@ import com.wavelength.music.ui.library.LibraryScreen
 import com.wavelength.music.ui.nowplaying.NowPlayingScreen
 import com.wavelength.music.ui.nowplaying.PlayerViewModel
 import com.wavelength.music.ui.search.SearchScreen
+import com.wavelength.music.ui.settings.SettingsScreen
 
 @Composable
 fun WavelengthNavHost() {
@@ -38,7 +39,7 @@ fun WavelengthNavHost() {
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
-    val showChrome = currentRoute != Screen.NowPlaying.route
+    val showChrome = currentRoute != Screen.NowPlaying.route && currentRoute != Screen.Settings.route
 
     Scaffold(
         bottomBar = {
@@ -84,7 +85,8 @@ fun WavelengthNavHost() {
                     onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
                     onGenreClick = { tag, label ->
                         navController.navigate(Screen.Genre.createRoute(tag, label))
-                    }
+                    },
+                    onSettingsClick = { navController.navigate(Screen.Settings.route) }
                 )
             }
             composable(Screen.Search.route) {
@@ -100,6 +102,9 @@ fun WavelengthNavHost() {
                     onCollapse = { navController.popBackStack() },
                     viewModel = playerViewModel
                 )
+            }
+            composable(Screen.Settings.route) {
+                SettingsScreen(onBack = { navController.popBackStack() })
             }
             composable(
                 route = Screen.Genre.route,

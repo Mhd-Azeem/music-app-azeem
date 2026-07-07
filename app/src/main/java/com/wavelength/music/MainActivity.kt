@@ -7,17 +7,18 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.wavelength.music.ui.components.AppBackground
 import com.wavelength.music.ui.navigation.WavelengthNavHost
+import com.wavelength.music.ui.settings.AppSettingsViewModel
 import com.wavelength.music.ui.theme.WavelengthTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -41,13 +42,14 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            WavelengthTheme {
+            val settingsViewModel: AppSettingsViewModel = hiltViewModel()
+            val settings by settingsViewModel.state.collectAsStateWithLifecycle()
+
+            WavelengthTheme(theme = settings.theme) {
                 Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-                    Image(
-                        painter = painterResource(R.drawable.bg_photo),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize().alpha(0.25f),
-                        contentScale = ContentScale.Crop
+                    AppBackground(
+                        hasCustomBackground = settings.hasCustomBackground,
+                        customBackgroundFile = settingsViewModel.customBackgroundFile
                     )
                     WavelengthNavHost()
                 }
