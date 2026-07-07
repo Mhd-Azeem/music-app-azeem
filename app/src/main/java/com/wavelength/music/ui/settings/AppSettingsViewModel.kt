@@ -1,6 +1,6 @@
 package com.wavelength.music.ui.settings
 
-import android.net.Uri
+import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wavelength.music.data.model.DownloadsSummary
@@ -32,11 +32,13 @@ class AppSettingsViewModel @Inject constructor(
 
     fun selectTheme(theme: AppTheme) = settingsRepository.setTheme(theme)
 
-    fun pickBackground(uri: Uri) {
-        viewModelScope.launch { settingsRepository.setCustomBackground(uri) }
+    fun pickBackground(bitmap: Bitmap) {
+        viewModelScope.launch { settingsRepository.setCustomBackground(bitmap) }
     }
 
     fun resetBackground() = settingsRepository.resetBackground()
+
+    fun setBackgroundOpacity(opacity: Float) = settingsRepository.setBackgroundOpacity(opacity)
 
     fun clearAllDownloads() {
         viewModelScope.launch { repository.clearAllDownloads() }

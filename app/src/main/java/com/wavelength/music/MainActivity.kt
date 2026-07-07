@@ -54,7 +54,8 @@ class MainActivity : ComponentActivity() {
                     Box(modifier = Modifier.fillMaxWidth().weight(1f).background(Color.Black)) {
                         AppBackground(
                             hasCustomBackground = settings.hasCustomBackground,
-                            customBackgroundFile = settingsViewModel.customBackgroundFile
+                            customBackgroundFile = settingsViewModel.customBackgroundFile,
+                            opacity = settings.backgroundOpacity
                         )
                         WavelengthNavHost()
                     }

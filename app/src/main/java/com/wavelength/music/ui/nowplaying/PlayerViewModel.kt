@@ -47,6 +47,7 @@ class PlayerViewModel @Inject constructor(
     fun cycleRepeatMode() = playerController.cycleRepeatMode()
     fun playQueueItem(index: Int) = playerController.playQueueItem(index)
     fun moveQueueItem(from: Int, to: Int) = playerController.moveQueueItem(from, to)
+    fun setVolume(volume: Float) = playerController.setVolume(volume)
 
     fun toggleFavorite() {
         val track = state.value.currentTrack ?: return

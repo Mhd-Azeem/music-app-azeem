@@ -3,7 +3,7 @@ package com.wavelength.music.data.repository
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
-import android.net.Uri
+import android.graphics.Bitmap
 import androidx.core.content.edit
 import com.wavelength.music.ui.settings.IconPreset
 import com.wavelength.music.ui.theme.AppTheme
@@ -21,8 +21,11 @@ import javax.inject.Singleton
 data class AppSettingsState(
     val iconPreset: IconPreset = IconPreset.CLASSIC,
     val theme: AppTheme = AppTheme.CLASSIC,
-    val hasCustomBackground: Boolean = false
+    val hasCustomBackground: Boolean = false,
+    val backgroundOpacity: Float = DEFAULT_BACKGROUND_OPACITY
 )
+
+const val DEFAULT_BACKGROUND_OPACITY = 0.25f
 
 @Singleton
 class SettingsRepository @Inject constructor(
@@ -42,7 +45,8 @@ class SettingsRepository @Inject constructor(
         theme = runCatching {
             AppTheme.valueOf(prefs.getString(KEY_THEME, null) ?: AppTheme.CLASSIC.name)
         }.getOrDefault(AppTheme.CLASSIC),
-        hasCustomBackground = customBackgroundFile.exists()
+        hasCustomBackground = customBackgroundFile.exists(),
+        backgroundOpacity = prefs.getFloat(KEY_BACKGROUND_OPACITY, DEFAULT_BACKGROUND_OPACITY)
     )
 
     fun setIconPreset(preset: IconPreset) {
@@ -56,12 +60,10 @@ class SettingsRepository @Inject constructor(
         _state.update { it.copy(theme = theme) }
     }
 
-    suspend fun setCustomBackground(uri: Uri): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun setCustomBackground(bitmap: Bitmap): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            val input = context.contentResolver.openInputStream(uri)
-                ?: error("Could not open the selected image")
-            input.use { stream ->
-                customBackgroundFile.outputStream().use { output -> stream.copyTo(output) }
+            customBackgroundFile.outputStream().use { output ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 92, output)
             }
             Unit
         }.onSuccess {
@@ -72,6 +74,12 @@ class SettingsRepository @Inject constructor(
     fun resetBackground() {
         if (customBackgroundFile.exists()) customBackgroundFile.delete()
         _state.update { it.copy(hasCustomBackground = false) }
+    }
+
+    fun setBackgroundOpacity(opacity: Float) {
+        val clamped = opacity.coerceIn(0f, 1f)
+        prefs.edit { putFloat(KEY_BACKGROUND_OPACITY, clamped) }
+        _state.update { it.copy(backgroundOpacity = clamped) }
     }
 
     /** Enables the alias matching [preset] and disables the others, so exactly one launcher
@@ -95,5 +103,6 @@ class SettingsRepository @Inject constructor(
     private companion object {
         const val KEY_ICON = "icon_preset"
         const val KEY_THEME = "theme"
+        const val KEY_BACKGROUND_OPACITY = "background_opacity"
     }
 }

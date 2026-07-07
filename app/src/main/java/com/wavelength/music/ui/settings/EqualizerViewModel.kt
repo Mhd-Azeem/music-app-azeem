@@ -3,6 +3,7 @@ package com.wavelength.music.ui.settings
 import androidx.lifecycle.ViewModel
 import com.wavelength.music.playback.EqualizerBand
 import com.wavelength.music.playback.EqualizerController
+import com.wavelength.music.playback.EqualizerMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
@@ -17,6 +18,7 @@ class EqualizerViewModel @Inject constructor(
     val bands: StateFlow<List<EqualizerBand>> = equalizerController.bands
     val bassBoostSupported: StateFlow<Boolean> = equalizerController.bassBoostSupported
     val bassBoostStrength: StateFlow<Int> = equalizerController.bassBoostStrength
+    val mode: StateFlow<EqualizerMode> = equalizerController.mode
 
     fun setEnabled(value: Boolean) = equalizerController.setEnabled(value)
 
@@ -24,4 +26,6 @@ class EqualizerViewModel @Inject constructor(
         equalizerController.setBandLevel(bandIndex, levelMillibel)
 
     fun setBassBoostStrength(strength: Int) = equalizerController.setBassBoostStrength(strength)
+
+    fun setMode(mode: EqualizerMode) = equalizerController.setMode(mode)
 }

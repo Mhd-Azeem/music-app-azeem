@@ -72,6 +72,10 @@ class PlayerController @Inject constructor(
         override fun onRepeatModeChanged(repeatMode: Int) {
             _state.update { it.copy(repeatMode = repeatMode.toRepeatMode()) }
         }
+
+        override fun onVolumeChanged(volume: Float) {
+            _state.update { it.copy(volume = volume) }
+        }
     }
 
     fun connect() {
@@ -100,7 +104,8 @@ class PlayerController @Inject constructor(
                 positionMs = c.currentPosition.coerceAtLeast(0),
                 durationMs = c.duration.coerceAtLeast(0),
                 shuffleEnabled = c.shuffleModeEnabled,
-                repeatMode = c.repeatMode.toRepeatMode()
+                repeatMode = c.repeatMode.toRepeatMode(),
+                volume = c.volume
             )
         }
         updateTicker(c.isPlaying)
@@ -147,6 +152,12 @@ class PlayerController @Inject constructor(
     fun seekTo(positionMs: Long) {
         controller?.seekTo(positionMs)
         _state.update { it.copy(positionMs = positionMs) }
+    }
+
+    fun setVolume(volume: Float) {
+        val clamped = volume.coerceIn(0f, 1f)
+        controller?.volume = clamped
+        _state.update { it.copy(volume = clamped) }
     }
 
     fun skipNext() {

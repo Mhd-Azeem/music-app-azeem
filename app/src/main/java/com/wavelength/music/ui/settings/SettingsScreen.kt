@@ -1,5 +1,6 @@
 package com.wavelength.music.ui.settings
 
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,8 +52,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.widget.Toast
 import coil.compose.AsyncImage
 import com.wavelength.music.R
+import com.wavelength.music.playback.EqualizerMode
+import com.wavelength.music.ui.components.CircularKnob
+import com.wavelength.music.ui.components.ImageCropDialog
 import com.wavelength.music.ui.theme.AppTheme
 import com.wavelength.music.ui.theme.swatchColor
+import kotlin.math.roundToInt
 
 @Composable
 fun SettingsScreen(
@@ -69,6 +75,10 @@ fun SettingsScreen(
     val eqBands by equalizerViewModel.bands.collectAsStateWithLifecycle()
     val bassSupported by equalizerViewModel.bassBoostSupported.collectAsStateWithLifecycle()
     val bassStrength by equalizerViewModel.bassBoostStrength.collectAsStateWithLifecycle()
+    val eqMode by equalizerViewModel.mode.collectAsStateWithLifecycle()
+
+    var pendingBackgroundCropUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingIconCropUri by remember { mutableStateOf<Uri?>(null) }
 
     if (showClearDownloadsConfirm) {
         AlertDialog(
@@ -87,24 +97,45 @@ fun SettingsScreen(
         )
     }
 
+    pendingBackgroundCropUri?.let { uri ->
+        ImageCropDialog(
+            imageUri = uri,
+            aspectRatio = 9f / 19.5f,
+            onDismiss = { pendingBackgroundCropUri = null },
+            onCropped = { bitmap ->
+                viewModel.pickBackground(bitmap)
+                pendingBackgroundCropUri = null
+            }
+        )
+    }
+
+    pendingIconCropUri?.let { uri ->
+        ImageCropDialog(
+            imageUri = uri,
+            aspectRatio = 1f,
+            onDismiss = { pendingIconCropUri = null },
+            onCropped = { bitmap ->
+                if (HomeScreenShortcut.isSupported(context)) {
+                    HomeScreenShortcut.pinPhotoAsShortcut(context, bitmap, "Azeem's Music")
+                } else {
+                    Toast.makeText(
+                        context,
+                        "Your home screen doesn't support pinned shortcuts.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                pendingIconCropUri = null
+            }
+        )
+    }
+
     val pickBackgroundLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
-    ) { uri -> uri?.let { viewModel.pickBackground(it) } }
+    ) { uri -> uri?.let { pendingBackgroundCropUri = it } }
 
     val pickIconPhotoLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        if (HomeScreenShortcut.isSupported(context)) {
-            HomeScreenShortcut.pinPhotoAsShortcut(context, uri, "Azeem's Music")
-        } else {
-            Toast.makeText(
-                context,
-                "Your home screen doesn't support pinned shortcuts.",
-                Toast.LENGTH_LONG
-            ).show()
-        }
-    }
+    ) { uri -> uri?.let { pendingIconCropUri = it } }
 
     Scaffold(
         topBar = {
@@ -178,7 +209,7 @@ fun SettingsScreen(
                             )
                         } else {
                             Image(
-                                painter = painterResource(R.drawable.ic_launcher_photo),
+                                painter = painterResource(R.drawable.bg_default),
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
@@ -200,6 +231,18 @@ fun SettingsScreen(
                                 Text("Reset")
                             }
                         }
+                    }
+                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                        Text(
+                            text = "Opacity: ${(settings.backgroundOpacity * 100).roundToInt()}%",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Slider(
+                            value = settings.backgroundOpacity,
+                            onValueChange = { viewModel.setBackgroundOpacity(it) },
+                            valueRange = 0f..1f
+                        )
                     }
                 }
             }
@@ -266,23 +309,63 @@ fun SettingsScreen(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
                     } else {
-                        eqBands.forEach { band ->
-                            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                                Text(
-                                    text = formatBandFrequency(band.centerFreqHz),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Slider(
-                                    value = band.levelMillibel.toFloat(),
-                                    onValueChange = {
-                                        equalizerViewModel.setBandLevel(band.index, it.toInt())
-                                    },
-                                    valueRange = band.minLevelMillibel.toFloat()..band.maxLevelMillibel.toFloat(),
-                                    enabled = eqEnabled
-                                )
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            FilterChip(
+                                selected = eqMode == EqualizerMode.SIMPLE,
+                                onClick = { equalizerViewModel.setMode(EqualizerMode.SIMPLE) },
+                                label = { Text("Simple") }
+                            )
+                            FilterChip(
+                                selected = eqMode == EqualizerMode.ADVANCED,
+                                onClick = { equalizerViewModel.setMode(EqualizerMode.ADVANCED) },
+                                label = { Text("Advanced") }
+                            )
+                        }
+
+                        if (eqMode == EqualizerMode.SIMPLE) {
+                            val simpleBands = listOfNotNull(
+                                eqBands.firstOrNull()?.let { "Bass" to it },
+                                eqBands.getOrNull(eqBands.size / 2)?.let { "Vocals" to it },
+                                eqBands.lastOrNull()?.let { "Treble" to it }
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                simpleBands.forEach { (label, band) ->
+                                    CircularKnob(
+                                        label = label,
+                                        valueLabel = "${if (band.levelMillibel >= 0) "+" else ""}${band.levelMillibel / 100}dB",
+                                        value = band.levelMillibel.toFloat(),
+                                        valueRange = band.minLevelMillibel.toFloat()..band.maxLevelMillibel.toFloat(),
+                                        onValueChange = { equalizerViewModel.setBandLevel(band.index, it.toInt()) },
+                                        enabled = eqEnabled
+                                    )
+                                }
+                            }
+                        } else {
+                            eqBands.forEach { band ->
+                                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                                    Text(
+                                        text = formatBandFrequency(band.centerFreqHz),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Slider(
+                                        value = band.levelMillibel.toFloat(),
+                                        onValueChange = {
+                                            equalizerViewModel.setBandLevel(band.index, it.toInt())
+                                        },
+                                        valueRange = band.minLevelMillibel.toFloat()..band.maxLevelMillibel.toFloat(),
+                                        enabled = eqEnabled
+                                    )
+                                }
                             }
                         }
+
                         if (bassSupported) {
                             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                                 Text(

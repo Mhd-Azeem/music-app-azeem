@@ -19,6 +19,8 @@ data class EqualizerBand(
     val maxLevelMillibel: Int
 )
 
+enum class EqualizerMode { ADVANCED, SIMPLE }
+
 /** Wraps the platform Equalizer/BassBoost AudioEffects, (re)attached to whichever audio session
  * the ExoPlayer instance in [PlaybackService] is currently using. Devices vary wildly in how many
  * bands they support (or whether these effects exist at all), so every call is defensive — a
@@ -47,6 +49,18 @@ class EqualizerController @Inject constructor(
 
     private val _bassBoostStrength = MutableStateFlow(prefs.getInt(KEY_BASS, 0))
     val bassBoostStrength: StateFlow<Int> = _bassBoostStrength.asStateFlow()
+
+    private val _mode = MutableStateFlow(
+        runCatching {
+            EqualizerMode.valueOf(prefs.getString(KEY_MODE, null) ?: EqualizerMode.ADVANCED.name)
+        }.getOrDefault(EqualizerMode.ADVANCED)
+    )
+    val mode: StateFlow<EqualizerMode> = _mode.asStateFlow()
+
+    fun setMode(mode: EqualizerMode) {
+        _mode.value = mode
+        prefs.edit { putString(KEY_MODE, mode.name) }
+    }
 
     /** Called from [PlaybackService] whenever ExoPlayer's audio session id changes (including the
      * first time it becomes non-zero once playback actually starts). */
@@ -126,5 +140,6 @@ class EqualizerController @Inject constructor(
     private companion object {
         const val KEY_ENABLED = "enabled"
         const val KEY_BASS = "bass_strength"
+        const val KEY_MODE = "mode"
     }
 }

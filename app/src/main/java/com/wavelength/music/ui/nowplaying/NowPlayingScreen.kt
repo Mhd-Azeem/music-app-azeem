@@ -24,6 +24,9 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.VolumeDown
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -194,6 +197,31 @@ fun NowPlayingScreen(
                     tint = if (state.repeatMode != RepeatMode.OFF) MaterialTheme.colorScheme.primary else Color.White
                 )
             }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = when {
+                    state.volume <= 0f -> Icons.Filled.VolumeOff
+                    state.volume < 0.5f -> Icons.Filled.VolumeDown
+                    else -> Icons.Filled.VolumeUp
+                },
+                contentDescription = "Volume",
+                tint = Color.White
+            )
+            Slider(
+                value = state.volume,
+                onValueChange = { viewModel.setVolume(it) },
+                valueRange = 0f..1f,
+                modifier = Modifier.weight(1f).padding(start = 8.dp),
+                colors = SliderDefaults.colors(
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary
+                )
+            )
         }
 
         if (track == null) {
