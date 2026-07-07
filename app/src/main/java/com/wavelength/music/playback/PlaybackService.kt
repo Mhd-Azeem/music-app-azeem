@@ -4,14 +4,27 @@ import android.app.PendingIntent
 import android.content.Intent
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.wavelength.music.MainActivity
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class PlaybackService : MediaSessionService() {
 
+    @Inject
+    lateinit var equalizerController: EqualizerController
+
     private var mediaSession: MediaSession? = null
+
+    private val audioSessionListener = object : Player.Listener {
+        override fun onAudioSessionIdChanged(audioSessionId: Int) {
+            equalizerController.onAudioSessionIdChanged(audioSessionId)
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -26,6 +39,7 @@ class PlaybackService : MediaSessionService() {
             )
             .setHandleAudioBecomingNoisy(true)
             .build()
+            .also { it.addListener(audioSessionListener) }
 
         val sessionActivityIntent = PendingIntent.getActivity(
             this,
@@ -37,6 +51,8 @@ class PlaybackService : MediaSessionService() {
         mediaSession = MediaSession.Builder(this, player)
             .setSessionActivity(sessionActivityIntent)
             .build()
+
+        equalizerController.onAudioSessionIdChanged(player.audioSessionId)
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =

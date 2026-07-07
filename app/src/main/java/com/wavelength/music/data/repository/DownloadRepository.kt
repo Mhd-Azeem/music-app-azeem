@@ -39,6 +39,7 @@ class DownloadRepository @Inject constructor(
                     artist = track.artistName,
                     albumArtUrl = track.albumArtUrl,
                     filePath = destination.absolutePath,
+                    sizeBytes = destination.length(),
                     source = track.source.name
                 )
             )
@@ -49,6 +50,13 @@ class DownloadRepository @Inject constructor(
         withContext(Dispatchers.IO) {
             downloadDao.get(trackId)?.let { File(it.filePath).delete() }
             downloadDao.deleteById(trackId)
+        }
+    }
+
+    suspend fun clearAll() {
+        withContext(Dispatchers.IO) {
+            downloadsDir.listFiles()?.forEach { it.delete() }
+            downloadDao.clearAll()
         }
     }
 }

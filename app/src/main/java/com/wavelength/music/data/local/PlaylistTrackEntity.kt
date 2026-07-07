@@ -15,5 +15,6 @@ data class PlaylistTrackEntity(
     val albumArtUrl: String,
     val audioUrl: String,
     val source: String = "JIOSAAVN",
-    val addedAt: Long = System.currentTimeMillis()
+    val addedAt: Long = System.currentTimeMillis(),
+    val position: Int = 0
 )

@@ -31,6 +31,14 @@ interface PlaylistDao {
     @Query("DELETE FROM playlist_tracks WHERE playlistId = :playlistId AND trackId = :trackId")
     suspend fun removeTrack(playlistId: Long, trackId: String)
 
-    @Query("SELECT * FROM playlist_tracks WHERE playlistId = :playlistId ORDER BY addedAt ASC")
+    @Query("SELECT * FROM playlist_tracks WHERE playlistId = :playlistId ORDER BY position ASC, addedAt ASC")
     fun observePlaylistTracks(playlistId: Long): Flow<List<PlaylistTrackEntity>>
+
+    @Query("SELECT COALESCE(MAX(position), -1) FROM playlist_tracks WHERE playlistId = :playlistId")
+    suspend fun maxPosition(playlistId: Long): Int
+
+    @Query(
+        "UPDATE playlist_tracks SET position = :position WHERE playlistId = :playlistId AND trackId = :trackId"
+    )
+    suspend fun updatePosition(playlistId: Long, trackId: String, position: Int)
 }

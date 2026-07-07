@@ -50,11 +50,13 @@ fun HomeScreen(
     onGenreClick: (tag: String, label: String) -> Unit,
     onSettingsClick: () -> Unit,
     onPlaylistClick: (Long) -> Unit,
+    onSearchClick: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val featured by viewModel.featured.collectAsStateWithLifecycle()
     val recentlyPlayed by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+    val searchHistory by viewModel.searchHistory.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -81,12 +83,17 @@ fun HomeScreen(
                 featuredTracks = state.data,
                 recentlyPlayed = recentlyPlayed,
                 playlists = playlists,
+                searchHistory = searchHistory,
                 onTrackClick = { index, queue ->
                     viewModel.playTrack(queue, index)
                     onTrackClick()
                 },
                 onGenreClick = onGenreClick,
-                onPlaylistClick = onPlaylistClick
+                onPlaylistClick = onPlaylistClick,
+                onSearchHistoryClick = { query ->
+                    viewModel.prepareSearch(query)
+                    onSearchClick()
+                }
             )
         }
     }
@@ -98,15 +105,31 @@ private fun HomeContent(
     featuredTracks: List<Track>,
     recentlyPlayed: List<Track>,
     playlists: List<PlaylistSummary>,
+    searchHistory: List<String>,
     onTrackClick: (Int, List<Track>) -> Unit,
     onGenreClick: (String, String) -> Unit,
-    onPlaylistClick: (Long) -> Unit
+    onPlaylistClick: (Long) -> Unit,
+    onSearchHistoryClick: (String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(padding)
     ) {
+        if (searchHistory.isNotEmpty()) {
+            item { SectionHeader("Recent searches") }
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(searchHistory) { query ->
+                        AssistChip(onClick = { onSearchHistoryClick(query) }, label = { Text(query) })
+                    }
+                }
+            }
+        }
+
         item { SectionHeader(stringResource(R.string.featured_tracks)) }
         item {
             LazyRow(

@@ -56,4 +56,13 @@ class PlaylistDetailViewModel @Inject constructor(
     fun removeTrack(track: Track) {
         viewModelScope.launch { repository.removeTrackFromPlaylist(playlistId, track.id) }
     }
+
+    fun moveTrack(from: Int, to: Int) {
+        val current = tracks.value
+        if (current !is ScreenState.Success) return
+        val list = current.data
+        if (from !in list.indices || to !in list.indices || from == to) return
+        val reordered = list.toMutableList().apply { add(to, removeAt(from)) }
+        viewModelScope.launch { repository.reorderPlaylistTracks(playlistId, reordered.map { it.id }) }
+    }
 }

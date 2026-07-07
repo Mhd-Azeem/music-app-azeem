@@ -57,6 +57,18 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch { repository.toggleFavorite(track, isCurrentlyFavorite = true) }
     }
 
+    fun toggleFavoriteQuick(track: Track) {
+        viewModelScope.launch { repository.toggleFavoriteAuto(track) }
+    }
+
+    fun removeFromHistory(track: Track) {
+        viewModelScope.launch { repository.removeFromRecentlyPlayed(track.id) }
+    }
+
+    fun removeDownload(track: Track) {
+        viewModelScope.launch { repository.removeDownload(track.id) }
+    }
+
     /** Re-scans MediaStore for on-device audio. Call once permission is granted, and whenever
      * the user taps "Rescan library" afterwards. */
     fun rescanLocalLibrary() {
@@ -66,5 +78,34 @@ class LibraryViewModel @Inject constructor(
             repository.rescanLocalLibrary()
             _isScanning.value = false
         }
+    }
+
+    // --- Multi-select bulk actions ---------------------------------------------------------------
+
+    fun addTracksToPlaylist(playlistId: Long, tracks: List<Track>) {
+        viewModelScope.launch { tracks.forEach { repository.addTrackToPlaylist(playlistId, it) } }
+    }
+
+    fun createPlaylistWithTracks(name: String, tracks: List<Track>) {
+        viewModelScope.launch {
+            val id = repository.createPlaylist(name)
+            tracks.forEach { repository.addTrackToPlaylist(id, it) }
+        }
+    }
+
+    fun downloadTracks(tracks: List<Track>) {
+        viewModelScope.launch { tracks.forEach { repository.downloadTrack(it) } }
+    }
+
+    fun removeFavorites(tracks: List<Track>) {
+        viewModelScope.launch { tracks.forEach { repository.toggleFavorite(it, isCurrentlyFavorite = true) } }
+    }
+
+    fun removeTracksFromHistory(tracks: List<Track>) {
+        viewModelScope.launch { tracks.forEach { repository.removeFromRecentlyPlayed(it.id) } }
+    }
+
+    fun removeDownloads(tracks: List<Track>) {
+        viewModelScope.launch { tracks.forEach { repository.removeDownload(it.id) } }
     }
 }

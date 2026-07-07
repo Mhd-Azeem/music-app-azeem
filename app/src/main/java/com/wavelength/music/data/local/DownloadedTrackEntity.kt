@@ -10,6 +10,7 @@ data class DownloadedTrackEntity(
     val artist: String,
     val albumArtUrl: String,
     val filePath: String,
+    val sizeBytes: Long = 0L,
     val source: String = "JIOSAAVN",
     val downloadedAt: Long = System.currentTimeMillis()
 )

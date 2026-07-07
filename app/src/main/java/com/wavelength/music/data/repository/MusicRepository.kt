@@ -14,8 +14,10 @@ import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.model.TrackSource
 import android.net.Uri
+import com.wavelength.music.data.model.DownloadsSummary
 import java.io.File
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -81,10 +83,17 @@ class MusicRepository @Inject constructor(
         }
     }
 
+    /** For quick actions (like swipe-to-favorite) that don't already know the current state. */
+    suspend fun toggleFavoriteAuto(track: Track) {
+        toggleFavorite(track, isCurrentlyFavorite = favoriteDao.isFavorite(track.id).first())
+    }
+
     fun observeRecentlyPlayed(limit: Int = 50): Flow<List<Track>> =
         recentlyPlayedDao.observeRecent(limit).map { list ->
             list.map { it.toTrack() }
         }
+
+    suspend fun removeFromRecentlyPlayed(trackId: String) = recentlyPlayedDao.deleteById(trackId)
 
     suspend fun recordPlayed(track: Track) {
         recentlyPlayedDao.recordPlay(
@@ -115,6 +124,7 @@ class MusicRepository @Inject constructor(
         playlistDao.observePlaylistTracks(playlistId).map { list -> list.map { it.toTrack() } }
 
     suspend fun addTrackToPlaylist(playlistId: Long, track: Track) {
+        val nextPosition = playlistDao.maxPosition(playlistId) + 1
         playlistDao.addTrack(
             PlaylistTrackEntity(
                 playlistId = playlistId,
@@ -123,7 +133,8 @@ class MusicRepository @Inject constructor(
                 artist = track.artistName,
                 albumArtUrl = track.albumArtUrl,
                 audioUrl = track.audioUrl,
-                source = track.source.name
+                source = track.source.name,
+                position = nextPosition
             )
         )
     }
@@ -131,16 +142,28 @@ class MusicRepository @Inject constructor(
     suspend fun removeTrackFromPlaylist(playlistId: Long, trackId: String) =
         playlistDao.removeTrack(playlistId, trackId)
 
+    /** Persists a new track order after a drag/move-up/move-down reorder in the UI. */
+    suspend fun reorderPlaylistTracks(playlistId: Long, orderedTrackIds: List<String>) {
+        orderedTrackIds.forEachIndexed { index, trackId ->
+            playlistDao.updatePosition(playlistId, trackId, index)
+        }
+    }
+
     // --- Offline downloads -----------------------------------------------------------------------
 
     fun observeDownloadedTracks(): Flow<List<Track>> = downloadRepository.observeDownloads()
         .map { list -> list.map { it.toTrack() } }
+
+    fun observeDownloadsSummary(): Flow<DownloadsSummary> = downloadRepository.observeDownloads()
+        .map { list -> DownloadsSummary(count = list.size, totalSizeBytes = list.sumOf { it.sizeBytes }) }
 
     fun isDownloaded(trackId: String): Flow<Boolean> = downloadRepository.isDownloaded(trackId)
 
     suspend fun downloadTrack(track: Track): Result<Unit> = downloadRepository.download(track)
 
     suspend fun removeDownload(trackId: String) = downloadRepository.removeDownload(trackId)
+
+    suspend fun clearAllDownloads() = downloadRepository.clearAll()
 
     // --- Search history ----------------------------------------------------------------------------
 

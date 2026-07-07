@@ -7,6 +7,7 @@ import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.repository.MusicRepository
 import com.wavelength.music.playback.PlayerController
 import com.wavelength.music.ui.components.ScreenState
+import com.wavelength.music.ui.search.PendingSearchQuery
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,7 +26,8 @@ val genreShortcuts = listOf(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val repository: MusicRepository,
-    private val playerController: PlayerController
+    private val playerController: PlayerController,
+    private val pendingSearchQuery: PendingSearchQuery
 ) : ViewModel() {
 
     private val _featured = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Loading)
@@ -35,6 +37,9 @@ class HomeViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val playlists: StateFlow<List<PlaylistSummary>> = repository.observePlaylists()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val searchHistory: StateFlow<List<String>> = repository.observeSearchHistory(8)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
@@ -57,5 +62,9 @@ class HomeViewModel @Inject constructor(
 
     fun playTrack(queue: List<Track>, index: Int) {
         playerController.playQueue(queue, index)
+    }
+
+    fun prepareSearch(query: String) {
+        pendingSearchQuery.set(query)
     }
 }

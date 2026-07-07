@@ -20,7 +20,8 @@ import javax.inject.Inject
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val repository: MusicRepository,
-    private val playerController: PlayerController
+    private val playerController: PlayerController,
+    private val pendingSearchQuery: PendingSearchQuery
 ) : ViewModel() {
 
     private val _query = MutableStateFlow("")
@@ -33,6 +34,13 @@ class SearchViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var searchJob: Job? = null
+
+    init {
+        pendingSearchQuery.consume()?.let {
+            onQueryChange(it)
+            commitSearch()
+        }
+    }
 
     fun onQueryChange(newQuery: String) {
         _query.value = newQuery

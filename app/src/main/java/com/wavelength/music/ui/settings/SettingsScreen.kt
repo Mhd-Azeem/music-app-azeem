@@ -20,16 +20,23 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,10 +56,36 @@ import com.wavelength.music.ui.theme.swatchColor
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    viewModel: AppSettingsViewModel = hiltViewModel()
+    viewModel: AppSettingsViewModel = hiltViewModel(),
+    equalizerViewModel: EqualizerViewModel = hiltViewModel()
 ) {
     val settings by viewModel.state.collectAsStateWithLifecycle()
+    val downloadsSummary by viewModel.downloadsSummary.collectAsStateWithLifecycle()
+    var showClearDownloadsConfirm by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    val eqSupported by equalizerViewModel.isSupported.collectAsStateWithLifecycle()
+    val eqEnabled by equalizerViewModel.enabled.collectAsStateWithLifecycle()
+    val eqBands by equalizerViewModel.bands.collectAsStateWithLifecycle()
+    val bassSupported by equalizerViewModel.bassBoostSupported.collectAsStateWithLifecycle()
+    val bassStrength by equalizerViewModel.bassBoostStrength.collectAsStateWithLifecycle()
+
+    if (showClearDownloadsConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearDownloadsConfirm = false },
+            title = { Text("Clear all downloads?") },
+            text = { Text("This deletes every downloaded song from this device. You can re-download them anytime.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.clearAllDownloads()
+                    showClearDownloadsConfirm = false
+                }) { Text("Clear all") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearDownloadsConfirm = false }) { Text("Cancel") }
+            }
+        )
+    }
 
     val pickBackgroundLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
@@ -187,8 +220,99 @@ fun SettingsScreen(
                     }
                 }
             }
+
+            item {
+                SettingsSection(title = "Downloads") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (downloadsSummary.count == 0) {
+                                "No downloads yet"
+                            } else {
+                                "${downloadsSummary.count} songs · ${formatStorageSize(downloadsSummary.totalSizeBytes)}"
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (downloadsSummary.count > 0) {
+                            OutlinedButton(onClick = { showClearDownloadsConfirm = true }) {
+                                Text("Clear all")
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
+                SettingsSection(title = "Equalizer") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Enable equalizer", modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = eqEnabled,
+                            onCheckedChange = { equalizerViewModel.setEnabled(it) },
+                            enabled = eqSupported || bassSupported
+                        )
+                    }
+                    if (!eqSupported && !bassSupported) {
+                        Text(
+                            text = "Play a song first to set up the equalizer — some devices don't support it.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    } else {
+                        eqBands.forEach { band ->
+                            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                                Text(
+                                    text = formatBandFrequency(band.centerFreqHz),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Slider(
+                                    value = band.levelMillibel.toFloat(),
+                                    onValueChange = {
+                                        equalizerViewModel.setBandLevel(band.index, it.toInt())
+                                    },
+                                    valueRange = band.minLevelMillibel.toFloat()..band.maxLevelMillibel.toFloat(),
+                                    enabled = eqEnabled
+                                )
+                            }
+                        }
+                        if (bassSupported) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                                Text(
+                                    text = "Bass boost",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Slider(
+                                    value = bassStrength.toFloat(),
+                                    onValueChange = { equalizerViewModel.setBassBoostStrength(it.toInt()) },
+                                    valueRange = 0f..1000f,
+                                    enabled = eqEnabled
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
+}
+
+private fun formatBandFrequency(hz: Int): String =
+    if (hz >= 1000) "%.1f kHz".format(hz / 1000.0) else "$hz Hz"
+
+private fun formatStorageSize(bytes: Long): String = when {
+    bytes >= 1_073_741_824L -> "%.1f GB".format(bytes / 1_073_741_824.0)
+    bytes >= 1_048_576L -> "%.1f MB".format(bytes / 1_048_576.0)
+    bytes >= 1024L -> "%.1f KB".format(bytes / 1024.0)
+    else -> "$bytes B"
 }
 
 @Composable

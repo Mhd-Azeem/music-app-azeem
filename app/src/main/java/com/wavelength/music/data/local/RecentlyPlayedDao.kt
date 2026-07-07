@@ -18,6 +18,9 @@ interface RecentlyPlayedDao {
     @Insert
     suspend fun insert(entry: RecentlyPlayedEntity)
 
+    @Query("DELETE FROM recently_played WHERE trackId = :trackId")
+    suspend fun deleteById(trackId: String)
+
     @Query(
         "DELETE FROM recently_played WHERE entryId NOT IN " +
             "(SELECT entryId FROM recently_played ORDER BY timestamp DESC LIMIT :maxEntries)"

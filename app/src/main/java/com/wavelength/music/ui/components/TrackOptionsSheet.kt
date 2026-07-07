@@ -13,6 +13,8 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.QueueMusic
@@ -48,6 +50,8 @@ fun TrackOptionsSheet(
     track: Track,
     onDismiss: () -> Unit,
     onRemoveFromPlaylist: (() -> Unit)? = null,
+    onMoveUp: (() -> Unit)? = null,
+    onMoveDown: (() -> Unit)? = null,
     viewModel: TrackActionsViewModel = hiltViewModel()
 ) {
     val isFavorite by remember(track.id) { viewModel.isFavorite(track.id) }
@@ -166,6 +170,18 @@ fun TrackOptionsSheet(
             }
             TrackOptionRow(Icons.Filled.Info, "Song info") {
                 showInfo = true
+            }
+            if (onMoveUp != null) {
+                TrackOptionRow(Icons.Filled.KeyboardArrowUp, "Move up") {
+                    onMoveUp()
+                    onDismiss()
+                }
+            }
+            if (onMoveDown != null) {
+                TrackOptionRow(Icons.Filled.KeyboardArrowDown, "Move down") {
+                    onMoveDown()
+                    onDismiss()
+                }
             }
             if (onRemoveFromPlaylist != null) {
                 TrackOptionRow(Icons.Filled.Delete, "Remove from playlist") {

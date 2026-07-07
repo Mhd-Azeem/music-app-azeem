@@ -17,7 +17,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
@@ -50,8 +53,9 @@ import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.ui.components.EmptyView
 import com.wavelength.music.ui.components.ErrorView
+import com.wavelength.music.ui.components.SwipeableTrackRow
 import com.wavelength.music.ui.components.TrackOptionsSheet
-import com.wavelength.music.ui.components.TrackRow
+import com.wavelength.music.ui.playlist.AddToPlaylistDialog
 import com.wavelength.music.ui.playlist.CreatePlaylistDialog
 
 private val audioPermission: String
@@ -77,6 +81,9 @@ fun LibraryScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var trackForMenu by remember { mutableStateOf<Track?>(null) }
+    var selectionMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf(setOf<String>()) }
+    var showBulkAddToPlaylist by remember { mutableStateOf(false) }
     val tabs = listOf(
         stringResource(R.string.favorites),
         stringResource(R.string.recently_played),
@@ -84,6 +91,25 @@ fun LibraryScreen(
         stringResource(R.string.my_device),
         "Downloads"
     )
+
+    LaunchedEffect(selectedTab) {
+        selectionMode = false
+        selectedIds = emptySet()
+    }
+
+    val currentTracks = when (selectedTab) {
+        0 -> favorites
+        1 -> recentlyPlayed
+        3 -> localSongs
+        4 -> downloadedTracks
+        else -> emptyList()
+    }
+    val selectedTracks = currentTracks.filter { it.id in selectedIds }
+
+    fun exitSelection() {
+        selectionMode = false
+        selectedIds = emptySet()
+    }
 
     val context = LocalContext.current
     var hasPermission by remember {
@@ -111,25 +137,81 @@ fun LibraryScreen(
         )
     }
 
+    if (showBulkAddToPlaylist) {
+        AddToPlaylistDialog(
+            playlists = playlists,
+            onDismiss = {
+                showBulkAddToPlaylist = false
+                exitSelection()
+            },
+            onSelect = { playlistId -> viewModel.addTracksToPlaylist(playlistId, selectedTracks) },
+            onCreateNew = { name -> viewModel.createPlaylistWithTracks(name, selectedTracks) }
+        )
+    }
+
     trackForMenu?.let { track ->
         TrackOptionsSheet(track = track, onDismiss = { trackForMenu = null })
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.nav_library)) },
-                actions = {
-                    if (selectedTab == 3 && hasPermission) {
-                        IconButton(onClick = viewModel::rescanLocalLibrary) {
-                            Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.rescan_library))
+            if (selectionMode) {
+                TopAppBar(
+                    title = { Text("${selectedTracks.size} selected") },
+                    navigationIcon = {
+                        IconButton(onClick = { exitSelection() }) {
+                            Icon(Icons.Filled.Close, contentDescription = "Cancel selection")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { showBulkAddToPlaylist = true }) {
+                            Icon(Icons.Filled.PlaylistAdd, contentDescription = "Add to playlist")
+                        }
+                        if (selectedTab == 0 || selectedTab == 1) {
+                            IconButton(onClick = {
+                                viewModel.downloadTracks(selectedTracks)
+                                exitSelection()
+                            }) {
+                                Icon(Icons.Filled.Download, contentDescription = "Download")
+                            }
+                        }
+                        when (selectedTab) {
+                            0 -> IconButton(onClick = {
+                                viewModel.removeFavorites(selectedTracks)
+                                exitSelection()
+                            }) {
+                                Icon(Icons.Filled.Delete, contentDescription = "Remove from favorites")
+                            }
+                            1 -> IconButton(onClick = {
+                                viewModel.removeTracksFromHistory(selectedTracks)
+                                exitSelection()
+                            }) {
+                                Icon(Icons.Filled.Delete, contentDescription = "Remove from history")
+                            }
+                            4 -> IconButton(onClick = {
+                                viewModel.removeDownloads(selectedTracks)
+                                exitSelection()
+                            }) {
+                                Icon(Icons.Filled.Delete, contentDescription = "Remove downloads")
+                            }
                         }
                     }
-                }
-            )
+                )
+            } else {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.nav_library)) },
+                    actions = {
+                        if (selectedTab == 3 && hasPermission) {
+                            IconButton(onClick = viewModel::rescanLocalLibrary) {
+                                Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.rescan_library))
+                            }
+                        }
+                    }
+                )
+            }
         },
         floatingActionButton = {
-            if (selectedTab == 2) {
+            if (selectedTab == 2 && !selectionMode) {
                 FloatingActionButton(onClick = { showCreateDialog = true }) {
                     Icon(Icons.Filled.Add, contentDescription = "New playlist")
                 }
@@ -147,6 +229,15 @@ fun LibraryScreen(
                 }
             }
 
+            fun onToggleSelect(track: Track) {
+                selectedIds = if (track.id in selectedIds) selectedIds - track.id else selectedIds + track.id
+            }
+
+            fun onEnterSelection(track: Track) {
+                selectionMode = true
+                selectedIds = setOf(track.id)
+            }
+
             when (selectedTab) {
                 0 -> TrackList(
                     tracks = favorites,
@@ -156,7 +247,13 @@ fun LibraryScreen(
                         onTrackClick()
                     },
                     onFavoriteClick = viewModel::removeFavorite,
-                    onMoreClick = { trackForMenu = it }
+                    onMoreClick = { trackForMenu = it },
+                    selectionMode = selectionMode,
+                    selectedIds = selectedIds,
+                    onToggleSelect = ::onToggleSelect,
+                    onEnterSelection = ::onEnterSelection,
+                    onSwipeToFavorite = null,
+                    onSwipeToRemove = viewModel::removeFavorite
                 )
                 1 -> TrackList(
                     tracks = recentlyPlayed,
@@ -166,7 +263,13 @@ fun LibraryScreen(
                         onTrackClick()
                     },
                     onFavoriteClick = null,
-                    onMoreClick = { trackForMenu = it }
+                    onMoreClick = { trackForMenu = it },
+                    selectionMode = selectionMode,
+                    selectedIds = selectedIds,
+                    onToggleSelect = ::onToggleSelect,
+                    onEnterSelection = ::onEnterSelection,
+                    onSwipeToFavorite = viewModel::toggleFavoriteQuick,
+                    onSwipeToRemove = viewModel::removeFromHistory
                 )
                 2 -> PlaylistList(
                     playlists = playlists,
@@ -190,7 +293,13 @@ fun LibraryScreen(
                             onTrackClick()
                         },
                         onFavoriteClick = null,
-                        onMoreClick = { trackForMenu = it }
+                        onMoreClick = { trackForMenu = it },
+                        selectionMode = selectionMode,
+                        selectedIds = selectedIds,
+                        onToggleSelect = ::onToggleSelect,
+                        onEnterSelection = ::onEnterSelection,
+                        onSwipeToFavorite = viewModel::toggleFavoriteQuick,
+                        onSwipeToRemove = null
                     )
                 }
                 else -> TrackList(
@@ -202,7 +311,13 @@ fun LibraryScreen(
                     },
                     onFavoriteClick = null,
                     onMoreClick = { trackForMenu = it },
-                    emptyMessage = "No downloads yet — use a track's three-dot menu to download it"
+                    emptyMessage = "No downloads yet — use a track's three-dot menu to download it",
+                    selectionMode = selectionMode,
+                    selectedIds = selectedIds,
+                    onToggleSelect = ::onToggleSelect,
+                    onEnterSelection = ::onEnterSelection,
+                    onSwipeToFavorite = viewModel::toggleFavoriteQuick,
+                    onSwipeToRemove = viewModel::removeDownload
                 )
             }
         }
@@ -216,6 +331,12 @@ private fun TrackList(
     onTrackClick: (Int) -> Unit,
     onFavoriteClick: ((Track) -> Unit)?,
     onMoreClick: (Track) -> Unit,
+    selectionMode: Boolean,
+    selectedIds: Set<String>,
+    onToggleSelect: (Track) -> Unit,
+    onEnterSelection: (Track) -> Unit,
+    onSwipeToFavorite: ((Track) -> Unit)?,
+    onSwipeToRemove: ((Track) -> Unit)?,
     emptyMessage: String? = null
 ) {
     if (tracks.isEmpty()) {
@@ -226,13 +347,18 @@ private fun TrackList(
         }
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            itemsIndexed(tracks) { index, track ->
-                TrackRow(
+            itemsIndexed(tracks, key = { _, track -> track.id }) { index, track ->
+                SwipeableTrackRow(
                     track = track,
-                    onClick = { onTrackClick(index) },
+                    onClick = { if (selectionMode) onToggleSelect(track) else onTrackClick(index) },
+                    onLongClick = { onEnterSelection(track) },
                     isFavorite = isFavoriteTab,
-                    onFavoriteClick = onFavoriteClick?.let { { it(track) } },
-                    onMoreClick = { onMoreClick(track) }
+                    onFavoriteClick = if (selectionMode) null else onFavoriteClick?.let { { it(track) } },
+                    onMoreClick = if (selectionMode) null else { { onMoreClick(track) } },
+                    isSelected = track.id in selectedIds,
+                    showSelectionCheckbox = selectionMode,
+                    onSwipeToFavorite = onSwipeToFavorite?.let { { it(track) } },
+                    onSwipeToRemove = onSwipeToRemove?.let { { it(track) } }
                 )
             }
         }

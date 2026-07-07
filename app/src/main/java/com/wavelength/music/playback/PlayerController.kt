@@ -189,6 +189,14 @@ class PlayerController @Inject constructor(
         c.play()
     }
 
+    fun moveQueueItem(fromIndex: Int, toIndex: Int) {
+        val c = controller ?: return
+        if (fromIndex !in currentQueue.indices || toIndex !in currentQueue.indices) return
+        c.moveMediaItem(fromIndex, toIndex)
+        currentQueue = currentQueue.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
+        _state.update { it.copy(queue = currentQueue, currentIndex = c.currentMediaItemIndex) }
+    }
+
     fun playNext(track: Track) {
         val c = controller ?: return
         val insertIndex = (c.currentMediaItemIndex + 1).coerceIn(0, c.mediaItemCount)

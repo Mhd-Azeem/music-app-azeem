@@ -44,20 +44,31 @@ fun TrackListScreen(
     onPlayAll: () -> Unit,
     onTrackClick: (Int) -> Unit,
     emptyMessage: String? = null,
-    onRemoveFromPlaylist: ((Track) -> Unit)? = null
+    onRemoveFromPlaylist: ((Track) -> Unit)? = null,
+    onReorder: ((from: Int, to: Int) -> Unit)? = null
 ) {
-    var trackForMenu by remember { mutableStateOf<Track?>(null) }
+    var menuTrackIndex by remember { mutableStateOf<Int?>(null) }
+    val successData = (state as? ScreenState.Success)?.data
+    val menuTrack = menuTrackIndex?.let { index -> successData?.getOrNull(index) }
 
-    trackForMenu?.let { track ->
+    if (menuTrack != null && successData != null) {
+        val index = menuTrackIndex!!
+        val lastIndex = successData.lastIndex
         TrackOptionsSheet(
-            track = track,
-            onDismiss = { trackForMenu = null },
+            track = menuTrack,
+            onDismiss = { menuTrackIndex = null },
             onRemoveFromPlaylist = onRemoveFromPlaylist?.let {
                 {
-                    it(track)
-                    trackForMenu = null
+                    it(menuTrack)
+                    menuTrackIndex = null
                 }
-            }
+            },
+            onMoveUp = if (onReorder != null && index > 0) {
+                { onReorder(index, index - 1) }
+            } else null,
+            onMoveDown = if (onReorder != null && index < lastIndex) {
+                { onReorder(index, index + 1) }
+            } else null
         )
     }
 
@@ -122,7 +133,7 @@ fun TrackListScreen(
                     TrackRow(
                         track = track,
                         onClick = { onTrackClick(index) },
-                        onMoreClick = { trackForMenu = track }
+                        onMoreClick = { menuTrackIndex = index }
                     )
                 }
             }

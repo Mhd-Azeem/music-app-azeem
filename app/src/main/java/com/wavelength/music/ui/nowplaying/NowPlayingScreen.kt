@@ -45,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.wavelength.music.data.model.Track
 import com.wavelength.music.playback.RepeatMode
 import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.components.TrackRow
@@ -62,7 +61,7 @@ fun NowPlayingScreen(
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     val track = state.currentTrack
     var showAddToPlaylist by remember { mutableStateOf(false) }
-    var trackForMenu by remember { mutableStateOf<Track?>(null) }
+    var menuQueueIndex by remember { mutableStateOf<Int?>(null) }
 
     if (showAddToPlaylist) {
         AddToPlaylistDialog(
@@ -73,8 +72,19 @@ fun NowPlayingScreen(
         )
     }
 
-    trackForMenu?.let { menuTrack ->
-        TrackOptionsSheet(track = menuTrack, onDismiss = { trackForMenu = null })
+    val menuTrack = menuQueueIndex?.let { state.queue.getOrNull(it) }
+    if (menuTrack != null) {
+        val queueIndex = menuQueueIndex!!
+        TrackOptionsSheet(
+            track = menuTrack,
+            onDismiss = { menuQueueIndex = null },
+            onMoveUp = if (queueIndex > state.currentIndex + 1) {
+                { viewModel.moveQueueItem(queueIndex, queueIndex - 1) }
+            } else null,
+            onMoveDown = if (queueIndex < state.queue.lastIndex) {
+                { viewModel.moveQueueItem(queueIndex, queueIndex + 1) }
+            } else null
+        )
     }
 
     Column(
@@ -205,10 +215,11 @@ fun NowPlayingScreen(
             )
             LazyColumn(modifier = Modifier.weight(1f)) {
                 itemsIndexed(upcoming) { offset, upcomingTrack ->
+                    val queueIndex = state.currentIndex + 1 + offset
                     TrackRow(
                         track = upcomingTrack,
-                        onClick = { viewModel.playQueueItem(state.currentIndex + 1 + offset) },
-                        onMoreClick = { trackForMenu = upcomingTrack }
+                        onClick = { viewModel.playQueueItem(queueIndex) },
+                        onMoreClick = { menuQueueIndex = queueIndex }
                     )
                 }
             }

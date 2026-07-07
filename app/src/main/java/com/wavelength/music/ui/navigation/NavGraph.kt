@@ -90,6 +90,13 @@ fun WavelengthNavHost() {
                     onSettingsClick = { navController.navigate(Screen.Settings.route) },
                     onPlaylistClick = { id ->
                         navController.navigate(Screen.PlaylistDetail.createRoute(id))
+                    },
+                    onSearchClick = {
+                        navController.navigate(Screen.Search.route) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                 )
             }

@@ -30,6 +30,7 @@ fun PlaylistDetailScreen(
             viewModel.playTrack(index)
             onTrackClick()
         },
-        onRemoveFromPlaylist = viewModel::removeTrack
+        onRemoveFromPlaylist = viewModel::removeTrack,
+        onReorder = viewModel::moveTrack
     )
 }

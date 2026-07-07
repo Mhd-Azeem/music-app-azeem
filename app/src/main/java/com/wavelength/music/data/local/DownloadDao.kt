@@ -23,4 +23,7 @@ interface DownloadDao {
 
     @Query("DELETE FROM downloaded_tracks WHERE id = :trackId")
     suspend fun deleteById(trackId: String)
+
+    @Query("DELETE FROM downloaded_tracks")
+    suspend fun clearAll()
 }
