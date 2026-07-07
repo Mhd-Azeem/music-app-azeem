@@ -23,9 +23,9 @@ jobs:
           java-version: "17"
 
       - name: Write local.properties
-        # JIOSAAVN_BASE_URL can be overridden by adding a repository secret with that name —
-        # it's the app's only music source. Left unset, it falls back to an unconfigured
-        # placeholder (JioSaavn search just comes back empty until you set your own deployment).
+        # JIOSAAVN_BASE_URL can be overridden by adding a repository secret with that name.
+        # Left unset, the app falls back to its default JioSaavn deployment (see
+        # app/build.gradle.kts), so CI builds work without any secret configured.
         run: |
           echo "sdk.dir=${ANDROID_HOME}" > local.properties
           if [ -n "$JIOSAAVN_BASE_URL" ]; then

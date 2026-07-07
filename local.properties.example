@@ -2,7 +2,7 @@
 # The Android SDK location is normally added here automatically by Android Studio.
 sdk.dir=/path/to/your/Android/sdk
 
-# Base URL of your own self-hosted https://github.com/sumitkolhe/jiosaavn-api deployment
-# (e.g. a free Vercel deployment). Must end with /api/. This is the app's only music source —
-# leave it unset and search/browse just come back empty (handled gracefully, not a crash).
-JIOSAAVN_BASE_URL=https://your-deployment.vercel.app/api/
+# Base URL of a https://github.com/sumitkolhe/jiosaavn-api deployment. Must end with /api/.
+# This is the app's only music source. Defaults (in app/build.gradle.kts) to this project's
+# own Cloudflare Workers deployment, so you only need to set this if you deploy your own instance.
+JIOSAAVN_BASE_URL=https://jiosaavn-api.azeemzahira111.workers.dev/api/

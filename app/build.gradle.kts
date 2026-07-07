@@ -28,11 +28,11 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Point this at your own self-hosted https://github.com/sumitkolhe/jiosaavn-api
-        // deployment via local.properties' JIOSAAVN_BASE_URL. Left unconfigured, JioSaavn
-        // requests simply fail (handled gracefully) rather than crashing the build/app.
+        // Defaults to the project's own Cloudflare Workers deployment of
+        // https://github.com/sumitkolhe/jiosaavn-api. Override via local.properties'
+        // JIOSAAVN_BASE_URL if you deploy your own instance instead.
         val jioSaavnBaseUrl = localProperties.getProperty("JIOSAAVN_BASE_URL")
-            ?: "https://jiosaavn-api-unconfigured.example.com/api/"
+            ?: "https://jiosaavn-api.azeemzahira111.workers.dev/api/"
         buildConfigField("String", "JIOSAAVN_BASE_URL", "\"$jioSaavnBaseUrl\"")
     }
 

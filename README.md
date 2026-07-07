@@ -36,23 +36,25 @@ personal-use app: no login, no backend server, single user.
 
 ## Setup
 
-Wavelength has no music source configured out of the box — you need your own JioSaavn API
-deployment:
+Wavelength ships pointed at a working JioSaavn API deployment by default (a Cloudflare Workers
+instance of [sumitkolhe/jiosaavn-api](https://github.com/sumitkolhe/jiosaavn-api)), so it works out
+of the box. To use your own instance instead:
 
-1. Deploy [sumitkolhe/jiosaavn-api](https://github.com/sumitkolhe/jiosaavn-api) somewhere (a free
-   Vercel deployment is the easiest route — see that repo's own README).
+1. Deploy [sumitkolhe/jiosaavn-api](https://github.com/sumitkolhe/jiosaavn-api) somewhere — Cloudflare
+   Workers is this project's native deploy target (its own "Deploy with Cloudflare Workers" button);
+   Vercel's one-click deploy for this repo is currently broken (stale `vercel.json`/entrypoint
+   mismatch), so prefer Cloudflare or Docker.
 2. Copy `local.properties.example` to `local.properties` (git-ignored) and set your Android SDK
-   path and the deployment's base URL:
+   path and your deployment's base URL:
 
    ```properties
    sdk.dir=/path/to/your/Android/sdk
-   JIOSAAVN_BASE_URL=https://your-deployment.vercel.app/api/
+   JIOSAAVN_BASE_URL=https://your-worker-name.your-subdomain.workers.dev/api/
    ```
 
 3. Open the project in Android Studio (or run `./gradlew assembleDebug` from the command line).
-   The base URL is exposed to the app via `BuildConfig.JIOSAAVN_BASE_URL` — it is never hardcoded
-   in committed source. Leave it unset and search/browse simply come back empty rather than
-   crashing (JioSaavn is an unofficial API with no uptime guarantees; there's no fallback source).
+   The base URL is exposed to the app via `BuildConfig.JIOSAAVN_BASE_URL` and defaults (see
+   `app/build.gradle.kts`) to the project's own deployment if you don't override it locally.
 
 ### Local device songs
 
@@ -67,9 +69,8 @@ A GitHub Actions workflow (`.github/workflows/build-apk.yml`) builds a debug APK
 The easiest way to get it: open the repo's **Releases** tab — every push to this branch republishes
 the **"Latest build"** release with `app-debug.apk` attached directly (no zip, just download and
 install). It's also uploaded as a build artifact under Actions → latest run → Artifacts, if you
-want a specific commit's build. Add a repository secret named `JIOSAAVN_BASE_URL` so CI builds
-against your deployment; without it, the built app simply has no working music source until you
-set `local.properties` yourself for a local build.
+want a specific commit's build. CI builds against the project's default JioSaavn deployment
+unless you add a repository secret named `JIOSAAVN_BASE_URL` pointing at your own instance.
 
 > This project's Gradle build depends on the Android SDK and Google's Maven repository
 > (`dl.google.com`) to resolve the Android Gradle Plugin and AndroidX libraries. If you're building
