@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,6 +59,7 @@ import com.wavelength.music.ui.components.swipeVertical
 import com.wavelength.music.ui.playlist.AddToPlaylistDialog
 import com.wavelength.music.ui.theme.LiquidGlassStyle
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
 import java.util.concurrent.TimeUnit
 
@@ -65,9 +67,9 @@ import java.util.concurrent.TimeUnit
 fun NowPlayingScreen(
     onCollapse: () -> Unit,
     viewModel: PlayerViewModel = hiltViewModel(),
-    hazeState: HazeState? = null
+    isLiquid: Boolean = false
 ) {
-    val isLiquid = hazeState != null
+    val hazeState = remember { HazeState() }
     val pillShape = RoundedCornerShape(28.dp)
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isFavorite by viewModel.isCurrentFavorite.collectAsStateWithLifecycle()
@@ -126,206 +128,221 @@ fun NowPlayingScreen(
     val density = LocalDensity.current
     val collapseThresholdPx = with(density) { 80.dp.toPx() }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp)
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (isLiquid) {
+            AsyncImage(
+                model = track?.albumArtUrl,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize().haze(state = hazeState),
+                contentScale = ContentScale.Crop
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.35f))
+            )
+        }
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .swipeVertical(thresholdPx = collapseThresholdPx, onSwipeDown = onCollapse)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(24.dp)
         ) {
-            IconButton(onClick = onCollapse) {
-                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")
-            }
-
-            Box(modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
-                AsyncImage(
-                    model = track?.albumArtUrl,
-                    contentDescription = track?.name,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                )
-            }
-        }
-
-        Column(modifier = Modifier.fillMaxWidth().padding(top = 32.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = track?.name.orEmpty(),
-                        style = MaterialTheme.typography.headlineSmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = track?.artistName.orEmpty(),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                var topIconRowModifier: Modifier = Modifier
-                if (isLiquid) {
-                    topIconRowModifier = topIconRowModifier
-                        .clip(pillShape)
-                        .hazeChild(state = hazeState!!, style = LiquidGlassStyle)
-                        .border(1.dp, Color.White.copy(alpha = 0.25f), pillShape)
-                }
-                Row(modifier = topIconRowModifier) {
-                    IconButton(onClick = { showSleepTimerDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Filled.Timer,
-                            contentDescription = "Sleep timer",
-                            tint = if (sleepTimerRemaining != null || sleepTimerEndOfTrack) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                Color.White
-                            }
-                        )
-                    }
-                    IconButton(onClick = { showAddToPlaylist = true }) {
-                        Icon(
-                            imageVector = Icons.Filled.PlaylistAdd,
-                            contentDescription = "Add to playlist",
-                            tint = Color.White
-                        )
-                    }
-                    IconButton(onClick = viewModel::toggleFavorite) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                            contentDescription = "Favorite",
-                            tint = if (isFavorite) MaterialTheme.colorScheme.primary else Color.White
-                        )
-                    }
-                }
-            }
-        }
-
-        Column(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
-            Slider(
-                value = state.positionMs.toFloat().coerceIn(0f, state.durationMs.toFloat().coerceAtLeast(1f)),
-                onValueChange = { viewModel.seekTo(it.toLong()) },
-                valueRange = 0f..state.durationMs.toFloat().coerceAtLeast(1f),
-                colors = SliderDefaults.colors(
-                    thumbColor = MaterialTheme.colorScheme.primary,
-                    activeTrackColor = MaterialTheme.colorScheme.primary
-                )
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .swipeVertical(thresholdPx = collapseThresholdPx, onSwipeDown = onCollapse)
             ) {
-                Text(formatMillis(state.positionMs), style = MaterialTheme.typography.labelSmall)
-                Text(formatMillis(state.durationMs), style = MaterialTheme.typography.labelSmall)
-            }
-        }
+                IconButton(onClick = onCollapse) {
+                    Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")
+                }
 
-        var transportRowModifier = Modifier.fillMaxWidth().padding(top = 16.dp)
-        if (isLiquid) {
-            transportRowModifier = transportRowModifier
-                .clip(pillShape)
-                .hazeChild(state = hazeState!!, style = LiquidGlassStyle)
-                .border(1.dp, Color.White.copy(alpha = 0.25f), pillShape)
-        }
-        Row(
-            modifier = transportRowModifier,
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = viewModel::toggleShuffle) {
-                Icon(
-                    imageVector = Icons.Filled.Shuffle,
-                    contentDescription = "Shuffle",
-                    tint = if (state.shuffleEnabled) MaterialTheme.colorScheme.primary else Color.White
-                )
-            }
-            IconButton(onClick = viewModel::skipPrevious) {
-                Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous", modifier = Modifier.padding(4.dp))
-            }
-            IconButton(onClick = viewModel::playPause, modifier = Modifier.padding(8.dp)) {
-                Icon(
-                    imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = "Play/Pause",
-                    modifier = Modifier.padding(4.dp)
-                )
-            }
-            IconButton(onClick = viewModel::skipNext) {
-                Icon(Icons.Filled.SkipNext, contentDescription = "Next")
-            }
-            IconButton(onClick = viewModel::cycleRepeatMode) {
-                Icon(
-                    imageVector = if (state.repeatMode == RepeatMode.ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
-                    contentDescription = "Repeat",
-                    tint = if (state.repeatMode != RepeatMode.OFF) MaterialTheme.colorScheme.primary else Color.White
-                )
-            }
-        }
-
-        var volumeRowModifier = Modifier.fillMaxWidth().padding(top = 16.dp)
-        if (isLiquid) {
-            volumeRowModifier = volumeRowModifier
-                .clip(pillShape)
-                .hazeChild(state = hazeState!!, style = LiquidGlassStyle)
-                .border(1.dp, Color.White.copy(alpha = 0.25f), pillShape)
-                .padding(horizontal = 8.dp)
-        }
-        Row(
-            modifier = volumeRowModifier,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = when {
-                    state.volume <= 0f -> Icons.Filled.VolumeOff
-                    state.volume < 0.5f -> Icons.Filled.VolumeDown
-                    else -> Icons.Filled.VolumeUp
-                },
-                contentDescription = "Volume",
-                tint = Color.White
-            )
-            Slider(
-                value = state.volume,
-                onValueChange = { viewModel.setVolume(it) },
-                valueRange = 0f..1f,
-                modifier = Modifier.weight(1f).padding(start = 8.dp),
-                colors = SliderDefaults.colors(
-                    thumbColor = MaterialTheme.colorScheme.primary,
-                    activeTrackColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        }
-
-        if (track == null) {
-            Text(
-                text = "Nothing playing",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(top = 24.dp)
-            )
-        }
-
-        val upcoming = state.queue.drop(state.currentIndex + 1)
-        if (upcoming.isNotEmpty()) {
-            Text(
-                text = "Up next",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
-            )
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                itemsIndexed(upcoming) { offset, upcomingTrack ->
-                    val queueIndex = state.currentIndex + 1 + offset
-                    TrackRow(
-                        track = upcomingTrack,
-                        onClick = { viewModel.playQueueItem(queueIndex) },
-                        onMoreClick = { menuQueueIndex = queueIndex }
+                Box(modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
+                    AsyncImage(
+                        model = track?.albumArtUrl,
+                        contentDescription = track?.name,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                     )
+                }
+            }
+
+            Column(modifier = Modifier.fillMaxWidth().padding(top = 32.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = track?.name.orEmpty(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = track?.artistName.orEmpty(),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    var topIconRowModifier: Modifier = Modifier
+                    if (isLiquid) {
+                        topIconRowModifier = topIconRowModifier
+                            .clip(pillShape)
+                            .hazeChild(state = hazeState, style = LiquidGlassStyle)
+                            .border(1.dp, Color.White.copy(alpha = 0.25f), pillShape)
+                    }
+                    Row(modifier = topIconRowModifier) {
+                        IconButton(onClick = { showSleepTimerDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Filled.Timer,
+                                contentDescription = "Sleep timer",
+                                tint = if (sleepTimerRemaining != null || sleepTimerEndOfTrack) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    Color.White
+                                }
+                            )
+                        }
+                        IconButton(onClick = { showAddToPlaylist = true }) {
+                            Icon(
+                                imageVector = Icons.Filled.PlaylistAdd,
+                                contentDescription = "Add to playlist",
+                                tint = Color.White
+                            )
+                        }
+                        IconButton(onClick = viewModel::toggleFavorite) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                contentDescription = "Favorite",
+                                tint = if (isFavorite) MaterialTheme.colorScheme.primary else Color.White
+                            )
+                        }
+                    }
+                }
+            }
+
+            Column(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
+                Slider(
+                    value = state.positionMs.toFloat().coerceIn(0f, state.durationMs.toFloat().coerceAtLeast(1f)),
+                    onValueChange = { viewModel.seekTo(it.toLong()) },
+                    valueRange = 0f..state.durationMs.toFloat().coerceAtLeast(1f),
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(formatMillis(state.positionMs), style = MaterialTheme.typography.labelSmall)
+                    Text(formatMillis(state.durationMs), style = MaterialTheme.typography.labelSmall)
+                }
+            }
+
+            var transportRowModifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+            if (isLiquid) {
+                transportRowModifier = transportRowModifier
+                    .clip(pillShape)
+                    .hazeChild(state = hazeState, style = LiquidGlassStyle)
+                    .border(1.dp, Color.White.copy(alpha = 0.25f), pillShape)
+            }
+            Row(
+                modifier = transportRowModifier,
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = viewModel::toggleShuffle) {
+                    Icon(
+                        imageVector = Icons.Filled.Shuffle,
+                        contentDescription = "Shuffle",
+                        tint = if (state.shuffleEnabled) MaterialTheme.colorScheme.primary else Color.White
+                    )
+                }
+                IconButton(onClick = viewModel::skipPrevious) {
+                    Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous", modifier = Modifier.padding(4.dp))
+                }
+                IconButton(onClick = viewModel::playPause, modifier = Modifier.padding(8.dp)) {
+                    Icon(
+                        imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = "Play/Pause",
+                        modifier = Modifier.padding(4.dp)
+                    )
+                }
+                IconButton(onClick = viewModel::skipNext) {
+                    Icon(Icons.Filled.SkipNext, contentDescription = "Next")
+                }
+                IconButton(onClick = viewModel::cycleRepeatMode) {
+                    Icon(
+                        imageVector = if (state.repeatMode == RepeatMode.ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
+                        contentDescription = "Repeat",
+                        tint = if (state.repeatMode != RepeatMode.OFF) MaterialTheme.colorScheme.primary else Color.White
+                    )
+                }
+            }
+
+            var volumeRowModifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+            if (isLiquid) {
+                volumeRowModifier = volumeRowModifier
+                    .clip(pillShape)
+                    .hazeChild(state = hazeState, style = LiquidGlassStyle)
+                    .border(1.dp, Color.White.copy(alpha = 0.25f), pillShape)
+                    .padding(horizontal = 8.dp)
+            }
+            Row(
+                modifier = volumeRowModifier,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = when {
+                        state.volume <= 0f -> Icons.Filled.VolumeOff
+                        state.volume < 0.5f -> Icons.Filled.VolumeDown
+                        else -> Icons.Filled.VolumeUp
+                    },
+                    contentDescription = "Volume",
+                    tint = Color.White
+                )
+                Slider(
+                    value = state.volume,
+                    onValueChange = { viewModel.setVolume(it) },
+                    valueRange = 0f..1f,
+                    modifier = Modifier.weight(1f).padding(start = 8.dp),
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+            }
+
+            if (track == null) {
+                Text(
+                    text = "Nothing playing",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp)
+                )
+            }
+
+            val upcoming = state.queue.drop(state.currentIndex + 1)
+            if (upcoming.isNotEmpty()) {
+                Text(
+                    text = "Up next",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
+                )
+                LazyColumn(modifier = Modifier.weight(1f)) {
+                    itemsIndexed(upcoming) { offset, upcomingTrack ->
+                        val queueIndex = state.currentIndex + 1 + offset
+                        TrackRow(
+                            track = upcomingTrack,
+                            onClick = { viewModel.playQueueItem(queueIndex) },
+                            onMoreClick = { menuQueueIndex = queueIndex }
+                        )
+                    }
                 }
             }
         }

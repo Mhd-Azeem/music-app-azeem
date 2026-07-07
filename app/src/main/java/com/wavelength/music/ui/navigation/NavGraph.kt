@@ -151,7 +151,7 @@ fun WavelengthNavHost() {
                     NowPlayingScreen(
                         onCollapse = { navController.popBackStack() },
                         viewModel = playerViewModel,
-                        hazeState = if (isLiquid) hazeState else null
+                        isLiquid = isLiquid
                     )
                 }
                 composable(Screen.Settings.route) {

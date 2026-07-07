@@ -52,14 +52,14 @@ fun MiniPlayerBar(
 
     var barModifier = modifier.fillMaxWidth()
     if (isLiquid) {
-        barModifier = barModifier.padding(horizontal = 12.dp, vertical = 8.dp)
-    }
-    barModifier = barModifier.height(64.dp).clip(shape)
-    if (hazeState != null) {
-        barModifier = barModifier.hazeChild(state = hazeState, style = LiquidGlassStyle)
-    }
-    if (isLiquid) {
-        barModifier = barModifier.border(1.dp, Color.White.copy(alpha = 0.25f), shape)
+        barModifier = barModifier
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .height(64.dp)
+            .clip(shape)
+            .hazeChild(state = hazeState!!, style = LiquidGlassStyle)
+            .border(1.dp, Color.White.copy(alpha = 0.25f), shape)
+    } else {
+        barModifier = barModifier.height(64.dp)
     }
     barModifier = barModifier
         .clickable(onClick = onClick)
