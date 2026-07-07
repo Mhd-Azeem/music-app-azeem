@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -29,6 +30,8 @@ fun CircularKnob(
     val activeColor = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     val rangeSize = (valueRange.endInclusive - valueRange.start).takeIf { it > 0f } ?: 1f
     val sweepFraction = ((value - valueRange.start) / rangeSize).coerceIn(0f, 1f)
+    val currentValue = rememberUpdatedState(value)
+    val currentOnValueChange = rememberUpdatedState(onValueChange)
 
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
         Canvas(
@@ -39,7 +42,9 @@ fun CircularKnob(
                     detectDragGestures { change, dragAmount ->
                         change.consume()
                         val delta = -dragAmount.y / 200f * rangeSize
-                        onValueChange((value + delta).coerceIn(valueRange.start, valueRange.endInclusive))
+                        val newValue = (currentValue.value + delta)
+                            .coerceIn(valueRange.start, valueRange.endInclusive)
+                        currentOnValueChange.value(newValue)
                     }
                 }
         ) {
