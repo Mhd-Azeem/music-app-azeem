@@ -5,5 +5,6 @@ enum class AppTheme(val label: String) {
     MARVEL("Marvel"),
     PINK("Pink"),
     BLACK("Black"),
-    GREY("Grey")
+    GREY("Grey"),
+    LIQUID("Liquid")
 }

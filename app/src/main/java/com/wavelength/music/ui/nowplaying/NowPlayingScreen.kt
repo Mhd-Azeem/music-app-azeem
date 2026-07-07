@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -52,6 +53,7 @@ import coil.compose.AsyncImage
 import com.wavelength.music.playback.RepeatMode
 import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.components.TrackRow
+import com.wavelength.music.ui.components.swipeVertical
 import com.wavelength.music.ui.playlist.AddToPlaylistDialog
 import java.util.concurrent.TimeUnit
 
@@ -114,26 +116,35 @@ fun NowPlayingScreen(
         )
     }
 
+    val density = LocalDensity.current
+    val collapseThresholdPx = with(density) { 80.dp.toPx() }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(24.dp)
     ) {
-        IconButton(onClick = onCollapse) {
-            Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")
-        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .swipeVertical(thresholdPx = collapseThresholdPx, onSwipeDown = onCollapse)
+        ) {
+            IconButton(onClick = onCollapse) {
+                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")
+            }
 
-        Box(modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
-            AsyncImage(
-                model = track?.albumArtUrl,
-                contentDescription = track?.name,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
+            Box(modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
+                AsyncImage(
+                    model = track?.albumArtUrl,
+                    contentDescription = track?.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                )
+            }
         }
 
         Column(modifier = Modifier.fillMaxWidth().padding(top = 32.dp)) {

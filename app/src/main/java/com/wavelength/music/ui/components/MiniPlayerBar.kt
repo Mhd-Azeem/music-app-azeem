@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -38,12 +39,15 @@ fun MiniPlayerBar(
     modifier: Modifier = Modifier
 ) {
     val track = state.currentTrack ?: return
+    val density = LocalDensity.current
+    val expandThresholdPx = with(density) { 40.dp.toPx() }
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .swipeVertical(thresholdPx = expandThresholdPx, onSwipeUp = onClick),
         color = MaterialTheme.colorScheme.surfaceVariant,
         tonalElevation = 4.dp
     ) {

@@ -259,11 +259,12 @@ fun SettingsScreen(
 
             item {
                 SettingsSection(title = "Theme") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        AppTheme.entries.forEach { theme ->
+                        items(AppTheme.entries) { theme ->
                             ThemeOption(
                                 theme = theme,
                                 selected = settings.theme == theme,

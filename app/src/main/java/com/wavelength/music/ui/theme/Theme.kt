@@ -57,6 +57,16 @@ private fun schemeFor(theme: AppTheme): ColorScheme = when (theme) {
         onSurface = Color(0xFFF0F0F0),
         error = WavelengthError
     )
+    AppTheme.LIQUID -> darkColorScheme(
+        primary = Color(0xFF2DD4FF),
+        secondary = Color(0xFFA78BFA),
+        background = Color.Transparent,
+        surface = Color(0xFF0B1220),
+        surfaceVariant = Color(0xFF16233A),
+        onBackground = Color(0xFFE8F1FF),
+        onSurface = Color(0xFFE8F1FF),
+        error = WavelengthError
+    )
 }
 
 /** The primary swatch color shown for each theme option in Settings. */
@@ -66,6 +76,7 @@ fun AppTheme.swatchColor(): Color = when (this) {
     AppTheme.PINK -> Color(0xFFEC4899)
     AppTheme.BLACK -> Color(0xFFE0E0E0)
     AppTheme.GREY -> Color(0xFF9E9E9E)
+    AppTheme.LIQUID -> Color(0xFF2DD4FF)
 }
 
 // Wavelength always renders in dark mode; only the accent palette changes between themes.
