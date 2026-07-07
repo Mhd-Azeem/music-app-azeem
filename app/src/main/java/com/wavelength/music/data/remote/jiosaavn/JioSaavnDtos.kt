@@ -4,9 +4,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * DTOs for a self-hosted https://github.com/sumitkolhe/jiosaavn-api deployment. This is an
- * unofficial, community-run API with no stability guarantees, so several fields are nullable
- * with fallbacks (e.g. "link" vs "url") to tolerate small differences across deployments/versions.
+ * DTOs for a self-hosted https://github.com/sumitkolhe/jiosaavn-api deployment (the modern
+ * Hono/TypeScript rewrite — album/artists are nested objects, not flat strings like the older
+ * JioSaavn API schema). This is an unofficial, community-run API with no stability guarantees,
+ * so fields are nullable with fallbacks where reasonable.
  */
 @JsonClass(generateAdapter = true)
 data class JioSaavnImageDto(
@@ -18,14 +19,31 @@ data class JioSaavnImageDto(
 }
 
 @JsonClass(generateAdapter = true)
+data class JioSaavnAlbumRefDto(
+    @Json(name = "id") val id: String? = null,
+    @Json(name = "name") val name: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class JioSaavnArtistRefDto(
+    @Json(name = "id") val id: String? = null,
+    @Json(name = "name") val name: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class JioSaavnArtistsDto(
+    @Json(name = "primary") val primary: List<JioSaavnArtistRefDto> = emptyList(),
+    @Json(name = "featured") val featured: List<JioSaavnArtistRefDto> = emptyList(),
+    @Json(name = "all") val all: List<JioSaavnArtistRefDto> = emptyList()
+)
+
+@JsonClass(generateAdapter = true)
 data class JioSaavnSongDto(
     @Json(name = "id") val id: String,
     @Json(name = "name") val name: String? = null,
-    @Json(name = "song") val song: String? = null,
-    @Json(name = "album") val album: String? = null,
-    @Json(name = "primary_artists") val primaryArtists: String? = null,
-    @Json(name = "singers") val singers: String? = null,
-    @Json(name = "duration") val duration: String? = null,
+    @Json(name = "album") val album: JioSaavnAlbumRefDto? = null,
+    @Json(name = "artists") val artists: JioSaavnArtistsDto? = null,
+    @Json(name = "duration") val duration: Int? = null,
     @Json(name = "image") val image: List<JioSaavnImageDto> = emptyList(),
     @Json(name = "downloadUrl") val downloadUrl: List<JioSaavnImageDto> = emptyList()
 )
