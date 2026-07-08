@@ -2,6 +2,7 @@ package com.wavelength.music.ui.nowplaying
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,9 +14,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -40,6 +43,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +57,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -64,18 +69,23 @@ import com.wavelength.music.playback.RepeatMode
 import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.components.TrackRow
 import com.wavelength.music.ui.playlist.AddToPlaylistDialog
-import com.wavelength.music.ui.theme.LiquidGlassStyle
+import dev.chrisbanes.haze.ExperimentalHazeApi
+import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
+@OptIn(ExperimentalHazeApi::class)
 @Composable
 fun NowPlayingScreen(
     onCollapse: () -> Unit,
     viewModel: PlayerViewModel = hiltViewModel(),
-    isLiquid: Boolean = false
+    isLiquid: Boolean = false,
+    glassStyle: HazeStyle = HazeStyle.Unspecified,
+    expandUpNextOnScroll: Boolean = false
 ) {
     val hazeState = remember { HazeState() }
     val pillShape = RoundedCornerShape(28.dp)
@@ -245,7 +255,7 @@ fun NowPlayingScreen(
                     if (isLiquid) {
                         topIconRowModifier = topIconRowModifier
                             .clip(pillShape)
-                            .hazeChild(state = hazeState, style = LiquidGlassStyle)
+                            .hazeChild(state = hazeState, style = glassStyle) { inputScale = HazeInputScale.Auto }
                             .border(1.dp, Color.White.copy(alpha = 0.25f), pillShape)
                     }
                     Row(modifier = topIconRowModifier) {
@@ -301,7 +311,7 @@ fun NowPlayingScreen(
             if (isLiquid) {
                 transportRowModifier = transportRowModifier
                     .clip(pillShape)
-                    .hazeChild(state = hazeState, style = LiquidGlassStyle)
+                    .hazeChild(state = hazeState, style = glassStyle) { inputScale = HazeInputScale.Auto }
                     .border(1.dp, Color.White.copy(alpha = 0.25f), pillShape)
             }
             Row(
@@ -342,7 +352,7 @@ fun NowPlayingScreen(
             if (isLiquid) {
                 volumeRowModifier = volumeRowModifier
                     .clip(pillShape)
-                    .hazeChild(state = hazeState, style = LiquidGlassStyle)
+                    .hazeChild(state = hazeState, style = glassStyle) { inputScale = HazeInputScale.Auto }
                     .border(1.dp, Color.White.copy(alpha = 0.25f), pillShape)
                     .padding(horizontal = 8.dp)
             }
@@ -388,7 +398,23 @@ fun NowPlayingScreen(
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
                 )
-                LazyColumn(modifier = Modifier.weight(1f)) {
+                val upNextListState = rememberLazyListState()
+                val upNextScrolled by remember {
+                    derivedStateOf {
+                        upNextListState.firstVisibleItemIndex > 0 || upNextListState.firstVisibleItemScrollOffset > 0
+                    }
+                }
+                val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+                val upNextHeight by animateDpAsState(
+                    targetValue = if (expandUpNextOnScroll && upNextScrolled) screenHeight / 2 else 220.dp,
+                    label = "upNextHeight"
+                )
+                val upNextModifier = if (expandUpNextOnScroll) {
+                    Modifier.height(upNextHeight)
+                } else {
+                    Modifier.weight(1f)
+                }
+                LazyColumn(modifier = upNextModifier, state = upNextListState) {
                     itemsIndexed(upcoming) { offset, upcomingTrack ->
                         val queueIndex = state.currentIndex + 1 + offset
                         TrackRow(

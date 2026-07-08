@@ -41,12 +41,14 @@ import com.wavelength.music.ui.playlist.PlaylistDetailScreen
 import com.wavelength.music.ui.search.SearchScreen
 import com.wavelength.music.ui.settings.AppSettingsViewModel
 import com.wavelength.music.ui.settings.SettingsScreen
-import com.wavelength.music.ui.theme.AppTheme
-import com.wavelength.music.ui.theme.LiquidGlassStyle
+import com.wavelength.music.ui.theme.glassStyleFor
+import dev.chrisbanes.haze.ExperimentalHazeApi
+import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
 
+@OptIn(ExperimentalHazeApi::class)
 @Composable
 fun WavelengthNavHost() {
     val navController = rememberNavController()
@@ -54,7 +56,8 @@ fun WavelengthNavHost() {
     val playbackState by playerViewModel.state.collectAsStateWithLifecycle()
     val settingsViewModel: AppSettingsViewModel = hiltViewModel()
     val settings by settingsViewModel.state.collectAsStateWithLifecycle()
-    val isLiquid = settings.theme == AppTheme.LIQUID
+    val isLiquid = settings.theme.isGlass
+    val glassStyle = glassStyleFor(settings.theme)
     val hazeState = remember { HazeState() }
 
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -66,7 +69,9 @@ fun WavelengthNavHost() {
             if (showChrome) {
                 var navBarModifier: Modifier = Modifier
                 if (isLiquid) {
-                    navBarModifier = navBarModifier.hazeChild(state = hazeState, style = LiquidGlassStyle)
+                    navBarModifier = navBarModifier.hazeChild(state = hazeState, style = glassStyle) {
+                        inputScale = HazeInputScale.Auto
+                    }
                 }
                 Column {
                     MiniPlayerBar(
@@ -74,7 +79,8 @@ fun WavelengthNavHost() {
                         onClick = { navController.navigate(Screen.NowPlaying.route) },
                         onPlayPause = playerViewModel::playPause,
                         onSkipNext = playerViewModel::skipNext,
-                        hazeState = if (isLiquid) hazeState else null
+                        hazeState = if (isLiquid) hazeState else null,
+                        glassStyle = glassStyle
                     )
                     NavigationBar(
                         modifier = navBarModifier,
@@ -168,7 +174,9 @@ fun WavelengthNavHost() {
                     NowPlayingScreen(
                         onCollapse = { navController.popBackStack() },
                         viewModel = playerViewModel,
-                        isLiquid = isLiquid
+                        isLiquid = isLiquid,
+                        glassStyle = glassStyle,
+                        expandUpNextOnScroll = settings.expandUpNextOnScroll
                     )
                 }
                 composable(Screen.Settings.route) {

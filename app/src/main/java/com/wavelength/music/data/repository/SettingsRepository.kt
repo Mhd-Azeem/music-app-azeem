@@ -22,7 +22,8 @@ data class AppSettingsState(
     val iconPreset: IconPreset = IconPreset.CLASSIC,
     val theme: AppTheme = AppTheme.CLASSIC,
     val hasCustomBackground: Boolean = false,
-    val backgroundOpacity: Float = DEFAULT_BACKGROUND_OPACITY
+    val backgroundOpacity: Float = DEFAULT_BACKGROUND_OPACITY,
+    val expandUpNextOnScroll: Boolean = false
 )
 
 const val DEFAULT_BACKGROUND_OPACITY = 0.25f
@@ -46,7 +47,8 @@ class SettingsRepository @Inject constructor(
             AppTheme.valueOf(prefs.getString(KEY_THEME, null) ?: AppTheme.CLASSIC.name)
         }.getOrDefault(AppTheme.CLASSIC),
         hasCustomBackground = customBackgroundFile.exists(),
-        backgroundOpacity = prefs.getFloat(KEY_BACKGROUND_OPACITY, DEFAULT_BACKGROUND_OPACITY)
+        backgroundOpacity = prefs.getFloat(KEY_BACKGROUND_OPACITY, DEFAULT_BACKGROUND_OPACITY),
+        expandUpNextOnScroll = prefs.getBoolean(KEY_EXPAND_UP_NEXT, false)
     )
 
     fun setIconPreset(preset: IconPreset) {
@@ -82,6 +84,11 @@ class SettingsRepository @Inject constructor(
         _state.update { it.copy(backgroundOpacity = clamped) }
     }
 
+    fun setExpandUpNextOnScroll(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_EXPAND_UP_NEXT, enabled) }
+        _state.update { it.copy(expandUpNextOnScroll = enabled) }
+    }
+
     /** Enables the alias matching [preset] and disables the others, so exactly one launcher
      * icon is ever active at a time. */
     private fun applyIconPreset(preset: IconPreset) {
@@ -104,5 +111,6 @@ class SettingsRepository @Inject constructor(
         const val KEY_ICON = "icon_preset"
         const val KEY_THEME = "theme"
         const val KEY_BACKGROUND_OPACITY = "background_opacity"
+        const val KEY_EXPAND_UP_NEXT = "expand_up_next_on_scroll"
     }
 }

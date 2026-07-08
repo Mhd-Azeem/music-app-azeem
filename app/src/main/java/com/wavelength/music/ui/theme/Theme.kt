@@ -57,9 +57,49 @@ private fun schemeFor(theme: AppTheme): ColorScheme = when (theme) {
         onSurface = Color(0xFFF0F0F0),
         error = WavelengthError
     )
+    AppTheme.OCEAN -> darkColorScheme(
+        primary = Color(0xFF22D3EE),
+        secondary = Color(0xFF0EA5E9),
+        background = Color.Transparent,
+        surface = Color(0xFF0F2027),
+        surfaceVariant = Color(0xFF1B3A42),
+        onBackground = WavelengthOnBackground,
+        onSurface = WavelengthOnBackground,
+        error = WavelengthError
+    )
+    AppTheme.SUNSET -> darkColorScheme(
+        primary = Color(0xFFFF7A45),
+        secondary = Color(0xFFFFB84D),
+        background = Color.Transparent,
+        surface = Color(0xFF2A1810),
+        surfaceVariant = Color(0xFF3D2418),
+        onBackground = WavelengthOnBackground,
+        onSurface = WavelengthOnBackground,
+        error = WavelengthError
+    )
     AppTheme.LIQUID -> darkColorScheme(
         primary = Color(0xFF7DD3FC),
         secondary = Color(0xFFC4B5FD),
+        background = Color.Transparent,
+        surface = Color(0xFF1C1C1E),
+        surfaceVariant = Color(0xFF2A2A2C),
+        onBackground = Color(0xFFF5F5F7),
+        onSurface = Color(0xFFF5F5F7),
+        error = WavelengthError
+    )
+    AppTheme.LIQUID_PURPLE -> darkColorScheme(
+        primary = Color(0xFFC084FC),
+        secondary = Color(0xFFF0ABFC),
+        background = Color.Transparent,
+        surface = Color(0xFF1C1C1E),
+        surfaceVariant = Color(0xFF2A2A2C),
+        onBackground = Color(0xFFF5F5F7),
+        onSurface = Color(0xFFF5F5F7),
+        error = WavelengthError
+    )
+    AppTheme.LIQUID_ROSE -> darkColorScheme(
+        primary = Color(0xFFFB7185),
+        secondary = Color(0xFFFDA4AF),
         background = Color.Transparent,
         surface = Color(0xFF1C1C1E),
         surfaceVariant = Color(0xFF2A2A2C),
@@ -76,7 +116,11 @@ fun AppTheme.swatchColor(): Color = when (this) {
     AppTheme.PINK -> Color(0xFFEC4899)
     AppTheme.BLACK -> Color(0xFFE0E0E0)
     AppTheme.GREY -> Color(0xFF9E9E9E)
+    AppTheme.OCEAN -> Color(0xFF22D3EE)
+    AppTheme.SUNSET -> Color(0xFFFF7A45)
     AppTheme.LIQUID -> Color(0xFF7DD3FC)
+    AppTheme.LIQUID_PURPLE -> Color(0xFFC084FC)
+    AppTheme.LIQUID_ROSE -> Color(0xFFFB7185)
 }
 
 // Wavelength always renders in dark mode; only the accent palette changes between themes.

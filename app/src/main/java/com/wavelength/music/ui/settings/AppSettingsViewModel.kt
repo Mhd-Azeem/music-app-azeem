@@ -78,6 +78,8 @@ class AppSettingsViewModel @Inject constructor(
 
     fun setBackgroundOpacity(opacity: Float) = settingsRepository.setBackgroundOpacity(opacity)
 
+    fun setExpandUpNextOnScroll(enabled: Boolean) = settingsRepository.setExpandUpNextOnScroll(enabled)
+
     fun clearAllDownloads() {
         viewModelScope.launch { repository.clearAllDownloads() }
     }

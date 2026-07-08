@@ -264,19 +264,55 @@ fun SettingsScreen(
             }
 
             item {
-                SettingsSection(title = "Theme") {
+                SettingsSection(title = "Default Themes") {
                     LazyRow(
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(AppTheme.entries) { theme ->
+                        items(AppTheme.entries.filter { !it.isGlass }) { theme ->
                             ThemeOption(
                                 theme = theme,
                                 selected = settings.theme == theme,
                                 onClick = { viewModel.selectTheme(theme) }
                             )
                         }
+                    }
+                }
+            }
+
+            item {
+                SettingsSection(title = "Liquid Themes") {
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(AppTheme.entries.filter { it.isGlass }) { theme ->
+                            ThemeOption(
+                                theme = theme,
+                                selected = settings.theme == theme,
+                                onClick = { viewModel.selectTheme(theme) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
+                SettingsSection(title = "Now Playing") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Expand \"Up next\" to half screen when scrolled",
+                            modifier = Modifier.weight(1f)
+                        )
+                        Switch(
+                            checked = settings.expandUpNextOnScroll,
+                            onCheckedChange = { viewModel.setExpandUpNextOnScroll(it) }
+                        )
                     }
                 }
             }

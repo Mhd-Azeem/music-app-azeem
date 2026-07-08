@@ -31,10 +31,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.wavelength.music.playback.PlaybackUiState
-import com.wavelength.music.ui.theme.LiquidGlassStyle
+import dev.chrisbanes.haze.ExperimentalHazeApi
+import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeChild
 
+@OptIn(ExperimentalHazeApi::class)
 @Composable
 fun MiniPlayerBar(
     state: PlaybackUiState,
@@ -42,7 +45,8 @@ fun MiniPlayerBar(
     onPlayPause: () -> Unit,
     onSkipNext: () -> Unit,
     modifier: Modifier = Modifier,
-    hazeState: HazeState? = null
+    hazeState: HazeState? = null,
+    glassStyle: HazeStyle = HazeStyle.Unspecified
 ) {
     val track = state.currentTrack ?: return
     val density = LocalDensity.current
@@ -56,7 +60,7 @@ fun MiniPlayerBar(
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .height(64.dp)
             .clip(shape)
-            .hazeChild(state = hazeState!!, style = LiquidGlassStyle)
+            .hazeChild(state = hazeState!!, style = glassStyle) { inputScale = HazeInputScale.Auto }
             .border(1.dp, Color.White.copy(alpha = 0.25f), shape)
     } else {
         barModifier = barModifier.height(64.dp)
