@@ -87,6 +87,8 @@ fun SettingsScreen(
     val bassSupported by equalizerViewModel.bassBoostSupported.collectAsStateWithLifecycle()
     val bassStrength by equalizerViewModel.bassBoostStrength.collectAsStateWithLifecycle()
     val eqMode by equalizerViewModel.mode.collectAsStateWithLifecycle()
+    val volumeBoostSupported by equalizerViewModel.volumeBoostSupported.collectAsStateWithLifecycle()
+    val volumeBoostPercent by equalizerViewModel.volumeBoostPercent.collectAsStateWithLifecycle()
 
     var pendingBackgroundCropUri by remember { mutableStateOf<Uri?>(null) }
     var pendingIconCropUri by remember { mutableStateOf<Uri?>(null) }
@@ -459,6 +461,37 @@ fun SettingsScreen(
                                     enabled = eqEnabled
                                 )
                             }
+                        }
+                    }
+                }
+            }
+
+            item {
+                SettingsSection(title = "Volume Booster") {
+                    if (!volumeBoostSupported) {
+                        Text(
+                            text = "Play a song first to set up the volume booster — some devices don't support it.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    } else {
+                        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                            Text(
+                                text = "Boost: $volumeBoostPercent%",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Slider(
+                                value = volumeBoostPercent.toFloat(),
+                                onValueChange = { equalizerViewModel.setVolumeBoostPercent(it.roundToInt()) },
+                                valueRange = 100f..400f
+                            )
+                            Text(
+                                text = "Boosting past 100% can distort audio, especially at higher device volume.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
                         }
                     }
                 }

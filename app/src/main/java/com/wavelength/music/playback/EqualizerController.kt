@@ -3,6 +3,7 @@ package com.wavelength.music.playback
 import android.content.Context
 import android.media.audiofx.BassBoost
 import android.media.audiofx.Equalizer
+import android.media.audiofx.LoudnessEnhancer
 import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.log10
 import kotlin.math.roundToInt
 
 data class EqualizerBand(
@@ -46,6 +48,7 @@ class EqualizerController @Inject constructor(
 
     private var equalizer: Equalizer? = null
     private var bassBoost: BassBoost? = null
+    private var loudnessEnhancer: LoudnessEnhancer? = null
     private var currentSessionId: Int = 0
 
     private val _isSupported = MutableStateFlow(false)
@@ -62,6 +65,13 @@ class EqualizerController @Inject constructor(
 
     private val _bassBoostStrength = MutableStateFlow(prefs.getInt(KEY_BASS, 0))
     val bassBoostStrength: StateFlow<Int> = _bassBoostStrength.asStateFlow()
+
+    private val _volumeBoostSupported = MutableStateFlow(false)
+    val volumeBoostSupported: StateFlow<Boolean> = _volumeBoostSupported.asStateFlow()
+
+    /** 100 = original volume, no boost; up to 400 = 4x amplitude (~+12dB). */
+    private val _volumeBoostPercent = MutableStateFlow(prefs.getInt(KEY_VOLUME_BOOST, 100))
+    val volumeBoostPercent: StateFlow<Int> = _volumeBoostPercent.asStateFlow()
 
     private val _mode = MutableStateFlow(
         runCatching {
@@ -118,6 +128,16 @@ class EqualizerController @Inject constructor(
         }.onFailure {
             _bassBoostSupported.value = false
         }
+
+        runCatching {
+            val le = LoudnessEnhancer(sessionId)
+            le.setTargetGain(percentToMillibel(_volumeBoostPercent.value))
+            le.enabled = _volumeBoostPercent.value > 100
+            loudnessEnhancer = le
+            _volumeBoostSupported.value = true
+        }.onFailure {
+            _volumeBoostSupported.value = false
+        }
     }
 
     fun setEnabled(value: Boolean) {
@@ -139,6 +159,27 @@ class EqualizerController @Inject constructor(
         runCatching { bassBoost?.setStrength(strength.toShort()) }
         prefs.edit { putInt(KEY_BASS, strength) }
         _bassBoostStrength.value = strength
+    }
+
+    /** [percent] is 100 (no boost) to 400 (4x amplitude). Disables the effect entirely at exactly
+     * 100 so it costs nothing when the user isn't using it. */
+    fun setVolumeBoostPercent(percent: Int) {
+        val clamped = percent.coerceIn(100, 400)
+        runCatching {
+            loudnessEnhancer?.let { le ->
+                le.setTargetGain(percentToMillibel(clamped))
+                le.enabled = clamped > 100
+            }
+        }
+        prefs.edit { putInt(KEY_VOLUME_BOOST, clamped) }
+        _volumeBoostPercent.value = clamped
+    }
+
+    /** Treats [percent] as a linear amplitude ratio (100% = 1x = 0dB) and converts to the
+     * millibels [LoudnessEnhancer.setTargetGain] expects. */
+    private fun percentToMillibel(percent: Int): Int {
+        val ratio = percent / 100f
+        return (2000 * log10(ratio)).roundToInt()
     }
 
     /** Flattens every band and bass boost back to 0, without changing the enabled/mode state. */
@@ -194,8 +235,10 @@ class EqualizerController @Inject constructor(
     private fun release() {
         runCatching { equalizer?.release() }
         runCatching { bassBoost?.release() }
+        runCatching { loudnessEnhancer?.release() }
         equalizer = null
         bassBoost = null
+        loudnessEnhancer = null
     }
 
     private fun bandKey(index: Int) = "band_$index"
@@ -204,5 +247,6 @@ class EqualizerController @Inject constructor(
         const val KEY_ENABLED = "enabled"
         const val KEY_BASS = "bass_strength"
         const val KEY_MODE = "mode"
+        const val KEY_VOLUME_BOOST = "volume_boost_percent"
     }
 }
