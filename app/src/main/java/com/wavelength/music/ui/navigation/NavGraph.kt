@@ -1,5 +1,8 @@
 package com.wavelength.music.ui.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -147,7 +150,21 @@ fun WavelengthNavHost() {
                         }
                     )
                 }
-                composable(Screen.NowPlaying.route) {
+                composable(
+                    route = Screen.NowPlaying.route,
+                    enterTransition = {
+                        slideInVertically(initialOffsetY = { it }, animationSpec = tween(320))
+                    },
+                    exitTransition = {
+                        slideOutVertically(targetOffsetY = { it }, animationSpec = tween(280))
+                    },
+                    popEnterTransition = {
+                        slideInVertically(initialOffsetY = { it }, animationSpec = tween(320))
+                    },
+                    popExitTransition = {
+                        slideOutVertically(targetOffsetY = { it }, animationSpec = tween(280))
+                    }
+                ) {
                     NowPlayingScreen(
                         onCollapse = { navController.popBackStack() },
                         viewModel = playerViewModel,

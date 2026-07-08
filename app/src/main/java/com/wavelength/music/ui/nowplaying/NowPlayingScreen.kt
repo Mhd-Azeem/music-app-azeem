@@ -1,7 +1,11 @@
 package com.wavelength.music.ui.nowplaying
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,13 +41,17 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
@@ -55,12 +63,12 @@ import coil.compose.AsyncImage
 import com.wavelength.music.playback.RepeatMode
 import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.components.TrackRow
-import com.wavelength.music.ui.components.swipeVertical
 import com.wavelength.music.ui.playlist.AddToPlaylistDialog
 import com.wavelength.music.ui.theme.LiquidGlassStyle
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 @Composable
@@ -128,7 +136,18 @@ fun NowPlayingScreen(
     val density = LocalDensity.current
     val collapseThresholdPx = with(density) { 80.dp.toPx() }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    var dragOffset by remember { mutableFloatStateOf(0f) }
+    val settleAnim = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer {
+                translationY = dragOffset
+                alpha = 1f - (dragOffset / 900f).coerceIn(0f, 0.5f)
+            }
+    ) {
         if (isLiquid) {
             AsyncImage(
                 model = track?.albumArtUrl,
@@ -151,7 +170,42 @@ fun NowPlayingScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .swipeVertical(thresholdPx = collapseThresholdPx, onSwipeDown = onCollapse)
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures(
+                            onDragEnd = {
+                                if (dragOffset > collapseThresholdPx) {
+                                    dragOffset = 0f
+                                    onCollapse()
+                                } else {
+                                    scope.launch {
+                                        settleAnim.snapTo(dragOffset)
+                                        settleAnim.animateTo(
+                                            targetValue = 0f,
+                                            animationSpec = spring(
+                                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                stiffness = Spring.StiffnessMedium
+                                            )
+                                        ) { dragOffset = value }
+                                    }
+                                }
+                            },
+                            onDragCancel = {
+                                scope.launch {
+                                    settleAnim.snapTo(dragOffset)
+                                    settleAnim.animateTo(
+                                        targetValue = 0f,
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                                            stiffness = Spring.StiffnessMedium
+                                        )
+                                    ) { dragOffset = value }
+                                }
+                            }
+                        ) { change, dragAmount ->
+                            change.consume()
+                            dragOffset = (dragOffset + dragAmount).coerceAtLeast(0f)
+                        }
+                    }
             ) {
                 IconButton(onClick = onCollapse) {
                     Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")

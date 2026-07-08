@@ -58,13 +58,13 @@ private fun schemeFor(theme: AppTheme): ColorScheme = when (theme) {
         error = WavelengthError
     )
     AppTheme.LIQUID -> darkColorScheme(
-        primary = Color(0xFF2DD4FF),
-        secondary = Color(0xFFA78BFA),
+        primary = Color(0xFF7DD3FC),
+        secondary = Color(0xFFC4B5FD),
         background = Color.Transparent,
-        surface = Color(0xFF0B1220),
-        surfaceVariant = Color(0xFF16233A),
-        onBackground = Color(0xFFE8F1FF),
-        onSurface = Color(0xFFE8F1FF),
+        surface = Color(0xFF1C1C1E),
+        surfaceVariant = Color(0xFF2A2A2C),
+        onBackground = Color(0xFFF5F5F7),
+        onSurface = Color(0xFFF5F5F7),
         error = WavelengthError
     )
 }
@@ -76,7 +76,7 @@ fun AppTheme.swatchColor(): Color = when (this) {
     AppTheme.PINK -> Color(0xFFEC4899)
     AppTheme.BLACK -> Color(0xFFE0E0E0)
     AppTheme.GREY -> Color(0xFF9E9E9E)
-    AppTheme.LIQUID -> Color(0xFF2DD4FF)
+    AppTheme.LIQUID -> Color(0xFF7DD3FC)
 }
 
 // Wavelength always renders in dark mode; only the accent palette changes between themes.
