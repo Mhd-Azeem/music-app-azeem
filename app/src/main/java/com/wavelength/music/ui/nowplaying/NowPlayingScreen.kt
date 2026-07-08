@@ -1,5 +1,6 @@
 package com.wavelength.music.ui.nowplaying
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -150,6 +151,17 @@ fun NowPlayingScreen(
     val settleAnim = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
 
+    val upNextListState = rememberLazyListState()
+    val upNextScrolled by remember {
+        derivedStateOf {
+            upNextListState.firstVisibleItemIndex > 0 || upNextListState.firstVisibleItemScrollOffset > 0
+        }
+    }
+    // Album art hides to free up room for the queue to actually grow into — without this, "half
+    // the screen" has nowhere to expand into since art + controls already fill most of the
+    // screen, so the box would just get clipped off the bottom with no visible size change.
+    val isUpNextExpanded = expandUpNextOnScroll && upNextScrolled
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -221,16 +233,18 @@ fun NowPlayingScreen(
                     Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")
                 }
 
-                Box(modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
-                    AsyncImage(
-                        model = track?.albumArtUrl,
-                        contentDescription = track?.name,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                    )
+                AnimatedVisibility(visible = !isUpNextExpanded) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
+                        AsyncImage(
+                            model = track?.albumArtUrl,
+                            contentDescription = track?.name,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                        )
+                    }
                 }
             }
 
@@ -398,15 +412,9 @@ fun NowPlayingScreen(
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
                 )
-                val upNextListState = rememberLazyListState()
-                val upNextScrolled by remember {
-                    derivedStateOf {
-                        upNextListState.firstVisibleItemIndex > 0 || upNextListState.firstVisibleItemScrollOffset > 0
-                    }
-                }
                 val screenHeight = LocalConfiguration.current.screenHeightDp.dp
                 val upNextHeight by animateDpAsState(
-                    targetValue = if (expandUpNextOnScroll && upNextScrolled) screenHeight / 2 else 220.dp,
+                    targetValue = if (isUpNextExpanded) screenHeight / 2 else 220.dp,
                     label = "upNextHeight"
                 )
                 val upNextModifier = if (expandUpNextOnScroll) {
