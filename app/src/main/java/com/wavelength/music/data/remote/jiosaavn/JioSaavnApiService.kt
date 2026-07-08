@@ -22,4 +22,7 @@ interface JioSaavnApiService {
 
     @GET("playlists")
     suspend fun getPlaylist(@Query("link") link: String): JioSaavnPlaylistResponse
+
+    @GET("usage")
+    suspend fun getUsage(): JioSaavnUsageResponse
 }

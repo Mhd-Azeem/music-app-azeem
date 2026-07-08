@@ -79,3 +79,15 @@ data class JioSaavnCollectionData(
     @Json(name = "name") val name: String? = null,
     @Json(name = "songs") val songs: List<JioSaavnSongDto> = emptyList()
 )
+
+@JsonClass(generateAdapter = true)
+data class JioSaavnUsageResponse(
+    @Json(name = "data") val data: JioSaavnUsageDataDto? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class JioSaavnUsageDataDto(
+    @Json(name = "used") val used: Int? = null,
+    @Json(name = "limit") val limit: Int? = null,
+    @Json(name = "date") val date: String? = null
+)

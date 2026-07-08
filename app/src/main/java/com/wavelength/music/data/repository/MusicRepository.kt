@@ -52,6 +52,8 @@ class MusicRepository @Inject constructor(
     suspend fun searchTracks(query: String, limit: Int = 30): Result<List<Track>> =
         jioSaavnRepository.searchSongs(query, limit)
 
+    suspend fun getApiUsage() = jioSaavnRepository.getUsage()
+
     // --- Local device songs --------------------------------------------------------------------
 
     fun observeLocalSongs(): Flow<List<Track>> = localSongRepository.observeLocalSongs()

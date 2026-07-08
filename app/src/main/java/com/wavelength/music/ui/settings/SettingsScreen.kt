@@ -24,11 +24,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -74,6 +77,7 @@ fun SettingsScreen(
 ) {
     val settings by viewModel.state.collectAsStateWithLifecycle()
     val downloadsSummary by viewModel.downloadsSummary.collectAsStateWithLifecycle()
+    val usageState by viewModel.usageState.collectAsStateWithLifecycle()
     var showClearDownloadsConfirm by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
@@ -425,6 +429,68 @@ fun SettingsScreen(
             }
 
             item {
+                SettingsSection(title = "Cloudflare Usage") {
+                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                        when {
+                            usageState.isLoading -> {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                    Text(
+                                        text = "Checking usage…",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.padding(start = 12.dp)
+                                    )
+                                }
+                            }
+                            usageState.error != null -> {
+                                Text(
+                                    text = usageState.error.orEmpty(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                TextButton(
+                                    onClick = { viewModel.refreshUsage() },
+                                    modifier = Modifier.padding(top = 4.dp)
+                                ) {
+                                    Text("Retry")
+                                }
+                            }
+                            else -> {
+                                val used = usageState.used ?: 0
+                                val limit = usageState.limit ?: 1
+                                val fraction = (used.toFloat() / limit.toFloat()).coerceIn(0f, 1f)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "${used.formatThousands()} / ${limit.formatThousands()} requests today",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    IconButton(onClick = { viewModel.refreshUsage() }) {
+                                        Icon(Icons.Filled.Refresh, contentDescription = "Refresh usage")
+                                    }
+                                }
+                                LinearProgressIndicator(
+                                    progress = { fraction },
+                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                                )
+                                usageState.date?.let { date ->
+                                    Text(
+                                        text = "As of $date (UTC)",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
                 SettingsSection(title = "About") {
                     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -487,6 +553,8 @@ private fun formatStorageSize(bytes: Long): String = when {
     bytes >= 1024L -> "%.1f KB".format(bytes / 1024.0)
     else -> "$bytes B"
 }
+
+private fun Int.formatThousands(): String = "%,d".format(this)
 
 @Composable
 private fun SettingsSection(title: String, content: @Composable () -> Unit) {

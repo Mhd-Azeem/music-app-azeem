@@ -3,6 +3,7 @@ package com.wavelength.music.data.repository
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.model.toTrack
 import com.wavelength.music.data.remote.jiosaavn.JioSaavnApiService
+import com.wavelength.music.data.remote.jiosaavn.JioSaavnUsageDataDto
 import com.wavelength.music.data.remote.jiosaavn.toDomain
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -34,5 +35,11 @@ class JioSaavnRepository @Inject constructor(
 
     suspend fun getPlaylistTracks(playlistLink: String): Result<List<Track>> = runCatching {
         api.getPlaylist(playlistLink).data?.songs.orEmpty().map { it.toDomain().toTrack() }
+    }
+
+    /** Requires the deployment to have CF_API_TOKEN/CF_ACCOUNT_ID configured (see the worker's
+     * GET /usage endpoint) — fails on deployments that haven't set that up yet. */
+    suspend fun getUsage(): Result<JioSaavnUsageDataDto> = runCatching {
+        api.getUsage().data ?: error("Usage data missing from response")
     }
 }
