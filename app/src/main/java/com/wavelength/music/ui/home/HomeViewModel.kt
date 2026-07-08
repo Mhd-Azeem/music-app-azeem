@@ -9,10 +9,13 @@ import com.wavelength.music.playback.PlayerController
 import com.wavelength.music.ui.components.ScreenState
 import com.wavelength.music.ui.search.PendingSearchQuery
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -33,6 +36,9 @@ class HomeViewModel @Inject constructor(
     private val _featured = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Loading)
     val featured: StateFlow<ScreenState<List<Track>>> = _featured.asStateFlow()
 
+    private val _suggested = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Loading)
+    val suggested: StateFlow<ScreenState<List<Track>>> = _suggested.asStateFlow()
+
     val recentlyPlayed: StateFlow<List<Track>> = repository.observeRecentlyPlayed(10)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -44,20 +50,52 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadFeatured()
+        viewModelScope.launch {
+            repository.observeRecentlyPlayed(30).collectLatest { tracks -> loadSuggested(tracks) }
+        }
     }
 
+    /** Mixes general "top hits" with Tamil results so the featured carousel isn't purely
+     * English/Hindi-leaning — JioSaavn search is per-language, so there's no single query that
+     * covers both. */
     fun loadFeatured() {
         viewModelScope.launch {
             _featured.value = ScreenState.Loading
-            repository.getFeaturedTracks().fold(
-                onSuccess = { tracks ->
-                    _featured.value = if (tracks.isEmpty()) ScreenState.Empty else ScreenState.Success(tracks)
-                },
-                onFailure = { e ->
-                    _featured.value = ScreenState.Error(e.message ?: "Something went wrong")
+            coroutineScope {
+                val topHitsDeferred = async { repository.getFeaturedTracks(20) }
+                val tamilDeferred = async { repository.getTracksByTag("tamil", 10) }
+                val topHits = topHitsDeferred.await()
+                val tamilHits = tamilDeferred.await()
+                val combined = (topHits.getOrDefault(emptyList()) + tamilHits.getOrDefault(emptyList()))
+                    .distinctBy { it.id }
+                _featured.value = when {
+                    combined.isNotEmpty() -> ScreenState.Success(combined)
+                    topHits.isFailure -> ScreenState.Error(topHits.exceptionOrNull()?.message ?: "Something went wrong")
+                    else -> ScreenState.Empty
                 }
-            )
+            }
         }
+    }
+
+    /** Seeds "suggested for you" from whichever artist appears most often in recent plays, then
+     * searches JioSaavn for more from that artist, excluding tracks already recently played. */
+    private suspend fun loadSuggested(recentTracks: List<Track>) {
+        val topArtist = recentTracks.groupingBy { it.artistName }.eachCount().maxByOrNull { it.value }?.key
+        if (topArtist.isNullOrBlank()) {
+            _suggested.value = ScreenState.Empty
+            return
+        }
+        _suggested.value = ScreenState.Loading
+        repository.searchTracks(topArtist, limit = 20).fold(
+            onSuccess = { tracks ->
+                val excludeIds = recentTracks.map { it.id }.toSet()
+                val filtered = tracks.filterNot { it.id in excludeIds }
+                _suggested.value = if (filtered.isEmpty()) ScreenState.Empty else ScreenState.Success(filtered)
+            },
+            onFailure = { e ->
+                _suggested.value = ScreenState.Error(e.message ?: "Something went wrong")
+            }
+        )
     }
 
     fun playTrack(queue: List<Track>, index: Int) {

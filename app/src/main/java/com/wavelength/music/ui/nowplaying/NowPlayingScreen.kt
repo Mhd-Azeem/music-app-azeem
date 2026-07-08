@@ -53,6 +53,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -174,13 +175,8 @@ fun NowPlayingScreen(
             AsyncImage(
                 model = track?.albumArtUrl,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize().haze(state = hazeState),
+                modifier = Modifier.fillMaxSize().alpha(0.4f).haze(state = hazeState),
                 contentScale = ContentScale.Crop
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.35f))
             )
         }
         Column(

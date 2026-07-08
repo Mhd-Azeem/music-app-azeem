@@ -54,6 +54,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val featured by viewModel.featured.collectAsStateWithLifecycle()
+    val suggested by viewModel.suggested.collectAsStateWithLifecycle()
     val recentlyPlayed by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     val searchHistory by viewModel.searchHistory.collectAsStateWithLifecycle()
@@ -81,6 +82,7 @@ fun HomeScreen(
             is ScreenState.Success -> HomeContent(
                 padding = padding,
                 featuredTracks = state.data,
+                suggestedTracks = (suggested as? ScreenState.Success)?.data.orEmpty(),
                 recentlyPlayed = recentlyPlayed,
                 playlists = playlists,
                 searchHistory = searchHistory,
@@ -103,6 +105,7 @@ fun HomeScreen(
 private fun HomeContent(
     padding: PaddingValues,
     featuredTracks: List<Track>,
+    suggestedTracks: List<Track>,
     recentlyPlayed: List<Track>,
     playlists: List<PlaylistSummary>,
     searchHistory: List<String>,
@@ -178,6 +181,20 @@ private fun HomeContent(
                 ) {
                     itemsIndexed(recentlyPlayed) { index, track ->
                         TrackCard(track = track, onClick = { onTrackClick(index, recentlyPlayed) })
+                    }
+                }
+            }
+        }
+
+        if (suggestedTracks.isNotEmpty()) {
+            item { SectionHeader("Suggested for you") }
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    itemsIndexed(suggestedTracks) { index, track ->
+                        TrackCard(track = track, onClick = { onTrackClick(index, suggestedTracks) })
                     }
                 }
             }

@@ -69,6 +69,9 @@ class EqualizerController @Inject constructor(
     private val _volumeBoostSupported = MutableStateFlow(false)
     val volumeBoostSupported: StateFlow<Boolean> = _volumeBoostSupported.asStateFlow()
 
+    private val _volumeBoostEnabled = MutableStateFlow(prefs.getBoolean(KEY_VOLUME_BOOST_ENABLED, false))
+    val volumeBoostEnabled: StateFlow<Boolean> = _volumeBoostEnabled.asStateFlow()
+
     /** 100 = original volume, no boost; up to 400 = 4x amplitude (~+12dB). */
     private val _volumeBoostPercent = MutableStateFlow(prefs.getInt(KEY_VOLUME_BOOST, 100))
     val volumeBoostPercent: StateFlow<Int> = _volumeBoostPercent.asStateFlow()
@@ -132,7 +135,7 @@ class EqualizerController @Inject constructor(
         runCatching {
             val le = LoudnessEnhancer(sessionId)
             le.setTargetGain(percentToMillibel(_volumeBoostPercent.value))
-            le.enabled = _volumeBoostPercent.value > 100
+            le.enabled = _volumeBoostEnabled.value && _volumeBoostPercent.value > 100
             loudnessEnhancer = le
             _volumeBoostSupported.value = true
         }.onFailure {
@@ -161,18 +164,26 @@ class EqualizerController @Inject constructor(
         _bassBoostStrength.value = strength
     }
 
-    /** [percent] is 100 (no boost) to 400 (4x amplitude). Disables the effect entirely at exactly
-     * 100 so it costs nothing when the user isn't using it. */
+    /** [percent] is 100 (no boost) to 400 (4x amplitude). The effect only actually runs when both
+     * [setVolumeBoostEnabled] is on and percent is above 100, so it costs nothing otherwise. */
     fun setVolumeBoostPercent(percent: Int) {
         val clamped = percent.coerceIn(100, 400)
         runCatching {
             loudnessEnhancer?.let { le ->
                 le.setTargetGain(percentToMillibel(clamped))
-                le.enabled = clamped > 100
+                le.enabled = _volumeBoostEnabled.value && clamped > 100
             }
         }
         prefs.edit { putInt(KEY_VOLUME_BOOST, clamped) }
         _volumeBoostPercent.value = clamped
+    }
+
+    fun setVolumeBoostEnabled(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_VOLUME_BOOST_ENABLED, enabled) }
+        _volumeBoostEnabled.value = enabled
+        runCatching {
+            loudnessEnhancer?.enabled = enabled && _volumeBoostPercent.value > 100
+        }
     }
 
     /** Treats [percent] as a linear amplitude ratio (100% = 1x = 0dB) and converts to the
@@ -248,5 +259,6 @@ class EqualizerController @Inject constructor(
         const val KEY_BASS = "bass_strength"
         const val KEY_MODE = "mode"
         const val KEY_VOLUME_BOOST = "volume_boost_percent"
+        const val KEY_VOLUME_BOOST_ENABLED = "volume_boost_enabled"
     }
 }

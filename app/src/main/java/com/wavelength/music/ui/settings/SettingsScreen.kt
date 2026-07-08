@@ -88,6 +88,7 @@ fun SettingsScreen(
     val bassStrength by equalizerViewModel.bassBoostStrength.collectAsStateWithLifecycle()
     val eqMode by equalizerViewModel.mode.collectAsStateWithLifecycle()
     val volumeBoostSupported by equalizerViewModel.volumeBoostSupported.collectAsStateWithLifecycle()
+    val volumeBoostEnabled by equalizerViewModel.volumeBoostEnabled.collectAsStateWithLifecycle()
     val volumeBoostPercent by equalizerViewModel.volumeBoostPercent.collectAsStateWithLifecycle()
 
     var pendingBackgroundCropUri by remember { mutableStateOf<Uri?>(null) }
@@ -476,6 +477,16 @@ fun SettingsScreen(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
                     } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Enable volume booster", modifier = Modifier.weight(1f))
+                            Switch(
+                                checked = volumeBoostEnabled,
+                                onCheckedChange = { equalizerViewModel.setVolumeBoostEnabled(it) }
+                            )
+                        }
                         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                             Text(
                                 text = "Boost: $volumeBoostPercent%",
@@ -484,7 +495,8 @@ fun SettingsScreen(
                             Slider(
                                 value = volumeBoostPercent.toFloat(),
                                 onValueChange = { equalizerViewModel.setVolumeBoostPercent(it.roundToInt()) },
-                                valueRange = 100f..400f
+                                valueRange = 100f..400f,
+                                enabled = volumeBoostEnabled
                             )
                             Text(
                                 text = "Boosting past 100% can distort audio, especially at higher device volume.",

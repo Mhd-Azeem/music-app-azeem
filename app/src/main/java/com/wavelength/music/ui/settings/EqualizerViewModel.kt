@@ -21,6 +21,7 @@ class EqualizerViewModel @Inject constructor(
     val bassBoostStrength: StateFlow<Int> = equalizerController.bassBoostStrength
     val mode: StateFlow<EqualizerMode> = equalizerController.mode
     val volumeBoostSupported: StateFlow<Boolean> = equalizerController.volumeBoostSupported
+    val volumeBoostEnabled: StateFlow<Boolean> = equalizerController.volumeBoostEnabled
     val volumeBoostPercent: StateFlow<Int> = equalizerController.volumeBoostPercent
 
     fun setEnabled(value: Boolean) = equalizerController.setEnabled(value)
@@ -37,4 +38,6 @@ class EqualizerViewModel @Inject constructor(
     fun applyPreset(preset: EqualizerPreset) = equalizerController.applyPreset(preset)
 
     fun setVolumeBoostPercent(percent: Int) = equalizerController.setVolumeBoostPercent(percent)
+
+    fun setVolumeBoostEnabled(enabled: Boolean) = equalizerController.setVolumeBoostEnabled(enabled)
 }
