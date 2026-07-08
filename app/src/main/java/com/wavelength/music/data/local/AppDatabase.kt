@@ -13,7 +13,7 @@ import androidx.room.RoomDatabase
         DownloadedTrackEntity::class,
         SearchHistoryEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

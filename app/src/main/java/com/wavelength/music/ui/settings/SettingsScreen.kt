@@ -49,12 +49,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.widget.Toast
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 import com.wavelength.music.playback.EqualizerMode
 import com.wavelength.music.playback.EqualizerPreset
@@ -418,6 +420,57 @@ fun SettingsScreen(
                                 )
                             }
                         }
+                    }
+                }
+            }
+
+            item {
+                SettingsSection(title = "About") {
+                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Image(
+                                painter = painterResource(R.drawable.ic_launcher_classic),
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp))
+                            )
+                            Column(modifier = Modifier.padding(start = 12.dp)) {
+                                Text(
+                                    text = stringResource(R.string.app_name),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = "Version ${BuildConfig.VERSION_NAME}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        Text(
+                            text = "Features",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
+                        )
+                        val features = listOf(
+                            "Stream and search millions of songs",
+                            "Download tracks for offline listening",
+                            "Custom playlists with reordering and bulk actions",
+                            "Equalizer with bass boost and genre presets",
+                            "Sleep timer with countdown or end-of-track modes",
+                            "Custom app icon, background, and themes — including Liquid Glass",
+                            "Recently played, favorites, and search history"
+                        )
+                        features.forEach { feature ->
+                            Row(modifier = Modifier.padding(vertical = 2.dp)) {
+                                Text("•  ", color = MaterialTheme.colorScheme.primary)
+                                Text(feature, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        Text(
+                            text = "Created and Developed by Mohammed Azeem.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(top = 20.dp, bottom = 16.dp)
+                        )
                     }
                 }
             }

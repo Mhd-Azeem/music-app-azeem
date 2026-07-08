@@ -1,9 +1,13 @@
 package com.wavelength.music.data.local
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "recently_played")
+@Entity(
+    tableName = "recently_played",
+    indices = [Index(value = ["trackId"], unique = true)]
+)
 data class RecentlyPlayedEntity(
     @PrimaryKey(autoGenerate = true) val entryId: Long = 0,
     val trackId: String,
