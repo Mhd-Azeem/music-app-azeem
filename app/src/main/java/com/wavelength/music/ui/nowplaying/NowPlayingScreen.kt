@@ -58,8 +58,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -162,10 +166,32 @@ fun NowPlayingScreen(
         }
     }
     // Once the queue is short enough to fully fit at its expanded height, growing it snaps the
-    // scroll offset straight back to 0 — which would immediately flip upNextScrolled back to
-    // false and shrink it again, causing an expand/collapse flicker. Latching it keeps the queue
-    // expanded once triggered, only resetting when the current track changes.
+    // scroll offset straight back to 0 on its own (LazyColumn's remeasure, not a real scroll) —
+    // which would immediately flip upNextScrolled back to false and shrink it again, causing an
+    // expand/collapse flicker. Latching it keeps the queue expanded once triggered. To still let
+    // the user collapse it by hand, a NestedScrollConnection watches for the list settling at the
+    // top as a result of an *actual* scroll delta passing through it — nested scroll callbacks
+    // never fire for the layout-driven remeasure reset, only for real drag/fling consumption.
+    // But that alone isn't enough: once the queue is pinned at the top with nothing left to
+    // scroll, every further delta shows up here too, including a drag continuing in the same
+    // "reveal more of the queue" direction that caused the expansion in the first place — so the
+    // delta's direction is checked too, and only a delta trying to move back *toward* the top
+    // counts as the user asking to collapse it.
     var upNextExpandedLatch by remember { mutableStateOf(false) }
+    val upNextNestedScrollConnection = remember(upNextListState) {
+        object : NestedScrollConnection {
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                val towardTop = consumed.y + available.y > 0f
+                if (towardTop &&
+                    upNextListState.firstVisibleItemIndex == 0 &&
+                    upNextListState.firstVisibleItemScrollOffset == 0
+                ) {
+                    upNextExpandedLatch = false
+                }
+                return Offset.Zero
+            }
+        }
+    }
     LaunchedEffect(upNextScrolled) {
         if (upNextScrolled) upNextExpandedLatch = true
     }
@@ -434,7 +460,7 @@ fun NowPlayingScreen(
                     label = "upNextHeight"
                 )
                 val upNextModifier = if (expandUpNextOnScroll) {
-                    Modifier.height(upNextHeight)
+                    Modifier.height(upNextHeight).nestedScroll(upNextNestedScrollConnection)
                 } else {
                     Modifier.weight(1f)
                 }
