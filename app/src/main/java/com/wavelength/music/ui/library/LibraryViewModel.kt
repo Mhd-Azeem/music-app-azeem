@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.repository.MusicRepository
+import com.wavelength.music.data.repository.QrPlaylistRepository
 import com.wavelength.music.playback.PlayerController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
     private val repository: MusicRepository,
-    private val playerController: PlayerController
+    private val playerController: PlayerController,
+    private val qrPlaylistRepository: QrPlaylistRepository
 ) : ViewModel() {
 
     val favorites: StateFlow<List<Track>> = repository.observeFavorites()
@@ -58,6 +60,9 @@ class LibraryViewModel @Inject constructor(
     fun deletePlaylist(playlistId: Long) {
         viewModelScope.launch { repository.deletePlaylist(playlistId) }
     }
+
+    suspend fun importPlaylistFromQr(content: String): Result<Int> =
+        qrPlaylistRepository.importFromQr(content)
 
     fun playFrom(queue: List<Track>, index: Int) {
         playerController.playQueue(queue, index)

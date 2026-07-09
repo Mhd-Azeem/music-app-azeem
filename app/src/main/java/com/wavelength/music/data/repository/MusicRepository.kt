@@ -79,17 +79,24 @@ class MusicRepository @Inject constructor(
         if (isCurrentlyFavorite) {
             favoriteDao.deleteById(track.id)
         } else {
-            favoriteDao.insert(
-                FavoriteTrackEntity(
-                    id = track.id,
-                    name = track.name,
-                    artist = track.artistName,
-                    albumArtUrl = track.albumArtUrl,
-                    audioUrl = track.audioUrl,
-                    source = track.source.name
-                )
-            )
+            addFavorite(track)
         }
+    }
+
+    /** Unconditionally marks [track] as a favorite (insert-or-replace), unlike [toggleFavorite]
+     * which flips the current state — used by backup restore, where "add if missing" is what's
+     * wanted regardless of whatever's already favorited. */
+    suspend fun addFavorite(track: Track) {
+        favoriteDao.insert(
+            FavoriteTrackEntity(
+                id = track.id,
+                name = track.name,
+                artist = track.artistName,
+                albumArtUrl = track.albumArtUrl,
+                audioUrl = track.audioUrl,
+                source = track.source.name
+            )
+        )
     }
 
     /** For quick actions (like swipe-to-favorite) that don't already know the current state. */

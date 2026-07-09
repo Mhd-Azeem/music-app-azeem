@@ -111,6 +111,8 @@ dependencies {
 
     implementation(libs.coil.compose)
     implementation(libs.androidx.palette.ktx)
+    implementation(libs.zxing.core)
+    implementation(libs.zxing.embedded)
 
     implementation(libs.haze)
 

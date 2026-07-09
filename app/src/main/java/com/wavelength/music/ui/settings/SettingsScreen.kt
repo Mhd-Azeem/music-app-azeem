@@ -44,6 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,6 +68,7 @@ import com.wavelength.music.ui.components.CircularKnob
 import com.wavelength.music.ui.components.ImageCropDialog
 import com.wavelength.music.ui.theme.AppTheme
 import com.wavelength.music.ui.theme.swatchColor
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
@@ -151,6 +153,44 @@ fun SettingsScreen(
     val pickIconPhotoLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri -> uri?.let { pendingIconCropUri = it } }
+
+    val scope = rememberCoroutineScope()
+    val exportBackupLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                viewModel.exportBackup(uri).fold(
+                    onSuccess = {
+                        Toast.makeText(context, "Backup saved", Toast.LENGTH_SHORT).show()
+                    },
+                    onFailure = { e ->
+                        Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                )
+            }
+        }
+    }
+    val importBackupLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                viewModel.importBackup(uri).fold(
+                    onSuccess = { summary ->
+                        Toast.makeText(
+                            context,
+                            "Restored ${summary.favoriteCount} favorites and ${summary.playlistCount} playlists",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    },
+                    onFailure = { e ->
+                        Toast.makeText(context, "Restore failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                )
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -382,6 +422,30 @@ fun SettingsScreen(
                     ) {
                         Text("View listening statistics", modifier = Modifier.weight(1f))
                     }
+                }
+            }
+
+            item {
+                SettingsSection(title = "Backup & Restore") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(onClick = { exportBackupLauncher.launch("wavelength_backup.json") }) {
+                            Text("Export backup")
+                        }
+                        OutlinedButton(onClick = { importBackupLauncher.launch(arrayOf("application/json")) }) {
+                            Text("Restore backup")
+                        }
+                    }
+                    Text(
+                        text = "Saves your playlists and favorites to a file you choose — back it up " +
+                            "anywhere (Drive, email, a computer) and restore it after reinstalling, on " +
+                            "any version of the app.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
                 }
             }
 

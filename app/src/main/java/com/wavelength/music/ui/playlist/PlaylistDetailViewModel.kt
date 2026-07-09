@@ -1,10 +1,12 @@
 package com.wavelength.music.ui.playlist
 
+import android.graphics.Bitmap
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.repository.MusicRepository
+import com.wavelength.music.data.repository.QrPlaylistRepository
 import com.wavelength.music.playback.PlayerController
 import com.wavelength.music.ui.components.ScreenState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,7 +23,8 @@ import javax.inject.Inject
 class PlaylistDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: MusicRepository,
-    private val playerController: PlayerController
+    private val playerController: PlayerController,
+    private val qrPlaylistRepository: QrPlaylistRepository
 ) : ViewModel() {
 
     private val playlistId: Long = checkNotNull(savedStateHandle["playlistId"])
@@ -65,4 +68,7 @@ class PlaylistDetailViewModel @Inject constructor(
         val reordered = list.toMutableList().apply { add(to, removeAt(from)) }
         viewModelScope.launch { repository.reorderPlaylistTracks(playlistId, reordered.map { it.id }) }
     }
+
+    suspend fun generateQrCode(): Result<Bitmap> =
+        qrPlaylistRepository.encodePlaylistToQr(playlistId, _name.value)
 }

@@ -3,6 +3,7 @@ package com.wavelength.music.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -45,7 +46,8 @@ fun TrackListScreen(
     onTrackClick: (Int) -> Unit,
     emptyMessage: String? = null,
     onRemoveFromPlaylist: ((Track) -> Unit)? = null,
-    onReorder: ((from: Int, to: Int) -> Unit)? = null
+    onReorder: ((from: Int, to: Int) -> Unit)? = null,
+    actions: @Composable RowScope.() -> Unit = {}
 ) {
     var menuTrackIndex by remember { mutableStateOf<Int?>(null) }
     val successData = (state as? ScreenState.Success)?.data
@@ -80,7 +82,8 @@ fun TrackListScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                actions = actions
             )
         }
     ) { padding ->

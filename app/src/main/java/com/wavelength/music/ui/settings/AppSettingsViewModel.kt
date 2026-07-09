@@ -1,10 +1,13 @@
 package com.wavelength.music.ui.settings
 
 import android.graphics.Bitmap
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wavelength.music.data.backup.ImportSummary
 import com.wavelength.music.data.model.DownloadsSummary
 import com.wavelength.music.data.repository.AppSettingsState
+import com.wavelength.music.data.repository.BackupRepository
 import com.wavelength.music.data.repository.MusicRepository
 import com.wavelength.music.data.repository.SettingsRepository
 import com.wavelength.music.ui.theme.AppTheme
@@ -29,7 +32,8 @@ data class UsageUiState(
 @HiltViewModel
 class AppSettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
-    private val repository: MusicRepository
+    private val repository: MusicRepository,
+    private val backupRepository: BackupRepository
 ) : ViewModel() {
 
     val state: StateFlow<AppSettingsState> = settingsRepository.state
@@ -87,4 +91,8 @@ class AppSettingsViewModel @Inject constructor(
     fun clearAllDownloads() {
         viewModelScope.launch { repository.clearAllDownloads() }
     }
+
+    suspend fun exportBackup(uri: Uri): Result<Unit> = backupRepository.exportTo(uri)
+
+    suspend fun importBackup(uri: Uri): Result<ImportSummary> = backupRepository.importFrom(uri)
 }

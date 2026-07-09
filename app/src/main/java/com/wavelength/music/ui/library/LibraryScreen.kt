@@ -3,6 +3,7 @@ package com.wavelength.music.ui.library
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
@@ -41,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import com.wavelength.music.R
 import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
@@ -59,6 +64,7 @@ import com.wavelength.music.ui.components.ErrorView
 import com.wavelength.music.ui.components.SwipeableTrackRow
 import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.playlist.AddToPlaylistDialog
+import kotlinx.coroutines.launch
 import com.wavelength.music.ui.playlist.CreatePlaylistDialog
 
 private val audioPermission: String
@@ -86,6 +92,21 @@ fun LibraryScreen(
     var showCreateFolderDialog by remember { mutableStateOf(false) }
     var currentFolderId by remember { mutableStateOf<Long?>(null) }
     var trackForMenu by remember { mutableStateOf<Track?>(null) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val scanQrLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
+        val content = result.contents ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            viewModel.importPlaylistFromQr(content).fold(
+                onSuccess = { count ->
+                    Toast.makeText(context, "Imported $count tracks", Toast.LENGTH_SHORT).show()
+                },
+                onFailure = { e ->
+                    Toast.makeText(context, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            )
+        }
+    }
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(setOf<String>()) }
     var showBulkAddToPlaylist by remember { mutableStateOf(false) }
@@ -117,7 +138,6 @@ fun LibraryScreen(
         selectedIds = emptySet()
     }
 
-    val context = LocalContext.current
     var hasPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, audioPermission) == PackageManager.PERMISSION_GRANTED
@@ -221,6 +241,16 @@ fun LibraryScreen(
                             }
                         }
                         if (selectedTab == 2 && currentFolderId == null) {
+                            IconButton(onClick = {
+                                scanQrLauncher.launch(
+                                    ScanOptions()
+                                        .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                                        .setPrompt("Scan a playlist QR code")
+                                        .setBeepEnabled(false)
+                                )
+                            }) {
+                                Icon(Icons.Filled.QrCodeScanner, contentDescription = "Scan playlist QR code")
+                            }
                             IconButton(onClick = { showCreateFolderDialog = true }) {
                                 Icon(Icons.Filled.CreateNewFolder, contentDescription = "New folder")
                             }
