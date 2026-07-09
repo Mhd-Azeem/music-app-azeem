@@ -18,11 +18,15 @@ class PlaybackService : MediaSessionService() {
     @Inject
     lateinit var equalizerController: EqualizerController
 
+    @Inject
+    lateinit var visualizerController: VisualizerController
+
     private var mediaSession: MediaSession? = null
 
     private val audioSessionListener = object : Player.Listener {
         override fun onAudioSessionIdChanged(audioSessionId: Int) {
             equalizerController.onAudioSessionIdChanged(audioSessionId)
+            visualizerController.onAudioSessionIdChanged(audioSessionId)
         }
     }
 
@@ -53,6 +57,7 @@ class PlaybackService : MediaSessionService() {
             .build()
 
         equalizerController.onAudioSessionIdChanged(player.audioSessionId)
+        visualizerController.onAudioSessionIdChanged(player.audioSessionId)
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =

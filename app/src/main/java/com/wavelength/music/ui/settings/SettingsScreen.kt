@@ -388,6 +388,78 @@ fun SettingsScreen(
             }
 
             item {
+                SettingsSection(title = "AI DJ") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Keep the queue going automatically", modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = settings.aiDjEnabled,
+                            onCheckedChange = { viewModel.setAiDjEnabled(it) }
+                        )
+                    }
+                    Text(
+                        text = "When the queue is about to run out, automatically adds more songs " +
+                            "similar to what you've been listening to, so playback never stops.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+            }
+
+            item {
+                SettingsSection(title = "Crossfade") {
+                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                        Text(
+                            text = if (settings.crossfadeDurationMs == 0) {
+                                "Off"
+                            } else {
+                                "${settings.crossfadeDurationMs / 1000f}s"
+                            },
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Slider(
+                            value = settings.crossfadeDurationMs.toFloat(),
+                            onValueChange = { viewModel.setCrossfadeDurationMs(it.roundToInt()) },
+                            valueRange = 0f..8000f,
+                            steps = 7
+                        )
+                        Text(
+                            text = "Fades the ending track out and the next one in, instead of " +
+                                "switching abruptly.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+                }
+            }
+
+            item {
+                SettingsSection(title = "Audio Visualizer") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Show a waveform on Now Playing", modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = settings.audioVisualizerEnabled,
+                            onCheckedChange = { viewModel.setAudioVisualizerEnabled(it) }
+                        )
+                    }
+                    Text(
+                        text = "Needs microphone access to read the playback audio (nothing is " +
+                            "recorded or leaves your device).",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+            }
+
+            item {
                 SettingsSection(title = "Downloads") {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),

@@ -1,6 +1,10 @@
 package com.wavelength.music.ui.nowplaying
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.drawable.BitmapDrawable
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -8,6 +12,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,6 +33,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -39,6 +45,7 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.Subject
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.VolumeDown
 import androidx.compose.material.icons.filled.VolumeOff
@@ -53,6 +60,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -66,6 +74,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -79,6 +88,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.palette.graphics.Palette
@@ -86,7 +96,11 @@ import coil.Coil
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.request.SuccessResult
+import com.wavelength.music.data.model.LyricLine
 import com.wavelength.music.playback.RepeatMode
+import com.wavelength.music.ui.components.EmptyView
+import com.wavelength.music.ui.components.LoadingView
+import com.wavelength.music.ui.components.ScreenState
 import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.components.TrackRow
 import com.wavelength.music.ui.playlist.AddToPlaylistDialog
@@ -110,7 +124,8 @@ fun NowPlayingScreen(
     glassStyle: HazeStyle = HazeStyle.Unspecified,
     expandUpNextOnScroll: Boolean = false,
     dynamicThemeFromAlbumArt: Boolean = false,
-    vinylStyleAlbumArt: Boolean = false
+    vinylStyleAlbumArt: Boolean = false,
+    audioVisualizerEnabled: Boolean = false
 ) {
     val hazeState = remember { HazeState() }
     val pillShape = RoundedCornerShape(28.dp)
@@ -123,6 +138,7 @@ fun NowPlayingScreen(
     var showAddToPlaylist by remember { mutableStateOf(false) }
     var showSleepTimerDialog by remember { mutableStateOf(false) }
     var showSpeedMenu by remember { mutableStateOf(false) }
+    var showLyrics by remember { mutableStateOf(false) }
     var menuQueueIndex by remember { mutableStateOf<Int?>(null) }
 
     val context = LocalContext.current
@@ -153,6 +169,31 @@ fun NowPlayingScreen(
                 )
             }
         }
+    }
+
+    var hasRecordAudioPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+                PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val recordAudioPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> hasRecordAudioPermission = granted }
+    LaunchedEffect(audioVisualizerEnabled, hasRecordAudioPermission) {
+        if (audioVisualizerEnabled && !hasRecordAudioPermission) {
+            recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
+    val visualizerWaveform by viewModel.visualizerWaveform.collectAsStateWithLifecycle()
+    DisposableEffect(audioVisualizerEnabled, hasRecordAudioPermission) {
+        viewModel.setVisualizerCaptureEnabled(audioVisualizerEnabled && hasRecordAudioPermission)
+        onDispose { viewModel.setVisualizerCaptureEnabled(false) }
+    }
+
+    val lyricsState by viewModel.lyrics.collectAsStateWithLifecycle()
+    LaunchedEffect(track?.id, showLyrics) {
+        if (showLyrics) viewModel.loadLyrics()
     }
 
     if (showAddToPlaylist) {
@@ -411,6 +452,13 @@ fun NowPlayingScreen(
                                 }
                             )
                         }
+                        IconButton(onClick = { showLyrics = true }) {
+                            Icon(
+                                imageVector = Icons.Filled.Subject,
+                                contentDescription = "Lyrics",
+                                tint = Color.White
+                            )
+                        }
                         IconButton(onClick = { showAddToPlaylist = true }) {
                             Icon(
                                 imageVector = Icons.Filled.PlaylistAdd,
@@ -528,6 +576,14 @@ fun NowPlayingScreen(
                 )
             }
 
+            if (audioVisualizerEnabled && hasRecordAudioPermission) {
+                AudioVisualizer(
+                    waveform = visualizerWaveform,
+                    color = accentColor,
+                    modifier = Modifier.fillMaxWidth().height(56.dp).padding(top = 12.dp)
+                )
+            }
+
             if (track == null) {
                 Text(
                     text = "Nothing playing",
@@ -567,6 +623,14 @@ fun NowPlayingScreen(
                 }
             }
         }
+
+        if (showLyrics) {
+            LyricsOverlay(
+                lyricsState = lyricsState,
+                positionMs = state.positionMs,
+                onClose = { showLyrics = false }
+            )
+        }
     }
 }
 
@@ -593,6 +657,94 @@ private suspend fun loadDominantColor(context: android.content.Context, url: Str
             val swatch = palette.vibrantSwatch ?: palette.dominantSwatch ?: palette.mutedSwatch
             swatch?.rgb?.let { Color(it) }
         }.getOrNull()
+    }
+}
+
+/** Full-screen overlay showing synced lyrics (from lrclib.net, best-effort — many tracks won't
+ * have a match), auto-scrolling to and highlighting whichever line's timestamp has most recently
+ * passed. */
+@Composable
+private fun LyricsOverlay(
+    lyricsState: ScreenState<List<LyricLine>>,
+    positionMs: Long,
+    onClose: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Lyrics", style = MaterialTheme.typography.titleMedium)
+            IconButton(onClick = onClose) {
+                Icon(Icons.Filled.Close, contentDescription = "Close lyrics")
+            }
+        }
+        when (lyricsState) {
+            is ScreenState.Loading -> LoadingView(modifier = Modifier.fillMaxSize())
+            is ScreenState.Error -> EmptyView(modifier = Modifier.fillMaxSize(), message = lyricsState.message)
+            is ScreenState.Empty -> EmptyView(
+                modifier = Modifier.fillMaxSize(),
+                message = "No synced lyrics found for this track"
+            )
+            is ScreenState.Success -> {
+                val lines = lyricsState.data
+                val listState = rememberLazyListState()
+                val activeIndex = lines.indexOfLast { it.timestampMs <= positionMs }.coerceAtLeast(0)
+                LaunchedEffect(activeIndex) {
+                    listState.animateScrollToItem((activeIndex - 2).coerceAtLeast(0))
+                }
+                LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                    itemsIndexed(lines) { index, line ->
+                        Text(
+                            text = line.text,
+                            style = if (index == activeIndex) {
+                                MaterialTheme.typography.titleMedium
+                            } else {
+                                MaterialTheme.typography.bodyLarge
+                            },
+                            color = if (index == activeIndex) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Draws a simple bar visualizer from raw 8-bit PCM waveform samples (unsigned, centered at 128)
+ * — samples a fixed number of evenly-spaced bars rather than plotting every byte, since the
+ * capture buffer is much denser than needed for a readable bar chart. */
+@Composable
+private fun AudioVisualizer(waveform: ByteArray?, color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val data = waveform
+        if (data.isNullOrEmpty()) return@Canvas
+        val barCount = 32
+        val barWidth = size.width / barCount
+        for (i in 0 until barCount) {
+            val sampleIndex = (i * data.size / barCount).coerceIn(0, data.size - 1)
+            // Visualizer's waveform bytes are unsigned (0-255); Byte.toInt() sign-extends, so the
+            // upper half of the range (128-255) must be masked back to unsigned first or samples
+            // above center come out as huge negative numbers instead of small positive ones.
+            val unsigned = data[sampleIndex].toInt() and 0xFF
+            val amplitude = kotlin.math.abs(unsigned - 128) / 128f
+            val barHeight = (amplitude * size.height).coerceIn(2f, size.height)
+            drawRect(
+                color = color,
+                topLeft = Offset(i * barWidth, size.height - barHeight),
+                size = Size(barWidth * 0.6f, barHeight)
+            )
+        }
     }
 }
 

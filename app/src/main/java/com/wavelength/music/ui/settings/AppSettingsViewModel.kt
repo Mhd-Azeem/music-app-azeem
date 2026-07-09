@@ -88,6 +88,12 @@ class AppSettingsViewModel @Inject constructor(
 
     fun setVinylStyleAlbumArt(enabled: Boolean) = settingsRepository.setVinylStyleAlbumArt(enabled)
 
+    fun setAiDjEnabled(enabled: Boolean) = settingsRepository.setAiDjEnabled(enabled)
+
+    fun setCrossfadeDurationMs(durationMs: Int) = settingsRepository.setCrossfadeDurationMs(durationMs)
+
+    fun setAudioVisualizerEnabled(enabled: Boolean) = settingsRepository.setAudioVisualizerEnabled(enabled)
+
     fun clearAllDownloads() {
         viewModelScope.launch { repository.clearAllDownloads() }
     }

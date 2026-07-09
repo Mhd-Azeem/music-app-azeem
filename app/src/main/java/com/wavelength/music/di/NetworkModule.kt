@@ -4,6 +4,7 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.wavelength.music.BuildConfig
 import com.wavelength.music.data.remote.jiosaavn.JioSaavnApiService
+import com.wavelength.music.data.remote.lrclib.LrcLibApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -55,4 +56,14 @@ object NetworkModule {
     @Singleton
     fun provideJioSaavnApiService(retrofit: Retrofit): JioSaavnApiService =
         retrofit.create(JioSaavnApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideLrcLibApiService(okHttpClient: OkHttpClient, moshi: Moshi): LrcLibApiService =
+        Retrofit.Builder()
+            .baseUrl("https://lrclib.net/")
+            .client(okHttpClient)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+            .create(LrcLibApiService::class.java)
 }

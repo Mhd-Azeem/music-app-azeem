@@ -25,7 +25,11 @@ data class AppSettingsState(
     val backgroundOpacity: Float = DEFAULT_BACKGROUND_OPACITY,
     val expandUpNextOnScroll: Boolean = false,
     val dynamicThemeFromAlbumArt: Boolean = false,
-    val vinylStyleAlbumArt: Boolean = false
+    val vinylStyleAlbumArt: Boolean = false,
+    val aiDjEnabled: Boolean = false,
+    /** Milliseconds to fade out the ending track and fade in the next one; 0 disables it. */
+    val crossfadeDurationMs: Int = 0,
+    val audioVisualizerEnabled: Boolean = false
 )
 
 const val DEFAULT_BACKGROUND_OPACITY = 0.25f
@@ -52,7 +56,10 @@ class SettingsRepository @Inject constructor(
         backgroundOpacity = prefs.getFloat(KEY_BACKGROUND_OPACITY, DEFAULT_BACKGROUND_OPACITY),
         expandUpNextOnScroll = prefs.getBoolean(KEY_EXPAND_UP_NEXT, false),
         dynamicThemeFromAlbumArt = prefs.getBoolean(KEY_DYNAMIC_THEME, false),
-        vinylStyleAlbumArt = prefs.getBoolean(KEY_VINYL_STYLE, false)
+        vinylStyleAlbumArt = prefs.getBoolean(KEY_VINYL_STYLE, false),
+        aiDjEnabled = prefs.getBoolean(KEY_AI_DJ, false),
+        crossfadeDurationMs = prefs.getInt(KEY_CROSSFADE, 0),
+        audioVisualizerEnabled = prefs.getBoolean(KEY_VISUALIZER, false)
     )
 
     fun setIconPreset(preset: IconPreset) {
@@ -103,6 +110,22 @@ class SettingsRepository @Inject constructor(
         _state.update { it.copy(vinylStyleAlbumArt = enabled) }
     }
 
+    fun setAiDjEnabled(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_AI_DJ, enabled) }
+        _state.update { it.copy(aiDjEnabled = enabled) }
+    }
+
+    fun setCrossfadeDurationMs(durationMs: Int) {
+        val clamped = durationMs.coerceIn(0, 8000)
+        prefs.edit { putInt(KEY_CROSSFADE, clamped) }
+        _state.update { it.copy(crossfadeDurationMs = clamped) }
+    }
+
+    fun setAudioVisualizerEnabled(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_VISUALIZER, enabled) }
+        _state.update { it.copy(audioVisualizerEnabled = enabled) }
+    }
+
     /** Enables the alias matching [preset] and disables the others, so exactly one launcher
      * icon is ever active at a time. */
     private fun applyIconPreset(preset: IconPreset) {
@@ -128,5 +151,8 @@ class SettingsRepository @Inject constructor(
         const val KEY_EXPAND_UP_NEXT = "expand_up_next_on_scroll"
         const val KEY_DYNAMIC_THEME = "dynamic_theme_from_album_art"
         const val KEY_VINYL_STYLE = "vinyl_style_album_art"
+        const val KEY_AI_DJ = "ai_dj_enabled"
+        const val KEY_CROSSFADE = "crossfade_duration_ms"
+        const val KEY_VISUALIZER = "audio_visualizer_enabled"
     }
 }

@@ -10,6 +10,7 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.repository.MusicRepository
+import com.wavelength.music.data.repository.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,11 +29,23 @@ import javax.inject.Singleton
 @Singleton
 class PlayerController @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val repository: MusicRepository
+    private val repository: MusicRepository,
+    private val settingsRepository: SettingsRepository
 ) {
     private var controller: MediaController? = null
     private var controllerFuture: com.google.common.util.concurrent.ListenableFuture<MediaController>? = null
     private var currentQueue: List<Track> = emptyList()
+    private var aiDjExtendJob: Job? = null
+
+    // The user's actual desired volume, distinct from whatever controller.volume momentarily is
+    // mid-crossfade — fades ramp toward/away from this rather than a fixed 1f, and setVolume()
+    // is the only thing allowed to change it.
+    private var targetVolume: Float = 1f
+    private var crossfadeJob: Job? = null
+    private var fadeOutTriggeredForIndex: Int = -1
+    // Suppresses onVolumeChanged's state update while a fade is actively stepping volume, so the
+    // visible volume slider doesn't visibly animate down-and-up on every automatic track change.
+    private var isFading: Boolean = false
 
     private val _state = MutableStateFlow(PlaybackUiState())
     val state: StateFlow<PlaybackUiState> = _state.asStateFlow()
@@ -63,6 +76,25 @@ class PlayerController @Inject constructor(
             }
             if (track != null) {
                 controllerScope.launch { repository.recordPlayed(track) }
+                if (settingsRepository.state.value.aiDjEnabled && index >= currentQueue.size - 2) {
+                    extendQueueWithAiDj(track)
+                }
+            }
+            fadeOutTriggeredForIndex = -1
+            val crossfadeMs = settingsRepository.state.value.crossfadeDurationMs
+            // Only fade in after a natural end-of-track progression (which is what triggered the
+            // matching fade-out in maybeStartCrossfadeOut) — a manual skip/previous/queue-item
+            // tap/seek also fires this callback, and fading those from silence would mean every
+            // manual skip drops to silence and climbs back up instead of switching instantly.
+            // REPEAT covers looping back to the start under repeat-one/repeat-all, which is just
+            // as "natural" a progression as AUTO and should fade the same way.
+            val isNaturalProgression = reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
+                reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT
+            if (crossfadeMs > 0 && isNaturalProgression) {
+                startFade(from = 0f, to = targetVolume, durationMs = crossfadeMs)
+            } else {
+                crossfadeJob?.cancel()
+                controller?.volume = targetVolume
             }
         }
 
@@ -75,7 +107,9 @@ class PlayerController @Inject constructor(
         }
 
         override fun onVolumeChanged(volume: Float) {
-            _state.update { it.copy(volume = volume) }
+            if (!isFading) {
+                _state.update { it.copy(volume = volume) }
+            }
         }
 
         override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
@@ -100,6 +134,7 @@ class PlayerController @Inject constructor(
     private fun syncStateFromController() {
         val c = controller ?: return
         val index = c.currentMediaItemIndex
+        targetVolume = c.volume
         _state.update {
             it.copy(
                 isPlaying = c.isPlaying,
@@ -119,7 +154,16 @@ class PlayerController @Inject constructor(
 
     private fun updateTicker(isPlaying: Boolean) {
         tickerJob?.cancel()
-        if (!isPlaying) return
+        if (!isPlaying) {
+            // A fade is a wall-clock countdown, not tied to playback position, so it would keep
+            // running (and finish fading to silence) even while paused if left alone. Cancel it
+            // and restore the real volume so resuming always starts audible.
+            if (crossfadeJob?.isActive == true) {
+                crossfadeJob?.cancel()
+                controller?.volume = targetVolume
+            }
+            return
+        }
         tickerJob = controllerScope.launch {
             while (isActive) {
                 val c = controller
@@ -130,15 +174,64 @@ class PlayerController @Inject constructor(
                             durationMs = c.duration.coerceAtLeast(0)
                         )
                     }
+                    maybeStartCrossfadeOut(c)
                 }
                 delay(500)
             }
         }
     }
 
+    /** Starts fading the current track's volume down once it's within the crossfade window of
+     * ending, so it overlaps with the fade-in [onMediaItemTransition] starts for the next track.
+     * [fadeOutTriggeredForIndex] guards against re-triggering every tick while still in that
+     * window. */
+    private fun maybeStartCrossfadeOut(c: MediaController) {
+        val crossfadeMs = settingsRepository.state.value.crossfadeDurationMs
+        // A track shorter than the crossfade window would start fading out again almost as soon
+        // as it starts (its "remaining" time is already inside the window from the first tick),
+        // cancelling whatever fade-in/volume-snap just happened — so those simply don't crossfade.
+        if (crossfadeMs <= 0 || !c.hasNextMediaItem() || c.duration <= crossfadeMs) return
+        val currentIndex = c.currentMediaItemIndex
+        if (fadeOutTriggeredForIndex == currentIndex) return
+        val remaining = c.duration - c.currentPosition
+        if (remaining in 0..crossfadeMs.toLong()) {
+            fadeOutTriggeredForIndex = currentIndex
+            startFade(from = targetVolume, to = 0f, durationMs = remaining.toInt().coerceIn(1, crossfadeMs))
+        }
+    }
+
+    /** Ramps controller.volume from [from] to [to] over [durationMs] in ~50ms steps. Cancels any
+     * fade already in progress, so a fade-in from a new track always wins over a stale fade-out. */
+    private fun startFade(from: Float, to: Float, durationMs: Int) {
+        crossfadeJob?.cancel()
+        isFading = true
+        lateinit var job: Job
+        job = controllerScope.launch {
+            try {
+                val stepMs = 50
+                val steps = (durationMs / stepMs).coerceAtLeast(1)
+                for (i in 0..steps) {
+                    val t = i.toFloat() / steps
+                    controller?.volume = (from + (to - from) * t).coerceIn(0f, 1f)
+                    delay(stepMs.toLong())
+                }
+            } finally {
+                // Cancelling the old job to start a new fade doesn't stop it instantly — it only
+                // unwinds at its next suspension point, which can land after the new fade has
+                // already set isFading = true. Only the still-current job may clear it, so a
+                // late-arriving cancelled-job cleanup can't clobber a newer fade's flag.
+                if (crossfadeJob === job) isFading = false
+            }
+        }
+        crossfadeJob = job
+    }
+
     fun playQueue(tracks: List<Track>, startIndex: Int = 0) {
         val c = controller ?: return
         if (tracks.isEmpty()) return
+        crossfadeJob?.cancel()
+        fadeOutTriggeredForIndex = -1
+        c.volume = targetVolume
         currentQueue = tracks
         val items = tracks.map { it.toMediaItem() }
         c.setMediaItems(items, startIndex.coerceIn(0, items.lastIndex), 0L)
@@ -166,6 +259,8 @@ class PlayerController @Inject constructor(
 
     fun setVolume(volume: Float) {
         val clamped = volume.coerceIn(0f, 1f)
+        targetVolume = clamped
+        crossfadeJob?.cancel()
         controller?.volume = clamped
         _state.update { it.copy(volume = clamped) }
     }
@@ -209,6 +304,18 @@ class PlayerController @Inject constructor(
         _state.update { it.copy(queue = currentQueue) }
     }
 
+    /** When AI DJ is on and only a track or two is left in the queue, tops it up with more from
+     * the artist that's just finishing, so playback never runs dry. Guarded by [aiDjExtendJob] so
+     * back-to-back track transitions near the end of the queue can't fire overlapping searches. */
+    private fun extendQueueWithAiDj(justPlayed: Track) {
+        if (aiDjExtendJob?.isActive == true) return
+        aiDjExtendJob = controllerScope.launch {
+            val results = repository.searchTracks(justPlayed.artistName, limit = 10).getOrDefault(emptyList())
+            val existingIds = currentQueue.map { it.id }.toSet()
+            results.filterNot { it.id in existingIds }.take(5).forEach { addToQueue(it) }
+        }
+    }
+
     fun playQueueItem(index: Int) {
         val c = controller ?: return
         if (index !in currentQueue.indices) return
@@ -236,6 +343,8 @@ class PlayerController @Inject constructor(
 
     fun release() {
         tickerJob?.cancel()
+        crossfadeJob?.cancel()
+        aiDjExtendJob?.cancel()
         controller?.removeListener(playerListener)
         controllerFuture?.let { MediaController.releaseFuture(it) }
         controller = null
