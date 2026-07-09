@@ -39,10 +39,20 @@ class LibraryViewModel @Inject constructor(
     private val _isScanning = MutableStateFlow(false)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
 
-    fun createPlaylist(name: String) {
+    fun createPlaylist(name: String, parentFolderId: Long? = null) {
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return
-        viewModelScope.launch { repository.createPlaylist(trimmed) }
+        viewModelScope.launch { repository.createPlaylist(trimmed, parentFolderId) }
+    }
+
+    fun createFolder(name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch { repository.createFolder(trimmed) }
+    }
+
+    fun movePlaylistToFolder(playlistId: Long, folderId: Long?) {
+        viewModelScope.launch { repository.movePlaylistToFolder(playlistId, folderId) }
     }
 
     fun deletePlaylist(playlistId: Long) {

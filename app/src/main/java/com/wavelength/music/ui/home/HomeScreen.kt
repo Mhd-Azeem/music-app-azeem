@@ -55,6 +55,9 @@ fun HomeScreen(
 ) {
     val featured by viewModel.featured.collectAsStateWithLifecycle()
     val suggested by viewModel.suggested.collectAsStateWithLifecycle()
+    val dailyMix by viewModel.dailyMix.collectAsStateWithLifecycle()
+    val mostPlayed by viewModel.mostPlayed.collectAsStateWithLifecycle()
+    val recentlyAdded by viewModel.recentlyAdded.collectAsStateWithLifecycle()
     val recentlyPlayed by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     val searchHistory by viewModel.searchHistory.collectAsStateWithLifecycle()
@@ -83,8 +86,11 @@ fun HomeScreen(
                 padding = padding,
                 featuredTracks = state.data,
                 suggestedTracks = (suggested as? ScreenState.Success)?.data.orEmpty(),
+                dailyMixTracks = (dailyMix as? ScreenState.Success)?.data.orEmpty(),
+                mostPlayed = mostPlayed,
+                recentlyAdded = recentlyAdded,
                 recentlyPlayed = recentlyPlayed,
-                playlists = playlists,
+                playlists = playlists.filter { !it.isFolder },
                 searchHistory = searchHistory,
                 onTrackClick = { index, queue ->
                     viewModel.playTrack(queue, index)
@@ -106,6 +112,9 @@ private fun HomeContent(
     padding: PaddingValues,
     featuredTracks: List<Track>,
     suggestedTracks: List<Track>,
+    dailyMixTracks: List<Track>,
+    mostPlayed: List<Track>,
+    recentlyAdded: List<Track>,
     recentlyPlayed: List<Track>,
     playlists: List<PlaylistSummary>,
     searchHistory: List<String>,
@@ -195,6 +204,48 @@ private fun HomeContent(
                 ) {
                     itemsIndexed(suggestedTracks) { index, track ->
                         TrackCard(track = track, onClick = { onTrackClick(index, suggestedTracks) })
+                    }
+                }
+            }
+        }
+
+        if (dailyMixTracks.isNotEmpty()) {
+            item { SectionHeader("Daily Mix") }
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    itemsIndexed(dailyMixTracks) { index, track ->
+                        TrackCard(track = track, onClick = { onTrackClick(index, dailyMixTracks) })
+                    }
+                }
+            }
+        }
+
+        if (mostPlayed.isNotEmpty()) {
+            item { SectionHeader("Most played") }
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    itemsIndexed(mostPlayed) { index, track ->
+                        TrackCard(track = track, onClick = { onTrackClick(index, mostPlayed) })
+                    }
+                }
+            }
+        }
+
+        if (recentlyAdded.isNotEmpty()) {
+            item { SectionHeader("Recently added") }
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    itemsIndexed(recentlyAdded) { index, track ->
+                        TrackCard(track = track, onClick = { onTrackClick(index, recentlyAdded) })
                     }
                 }
             }

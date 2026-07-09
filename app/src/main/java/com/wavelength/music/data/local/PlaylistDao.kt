@@ -14,13 +14,22 @@ interface PlaylistDao {
     @Query("DELETE FROM playlists WHERE id = :playlistId")
     suspend fun deletePlaylist(playlistId: Long)
 
+    // No-op if playlistId isn't a folder (nothing has that parentFolderId), so this is always
+    // safe to call before deleting any playlist, not just folders.
+    @Query("UPDATE playlists SET parentFolderId = NULL WHERE parentFolderId = :playlistId")
+    suspend fun clearFolderReferences(playlistId: Long)
+
     @Query(
         "SELECT playlists.id AS id, playlists.name AS name, playlists.createdAt AS createdAt, " +
+            "playlists.isFolder AS isFolder, playlists.parentFolderId AS parentFolderId, " +
             "COUNT(playlist_tracks.entryId) AS trackCount " +
             "FROM playlists LEFT JOIN playlist_tracks ON playlists.id = playlist_tracks.playlistId " +
             "GROUP BY playlists.id ORDER BY playlists.createdAt DESC"
     )
     fun observePlaylistsWithCount(): Flow<List<PlaylistWithCount>>
+
+    @Query("UPDATE playlists SET parentFolderId = :folderId WHERE id = :playlistId")
+    suspend fun movePlaylistToFolder(playlistId: Long, folderId: Long?)
 
     @Query("SELECT * FROM playlists WHERE id = :playlistId")
     suspend fun getPlaylist(playlistId: Long): PlaylistEntity?

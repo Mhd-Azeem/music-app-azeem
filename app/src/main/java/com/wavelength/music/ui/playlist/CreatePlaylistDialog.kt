@@ -11,12 +11,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 
 @Composable
-fun CreatePlaylistDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
+fun CreatePlaylistDialog(
+    onDismiss: () -> Unit,
+    onCreate: (String) -> Unit,
+    title: String = "New playlist"
+) {
     var name by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New playlist") },
+        title = { Text(title) },
         text = {
             OutlinedTextField(
                 value = name,

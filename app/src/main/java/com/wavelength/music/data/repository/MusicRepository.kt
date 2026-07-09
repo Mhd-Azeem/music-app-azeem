@@ -3,6 +3,8 @@ package com.wavelength.music.data.repository
 import com.wavelength.music.data.local.DownloadedTrackEntity
 import com.wavelength.music.data.local.FavoriteDao
 import com.wavelength.music.data.local.FavoriteTrackEntity
+import com.wavelength.music.data.local.PlayEventDao
+import com.wavelength.music.data.local.PlayEventEntity
 import com.wavelength.music.data.local.PlaylistDao
 import com.wavelength.music.data.local.PlaylistEntity
 import com.wavelength.music.data.local.PlaylistTrackEntity
@@ -10,6 +12,9 @@ import com.wavelength.music.data.local.RecentlyPlayedDao
 import com.wavelength.music.data.local.RecentlyPlayedEntity
 import com.wavelength.music.data.local.SearchHistoryDao
 import com.wavelength.music.data.local.SearchHistoryEntity
+import com.wavelength.music.data.local.TrackPlayCount
+import com.wavelength.music.data.model.ArtistStat
+import com.wavelength.music.data.model.ListeningStats
 import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.model.TrackSource
@@ -17,6 +22,7 @@ import android.net.Uri
 import com.wavelength.music.data.model.DownloadsSummary
 import java.io.File
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -36,7 +42,8 @@ class MusicRepository @Inject constructor(
     private val recentlyPlayedDao: RecentlyPlayedDao,
     private val playlistDao: PlaylistDao,
     private val downloadRepository: DownloadRepository,
-    private val searchHistoryDao: SearchHistoryDao
+    private val searchHistoryDao: SearchHistoryDao,
+    private val playEventDao: PlayEventDao
 ) {
 
     // --- JioSaavn (the only online source) ------------------------------------------------------
@@ -108,17 +115,57 @@ class MusicRepository @Inject constructor(
                 source = track.source.name
             )
         )
+        playEventDao.recordEvent(
+            PlayEventEntity(
+                trackId = track.id,
+                name = track.name,
+                artist = track.artistName,
+                albumArtUrl = track.albumArtUrl,
+                audioUrl = track.audioUrl,
+                source = track.source.name
+            )
+        )
     }
+
+    // --- Listening statistics / smart playlists (derived from the play_events log) --------------
+
+    fun observeListeningStats(): Flow<ListeningStats> = combine(
+        playEventDao.observeTotalPlays(),
+        playEventDao.observeUniqueTrackCount(),
+        playEventDao.observeUniqueArtistCount()
+    ) { total, tracks, artists -> ListeningStats(total, tracks, artists) }
+
+    fun observeTopTracks(limit: Int = 20): Flow<List<Track>> =
+        playEventDao.observeTopTracks(limit).map { list -> list.map { it.toTrack() } }
+
+    fun observeTopArtists(limit: Int = 10): Flow<List<ArtistStat>> =
+        playEventDao.observeTopArtists(limit).map { list ->
+            list.map { ArtistStat(it.artist, it.playCount) }
+        }
 
     // --- User-created playlists -----------------------------------------------------------------
 
     fun observePlaylists(): Flow<List<PlaylistSummary>> = playlistDao.observePlaylistsWithCount()
-        .map { list -> list.map { PlaylistSummary(it.id, it.name, it.trackCount) } }
+        .map { list ->
+            list.map { PlaylistSummary(it.id, it.name, it.trackCount, it.isFolder, it.parentFolderId) }
+        }
 
-    suspend fun createPlaylist(name: String): Long =
-        playlistDao.insertPlaylist(PlaylistEntity(name = name))
+    suspend fun createPlaylist(name: String, parentFolderId: Long? = null): Long =
+        playlistDao.insertPlaylist(PlaylistEntity(name = name, parentFolderId = parentFolderId))
 
-    suspend fun deletePlaylist(playlistId: Long) = playlistDao.deletePlaylist(playlistId)
+    suspend fun createFolder(name: String): Long =
+        playlistDao.insertPlaylist(PlaylistEntity(name = name, isFolder = true))
+
+    suspend fun movePlaylistToFolder(playlistId: Long, folderId: Long?) =
+        playlistDao.movePlaylistToFolder(playlistId, folderId)
+
+    // Deleting a folder moves any playlists inside it back to the top level rather than leaving
+    // them pointing at a now-nonexistent parentFolderId (which would make them permanently
+    // unreachable in the UI). A no-op for a non-folder playlist, so it's always safe to call.
+    suspend fun deletePlaylist(playlistId: Long) {
+        playlistDao.clearFolderReferences(playlistId)
+        playlistDao.deletePlaylist(playlistId)
+    }
 
     suspend fun getPlaylistName(playlistId: Long): String? = playlistDao.getPlaylist(playlistId)?.name
 
@@ -214,6 +261,19 @@ private fun RecentlyPlayedEntity.toTrack(): Track = Track(
 )
 
 private fun PlaylistTrackEntity.toTrack(): Track = Track(
+    id = trackId,
+    name = name,
+    artistId = "",
+    artistName = artist,
+    albumId = "",
+    albumName = "",
+    albumArtUrl = albumArtUrl,
+    audioUrl = audioUrl,
+    durationSeconds = 0,
+    source = source.toTrackSource()
+)
+
+private fun TrackPlayCount.toTrack(): Track = Track(
     id = trackId,
     name = name,
     artistId = "",

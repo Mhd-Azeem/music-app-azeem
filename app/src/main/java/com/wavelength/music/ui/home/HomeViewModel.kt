@@ -2,6 +2,7 @@ package com.wavelength.music.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wavelength.music.data.model.ArtistStat
 import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.repository.MusicRepository
@@ -10,12 +11,14 @@ import com.wavelength.music.ui.components.ScreenState
 import com.wavelength.music.ui.search.PendingSearchQuery
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -48,10 +51,26 @@ class HomeViewModel @Inject constructor(
     val searchHistory: StateFlow<List<String>> = repository.observeSearchHistory(8)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /** "Most Played" smart playlist — a live, always-available Room aggregation, so unlike
+     * [suggested]/[dailyMix] it needs no loading/error state of its own. */
+    val mostPlayed: StateFlow<List<Track>> = repository.observeTopTracks(15)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** "Recently Added" smart playlist, seeded from favorites (already ordered newest-first). */
+    val recentlyAdded: StateFlow<List<Track>> = repository.observeFavorites()
+        .map { it.take(15) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _dailyMix = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Loading)
+    val dailyMix: StateFlow<ScreenState<List<Track>>> = _dailyMix.asStateFlow()
+
     init {
         loadFeatured()
         viewModelScope.launch {
             repository.observeRecentlyPlayed(30).collectLatest { tracks -> loadSuggested(tracks) }
+        }
+        viewModelScope.launch {
+            repository.observeTopArtists(2).collectLatest { artists -> loadDailyMix(artists) }
         }
     }
 
@@ -96,6 +115,24 @@ class HomeViewModel @Inject constructor(
                 _suggested.value = ScreenState.Error(e.message ?: "Something went wrong")
             }
         )
+    }
+
+    /** Mixes tracks from whichever 2 artists have the most plays across your whole listening
+     * history (unlike [suggested], which only looks at your most-recent plays), giving a broader
+     * "you'll probably like this too" mix. */
+    private suspend fun loadDailyMix(topArtists: List<ArtistStat>) {
+        if (topArtists.isEmpty()) {
+            _dailyMix.value = ScreenState.Empty
+            return
+        }
+        _dailyMix.value = ScreenState.Loading
+        coroutineScope {
+            val results = topArtists
+                .map { artist -> async { repository.searchTracks(artist.artistName, limit = 15) } }
+                .awaitAll()
+            val combined = results.flatMap { it.getOrDefault(emptyList()) }.distinctBy { it.id }.shuffled()
+            _dailyMix.value = if (combined.isEmpty()) ScreenState.Empty else ScreenState.Success(combined)
+        }
     }
 
     fun playTrack(queue: List<Track>, index: Int) {

@@ -38,6 +38,7 @@ import com.wavelength.music.ui.library.LibraryScreen
 import com.wavelength.music.ui.nowplaying.NowPlayingScreen
 import com.wavelength.music.ui.nowplaying.PlayerViewModel
 import com.wavelength.music.ui.playlist.PlaylistDetailScreen
+import com.wavelength.music.ui.statistics.StatisticsScreen
 import com.wavelength.music.ui.search.SearchScreen
 import com.wavelength.music.ui.settings.AppSettingsViewModel
 import com.wavelength.music.ui.settings.SettingsScreen
@@ -182,7 +183,13 @@ fun WavelengthNavHost() {
                     )
                 }
                 composable(Screen.Settings.route) {
-                    SettingsScreen(onBack = { navController.popBackStack() })
+                    SettingsScreen(
+                        onBack = { navController.popBackStack() },
+                        onStatisticsClick = { navController.navigate(Screen.Statistics.route) }
+                    )
+                }
+                composable(Screen.Statistics.route) {
+                    StatisticsScreen(onBack = { navController.popBackStack() })
                 }
                 composable(
                     route = Screen.Genre.route,

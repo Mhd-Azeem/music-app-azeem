@@ -32,6 +32,9 @@ fun AddToPlaylistDialog(
     onCreateNew: (String) -> Unit
 ) {
     var showCreateDialog by remember { mutableStateOf(false) }
+    // Folders are navigation containers, not valid drop targets — a track "added" to one here
+    // would end up filed under a folder id no track list ever queries by, silently vanishing.
+    val selectablePlaylists = playlists.filter { !it.isFolder }
 
     if (showCreateDialog) {
         CreatePlaylistDialog(
@@ -54,9 +57,9 @@ fun AddToPlaylistDialog(
                     icon = Icons.Filled.Add,
                     label = "New playlist"
                 )
-                if (playlists.isNotEmpty()) {
+                if (selectablePlaylists.isNotEmpty()) {
                     LazyColumn {
-                        items(playlists, key = { it.id }) { playlist ->
+                        items(selectablePlaylists, key = { it.id }) { playlist ->
                             PlaylistOptionRow(
                                 onClick = {
                                     onSelect(playlist.id)

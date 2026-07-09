@@ -17,7 +17,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PlaylistAdd
@@ -80,6 +83,8 @@ fun LibraryScreen(
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var showCreateDialog by remember { mutableStateOf(false) }
+    var showCreateFolderDialog by remember { mutableStateOf(false) }
+    var currentFolderId by remember { mutableStateOf<Long?>(null) }
     var trackForMenu by remember { mutableStateOf<Track?>(null) }
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(setOf<String>()) }
@@ -95,6 +100,7 @@ fun LibraryScreen(
     LaunchedEffect(selectedTab) {
         selectionMode = false
         selectedIds = emptySet()
+        currentFolderId = null
     }
 
     val currentTracks = when (selectedTab) {
@@ -133,7 +139,15 @@ fun LibraryScreen(
     if (showCreateDialog) {
         CreatePlaylistDialog(
             onDismiss = { showCreateDialog = false },
-            onCreate = viewModel::createPlaylist
+            onCreate = { name -> viewModel.createPlaylist(name, currentFolderId) }
+        )
+    }
+
+    if (showCreateFolderDialog) {
+        CreatePlaylistDialog(
+            onDismiss = { showCreateFolderDialog = false },
+            onCreate = viewModel::createFolder,
+            title = "New folder"
         )
     }
 
@@ -206,6 +220,11 @@ fun LibraryScreen(
                                 Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.rescan_library))
                             }
                         }
+                        if (selectedTab == 2 && currentFolderId == null) {
+                            IconButton(onClick = { showCreateFolderDialog = true }) {
+                                Icon(Icons.Filled.CreateNewFolder, contentDescription = "New folder")
+                            }
+                        }
                     }
                 )
             }
@@ -273,7 +292,10 @@ fun LibraryScreen(
                 )
                 2 -> PlaylistList(
                     playlists = playlists,
-                    onClick = onPlaylistClick,
+                    currentFolderId = currentFolderId,
+                    onPlaylistClick = onPlaylistClick,
+                    onFolderClick = { folderId -> currentFolderId = folderId },
+                    onBackFromFolder = { currentFolderId = null },
                     onDelete = viewModel::deletePlaylist
                 )
                 3 -> when {
@@ -368,36 +390,81 @@ private fun TrackList(
 @Composable
 private fun PlaylistList(
     playlists: List<PlaylistSummary>,
-    onClick: (Long) -> Unit,
+    currentFolderId: Long?,
+    onPlaylistClick: (Long) -> Unit,
+    onFolderClick: (Long) -> Unit,
+    onBackFromFolder: () -> Unit,
     onDelete: (Long) -> Unit
 ) {
-    if (playlists.isEmpty()) {
-        EmptyView(modifier = Modifier.fillMaxSize(), message = "No playlists yet — tap + to create one")
-    } else {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(playlists, key = { it.id }) { playlist ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onClick(playlist.id) }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = playlist.name,
-                            style = MaterialTheme.typography.bodyLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = "${playlist.trackCount} tracks",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    IconButton(onClick = { onDelete(playlist.id) }) {
-                        Icon(Icons.Filled.Delete, contentDescription = "Delete playlist")
+    val visible = playlists.filter { it.parentFolderId == currentFolderId }
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (currentFolderId != null) {
+            val folderName = playlists.firstOrNull { it.id == currentFolderId }?.name.orEmpty()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onBackFromFolder)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Back to all playlists")
+                Text(
+                    text = folderName,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(start = 12.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        if (visible.isEmpty()) {
+            val message = if (currentFolderId == null) {
+                "No playlists yet — tap + to create one"
+            } else {
+                "This folder is empty — tap + to add a playlist here"
+            }
+            EmptyView(modifier = Modifier.fillMaxSize(), message = message)
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(visible, key = { it.id }) { playlist ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                if (playlist.isFolder) onFolderClick(playlist.id) else onPlaylistClick(playlist.id)
+                            }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (playlist.isFolder) {
+                            Icon(
+                                Icons.Filled.Folder,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(end = 12.dp)
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = playlist.name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (!playlist.isFolder) {
+                                Text(
+                                    text = "${playlist.trackCount} tracks",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        IconButton(onClick = { onDelete(playlist.id) }) {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = if (playlist.isFolder) "Delete folder" else "Delete playlist"
+                            )
+                        }
                     }
                 }
             }

@@ -72,6 +72,7 @@ import kotlin.math.roundToInt
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
+    onStatisticsClick: () -> Unit = {},
     viewModel: AppSettingsViewModel = hiltViewModel(),
     equalizerViewModel: EqualizerViewModel = hiltViewModel()
 ) {
@@ -366,6 +367,20 @@ fun SettingsScreen(
                                 Text("Clear all")
                             }
                         }
+                    }
+                }
+            }
+
+            item {
+                SettingsSection(title = "Statistics") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = onStatisticsClick)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("View listening statistics", modifier = Modifier.weight(1f))
                     }
                 }
             }
