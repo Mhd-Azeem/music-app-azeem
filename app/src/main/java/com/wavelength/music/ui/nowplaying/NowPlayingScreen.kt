@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.VolumeDown
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +46,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -158,10 +161,21 @@ fun NowPlayingScreen(
             upNextListState.firstVisibleItemIndex > 0 || upNextListState.firstVisibleItemScrollOffset > 0
         }
     }
+    // Once the queue is short enough to fully fit at its expanded height, growing it snaps the
+    // scroll offset straight back to 0 — which would immediately flip upNextScrolled back to
+    // false and shrink it again, causing an expand/collapse flicker. Latching it keeps the queue
+    // expanded once triggered, only resetting when the current track changes.
+    var upNextExpandedLatch by remember { mutableStateOf(false) }
+    LaunchedEffect(upNextScrolled) {
+        if (upNextScrolled) upNextExpandedLatch = true
+    }
+    LaunchedEffect(track?.id) {
+        upNextExpandedLatch = false
+    }
     // Album art hides to free up room for the queue to actually grow into — without this, "half
     // the screen" has nowhere to expand into since art + controls already fill most of the
     // screen, so the box would just get clipped off the bottom with no visible size change.
-    val isUpNextExpanded = expandUpNextOnScroll && upNextScrolled
+    val isUpNextExpanded = expandUpNextOnScroll && upNextExpandedLatch
 
     Box(
         modifier = Modifier
@@ -339,12 +353,18 @@ fun NowPlayingScreen(
                 IconButton(onClick = viewModel::skipPrevious) {
                     Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous", modifier = Modifier.padding(4.dp))
                 }
-                IconButton(onClick = viewModel::playPause, modifier = Modifier.padding(8.dp)) {
-                    Icon(
-                        imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = "Play/Pause",
-                        modifier = Modifier.padding(4.dp)
-                    )
+                if (state.isBuffering) {
+                    Box(modifier = Modifier.padding(8.dp).padding(4.dp).size(24.dp)) {
+                        CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.fillMaxSize())
+                    }
+                } else {
+                    IconButton(onClick = viewModel::playPause, modifier = Modifier.padding(8.dp)) {
+                        Icon(
+                            imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                            contentDescription = "Play/Pause",
+                            modifier = Modifier.padding(4.dp)
+                        )
+                    }
                 }
                 IconButton(onClick = viewModel::skipNext) {
                     Icon(Icons.Filled.SkipNext, contentDescription = "Next")

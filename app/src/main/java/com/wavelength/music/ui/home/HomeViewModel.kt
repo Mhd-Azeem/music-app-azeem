@@ -66,7 +66,7 @@ class HomeViewModel @Inject constructor(
                 val tamilDeferred = async { repository.getTracksByTag("tamil", 10) }
                 val topHits = topHitsDeferred.await()
                 val tamilHits = tamilDeferred.await()
-                val combined = (topHits.getOrDefault(emptyList()) + tamilHits.getOrDefault(emptyList()))
+                val combined = (tamilHits.getOrDefault(emptyList()) + topHits.getOrDefault(emptyList()))
                     .distinctBy { it.id }
                 _featured.value = when {
                     combined.isNotEmpty() -> ScreenState.Success(combined)
