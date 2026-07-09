@@ -1,12 +1,16 @@
 package com.wavelength.music.ui.nowplaying
 
+import android.graphics.drawable.BitmapDrawable
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +25,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -39,6 +44,8 @@ import androidx.compose.material.icons.filled.VolumeDown
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -67,13 +74,18 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.palette.graphics.Palette
+import coil.Coil
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.request.SuccessResult
 import com.wavelength.music.playback.RepeatMode
 import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.components.TrackRow
@@ -84,7 +96,9 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalHazeApi::class)
@@ -94,7 +108,9 @@ fun NowPlayingScreen(
     viewModel: PlayerViewModel = hiltViewModel(),
     isLiquid: Boolean = false,
     glassStyle: HazeStyle = HazeStyle.Unspecified,
-    expandUpNextOnScroll: Boolean = false
+    expandUpNextOnScroll: Boolean = false,
+    dynamicThemeFromAlbumArt: Boolean = false,
+    vinylStyleAlbumArt: Boolean = false
 ) {
     val hazeState = remember { HazeState() }
     val pillShape = RoundedCornerShape(28.dp)
@@ -106,7 +122,38 @@ fun NowPlayingScreen(
     val track = state.currentTrack
     var showAddToPlaylist by remember { mutableStateOf(false) }
     var showSleepTimerDialog by remember { mutableStateOf(false) }
+    var showSpeedMenu by remember { mutableStateOf(false) }
     var menuQueueIndex by remember { mutableStateOf<Int?>(null) }
+
+    val context = LocalContext.current
+    var dynamicAccent by remember { mutableStateOf<Color?>(null) }
+    LaunchedEffect(track?.albumArtUrl, dynamicThemeFromAlbumArt) {
+        dynamicAccent = if (dynamicThemeFromAlbumArt) {
+            loadDominantColor(context, track?.albumArtUrl)
+        } else {
+            null
+        }
+    }
+    val accentColor = dynamicAccent ?: MaterialTheme.colorScheme.primary
+
+    // Driven manually (not rememberInfiniteTransition) so pausing genuinely stops the clock rather
+    // than just freezing what's displayed: cancelling this coroutine leaves the Animatable sitting
+    // at its exact current value, so resuming continues smoothly from there with no jump. Gated
+    // behind vinylStyleAlbumArt so it costs nothing for the (default) users who don't enable it,
+    // and .value is only read inside the graphicsLayer block below rather than into a composition-
+    // level val, so a spinning disc redraws its own layer each frame instead of recomposing the
+    // whole screen.
+    val vinylAngle = remember { Animatable(0f) }
+    LaunchedEffect(vinylStyleAlbumArt, state.isPlaying) {
+        if (vinylStyleAlbumArt && state.isPlaying) {
+            while (true) {
+                vinylAngle.animateTo(
+                    targetValue = vinylAngle.value + 360f,
+                    animationSpec = tween(durationMillis = 6000, easing = LinearEasing)
+                )
+            }
+        }
+    }
 
     if (showAddToPlaylist) {
         AddToPlaylistDialog(
@@ -271,15 +318,38 @@ fun NowPlayingScreen(
 
                 AnimatedVisibility(visible = !isUpNextExpanded) {
                     Box(modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
-                        AsyncImage(
-                            model = track?.albumArtUrl,
-                            contentDescription = track?.name,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(1f)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                        )
+                        if (vinylStyleAlbumArt) {
+                            Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f).padding(20.dp)) {
+                                AsyncImage(
+                                    model = track?.albumArtUrl,
+                                    contentDescription = track?.name,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .graphicsLayer { rotationZ = vinylAngle.value }
+                                        .clip(CircleShape)
+                                        .border(2.dp, Color.White.copy(alpha = 0.3f), CircleShape)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.Center)
+                                        .size(14.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.background)
+                                )
+                            }
+                        } else {
+                            AsyncImage(
+                                model = track?.albumArtUrl,
+                                contentDescription = track?.name,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(1f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                            )
+                        }
                     }
                 }
             }
@@ -308,13 +378,34 @@ fun NowPlayingScreen(
                             .hazeChild(state = hazeState, style = glassStyle) { inputScale = HazeInputScale.Auto }
                             .border(1.dp, Color.White.copy(alpha = 0.25f), pillShape)
                     }
-                    Row(modifier = topIconRowModifier) {
+                    Row(modifier = topIconRowModifier, verticalAlignment = Alignment.CenterVertically) {
+                        Box {
+                            Text(
+                                text = speedLabel(state.playbackSpeed),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (state.playbackSpeed != 1f) accentColor else Color.White,
+                                modifier = Modifier
+                                    .clickable { showSpeedMenu = true }
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
+                            DropdownMenu(expanded = showSpeedMenu, onDismissRequest = { showSpeedMenu = false }) {
+                                PLAYBACK_SPEEDS.forEach { speed ->
+                                    DropdownMenuItem(
+                                        text = { Text(speedLabel(speed)) },
+                                        onClick = {
+                                            viewModel.setPlaybackSpeed(speed)
+                                            showSpeedMenu = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
                         IconButton(onClick = { showSleepTimerDialog = true }) {
                             Icon(
                                 imageVector = Icons.Filled.Timer,
                                 contentDescription = "Sleep timer",
                                 tint = if (sleepTimerRemaining != null || sleepTimerEndOfTrack) {
-                                    MaterialTheme.colorScheme.primary
+                                    accentColor
                                 } else {
                                     Color.White
                                 }
@@ -331,7 +422,7 @@ fun NowPlayingScreen(
                             Icon(
                                 imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                                 contentDescription = "Favorite",
-                                tint = if (isFavorite) MaterialTheme.colorScheme.primary else Color.White
+                                tint = if (isFavorite) accentColor else Color.White
                             )
                         }
                     }
@@ -344,8 +435,8 @@ fun NowPlayingScreen(
                     onValueChange = { viewModel.seekTo(it.toLong()) },
                     valueRange = 0f..state.durationMs.toFloat().coerceAtLeast(1f),
                     colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.primary,
-                        activeTrackColor = MaterialTheme.colorScheme.primary
+                        thumbColor = accentColor,
+                        activeTrackColor = accentColor
                     )
                 )
                 Row(
@@ -373,7 +464,7 @@ fun NowPlayingScreen(
                     Icon(
                         imageVector = Icons.Filled.Shuffle,
                         contentDescription = "Shuffle",
-                        tint = if (state.shuffleEnabled) MaterialTheme.colorScheme.primary else Color.White
+                        tint = if (state.shuffleEnabled) accentColor else Color.White
                     )
                 }
                 IconButton(onClick = viewModel::skipPrevious) {
@@ -399,7 +490,7 @@ fun NowPlayingScreen(
                     Icon(
                         imageVector = if (state.repeatMode == RepeatMode.ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
                         contentDescription = "Repeat",
-                        tint = if (state.repeatMode != RepeatMode.OFF) MaterialTheme.colorScheme.primary else Color.White
+                        tint = if (state.repeatMode != RepeatMode.OFF) accentColor else Color.White
                     )
                 }
             }
@@ -431,8 +522,8 @@ fun NowPlayingScreen(
                     valueRange = 0f..1f,
                     modifier = Modifier.weight(1f).padding(start = 8.dp),
                     colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.primary,
-                        activeTrackColor = MaterialTheme.colorScheme.primary
+                        thumbColor = accentColor,
+                        activeTrackColor = accentColor
                     )
                 )
             }
@@ -476,6 +567,32 @@ fun NowPlayingScreen(
                 }
             }
         }
+    }
+}
+
+private val PLAYBACK_SPEEDS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
+
+private fun speedLabel(speed: Float): String {
+    val trimmed = if (speed == speed.toLong().toFloat()) speed.toLong().toString() else speed.toString()
+    return "${trimmed}x"
+}
+
+/** Downloads the album art and picks a vibrant swatch via the Palette API, falling back to the
+ * theme's primary color when disabled or the art can't be analyzed (missing art, network
+ * failure, decode error). `allowHardware(false)` is required so Palette can read the bitmap's
+ * pixels directly. */
+private suspend fun loadDominantColor(context: android.content.Context, url: String?): Color? {
+    if (url.isNullOrBlank()) return null
+    return withContext(Dispatchers.IO) {
+        runCatching {
+            val loader = Coil.imageLoader(context)
+            val request = ImageRequest.Builder(context).data(url).allowHardware(false).build()
+            val bitmap = ((loader.execute(request) as? SuccessResult)?.drawable as? BitmapDrawable)?.bitmap
+                ?: return@runCatching null
+            val palette = Palette.from(bitmap).generate()
+            val swatch = palette.vibrantSwatch ?: palette.dominantSwatch ?: palette.mutedSwatch
+            swatch?.rgb?.let { Color(it) }
+        }.getOrNull()
     }
 }
 

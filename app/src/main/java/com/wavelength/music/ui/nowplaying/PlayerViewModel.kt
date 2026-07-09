@@ -52,6 +52,7 @@ class PlayerViewModel @Inject constructor(
     fun playQueueItem(index: Int) = playerController.playQueueItem(index)
     fun moveQueueItem(from: Int, to: Int) = playerController.moveQueueItem(from, to)
     fun setVolume(volume: Float) = playerController.setVolume(volume)
+    fun setPlaybackSpeed(speed: Float) = playerController.setPlaybackSpeed(speed)
 
     fun startSleepTimer(minutes: Int) = sleepTimerController.startCountdown(minutes * 60_000L)
     fun startSleepTimerEndOfTrack() = sleepTimerController.startEndOfTrack()

@@ -3,6 +3,7 @@ package com.wavelength.music.playback
 import android.content.ComponentName
 import android.content.Context
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -76,6 +77,10 @@ class PlayerController @Inject constructor(
         override fun onVolumeChanged(volume: Float) {
             _state.update { it.copy(volume = volume) }
         }
+
+        override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
+            _state.update { it.copy(playbackSpeed = playbackParameters.speed) }
+        }
     }
 
     fun connect() {
@@ -105,7 +110,8 @@ class PlayerController @Inject constructor(
                 durationMs = c.duration.coerceAtLeast(0),
                 shuffleEnabled = c.shuffleModeEnabled,
                 repeatMode = c.repeatMode.toRepeatMode(),
-                volume = c.volume
+                volume = c.volume,
+                playbackSpeed = c.playbackParameters.speed
             )
         }
         updateTicker(c.isPlaying)
@@ -162,6 +168,12 @@ class PlayerController @Inject constructor(
         val clamped = volume.coerceIn(0f, 1f)
         controller?.volume = clamped
         _state.update { it.copy(volume = clamped) }
+    }
+
+    fun setPlaybackSpeed(speed: Float) {
+        val clamped = speed.coerceIn(0.5f, 2f)
+        controller?.setPlaybackSpeed(clamped)
+        _state.update { it.copy(playbackSpeed = clamped) }
     }
 
     fun skipNext() {

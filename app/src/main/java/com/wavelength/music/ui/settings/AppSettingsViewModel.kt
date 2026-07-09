@@ -80,6 +80,10 @@ class AppSettingsViewModel @Inject constructor(
 
     fun setExpandUpNextOnScroll(enabled: Boolean) = settingsRepository.setExpandUpNextOnScroll(enabled)
 
+    fun setDynamicThemeFromAlbumArt(enabled: Boolean) = settingsRepository.setDynamicThemeFromAlbumArt(enabled)
+
+    fun setVinylStyleAlbumArt(enabled: Boolean) = settingsRepository.setVinylStyleAlbumArt(enabled)
+
     fun clearAllDownloads() {
         viewModelScope.launch { repository.clearAllDownloads() }
     }

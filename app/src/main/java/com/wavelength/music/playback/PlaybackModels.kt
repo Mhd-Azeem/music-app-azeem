@@ -14,5 +14,6 @@ data class PlaybackUiState(
     val durationMs: Long = 0L,
     val shuffleEnabled: Boolean = false,
     val repeatMode: RepeatMode = RepeatMode.OFF,
-    val volume: Float = 1f
+    val volume: Float = 1f,
+    val playbackSpeed: Float = 1f
 )

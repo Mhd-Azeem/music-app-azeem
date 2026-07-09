@@ -176,7 +176,9 @@ fun WavelengthNavHost() {
                         viewModel = playerViewModel,
                         isLiquid = isLiquid,
                         glassStyle = glassStyle,
-                        expandUpNextOnScroll = settings.expandUpNextOnScroll
+                        expandUpNextOnScroll = settings.expandUpNextOnScroll,
+                        dynamicThemeFromAlbumArt = settings.dynamicThemeFromAlbumArt,
+                        vinylStyleAlbumArt = settings.vinylStyleAlbumArt
                     )
                 }
                 composable(Screen.Settings.route) {

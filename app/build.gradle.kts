@@ -110,6 +110,7 @@ dependencies {
     ksp(libs.room.compiler)
 
     implementation(libs.coil.compose)
+    implementation(libs.androidx.palette.ktx)
 
     implementation(libs.haze)
 

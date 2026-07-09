@@ -317,6 +317,32 @@ fun SettingsScreen(
                             onCheckedChange = { viewModel.setExpandUpNextOnScroll(it) }
                         )
                     }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Dynamic accent color from album art",
+                            modifier = Modifier.weight(1f)
+                        )
+                        Switch(
+                            checked = settings.dynamicThemeFromAlbumArt,
+                            onCheckedChange = { viewModel.setDynamicThemeFromAlbumArt(it) }
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Spinning vinyl-style album art",
+                            modifier = Modifier.weight(1f)
+                        )
+                        Switch(
+                            checked = settings.vinylStyleAlbumArt,
+                            onCheckedChange = { viewModel.setVinylStyleAlbumArt(it) }
+                        )
+                    }
                 }
             }
 

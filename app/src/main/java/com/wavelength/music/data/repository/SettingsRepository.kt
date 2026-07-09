@@ -23,7 +23,9 @@ data class AppSettingsState(
     val theme: AppTheme = AppTheme.CLASSIC,
     val hasCustomBackground: Boolean = false,
     val backgroundOpacity: Float = DEFAULT_BACKGROUND_OPACITY,
-    val expandUpNextOnScroll: Boolean = false
+    val expandUpNextOnScroll: Boolean = false,
+    val dynamicThemeFromAlbumArt: Boolean = false,
+    val vinylStyleAlbumArt: Boolean = false
 )
 
 const val DEFAULT_BACKGROUND_OPACITY = 0.25f
@@ -48,7 +50,9 @@ class SettingsRepository @Inject constructor(
         }.getOrDefault(AppTheme.CLASSIC),
         hasCustomBackground = customBackgroundFile.exists(),
         backgroundOpacity = prefs.getFloat(KEY_BACKGROUND_OPACITY, DEFAULT_BACKGROUND_OPACITY),
-        expandUpNextOnScroll = prefs.getBoolean(KEY_EXPAND_UP_NEXT, false)
+        expandUpNextOnScroll = prefs.getBoolean(KEY_EXPAND_UP_NEXT, false),
+        dynamicThemeFromAlbumArt = prefs.getBoolean(KEY_DYNAMIC_THEME, false),
+        vinylStyleAlbumArt = prefs.getBoolean(KEY_VINYL_STYLE, false)
     )
 
     fun setIconPreset(preset: IconPreset) {
@@ -89,6 +93,16 @@ class SettingsRepository @Inject constructor(
         _state.update { it.copy(expandUpNextOnScroll = enabled) }
     }
 
+    fun setDynamicThemeFromAlbumArt(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_DYNAMIC_THEME, enabled) }
+        _state.update { it.copy(dynamicThemeFromAlbumArt = enabled) }
+    }
+
+    fun setVinylStyleAlbumArt(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_VINYL_STYLE, enabled) }
+        _state.update { it.copy(vinylStyleAlbumArt = enabled) }
+    }
+
     /** Enables the alias matching [preset] and disables the others, so exactly one launcher
      * icon is ever active at a time. */
     private fun applyIconPreset(preset: IconPreset) {
@@ -112,5 +126,7 @@ class SettingsRepository @Inject constructor(
         const val KEY_THEME = "theme"
         const val KEY_BACKGROUND_OPACITY = "background_opacity"
         const val KEY_EXPAND_UP_NEXT = "expand_up_next_on_scroll"
+        const val KEY_DYNAMIC_THEME = "dynamic_theme_from_album_art"
+        const val KEY_VINYL_STYLE = "vinyl_style_album_art"
     }
 }
