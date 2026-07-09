@@ -728,7 +728,7 @@ private fun LyricsOverlay(
 private fun AudioVisualizer(waveform: ByteArray?, color: Color, modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
         val data = waveform
-        if (data.isNullOrEmpty()) return@Canvas
+        if (data == null || data.isEmpty()) return@Canvas
         val barCount = 32
         val barWidth = size.width / barCount
         for (i in 0 until barCount) {
