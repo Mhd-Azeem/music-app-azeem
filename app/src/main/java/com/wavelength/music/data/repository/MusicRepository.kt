@@ -21,6 +21,7 @@ import com.wavelength.music.data.model.TrackSource
 import android.net.Uri
 import com.wavelength.music.data.model.DownloadsSummary
 import java.io.File
+import java.util.Calendar
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -48,8 +49,10 @@ class MusicRepository @Inject constructor(
 
     // --- JioSaavn (the only online source) ------------------------------------------------------
 
+    /** Query includes the current year since JioSaavn search has no explicit "sort by newest" —
+     * asking for the year by name is what actually surfaces this year's releases first. */
     suspend fun getFeaturedTracks(limit: Int = 20): Result<List<Track>> =
-        jioSaavnRepository.searchSongs(FEATURED_SEED_QUERY, limit)
+        jioSaavnRepository.searchSongs("latest tamil songs $currentYear", limit)
 
     /** [tag] here is a language/mood term (e.g. "tamil", "hindi") rather than a fixed taxonomy —
      * JioSaavn search already returns language-relevant results for those terms. */
@@ -240,9 +243,8 @@ class MusicRepository @Inject constructor(
 
     suspend fun clearSearchHistory() = searchHistoryDao.clearAll()
 
-    private companion object {
-        const val FEATURED_SEED_QUERY = "latest tamil songs"
-    }
+    private val currentYear: Int
+        get() = Calendar.getInstance().get(Calendar.YEAR)
 }
 
 private fun FavoriteTrackEntity.toTrack(): Track = Track(

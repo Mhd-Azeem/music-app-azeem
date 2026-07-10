@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -59,13 +60,10 @@ class DragDropListState internal constructor(
         private set
     val previousItemOffset = Animatable(0f)
 
-    internal fun onDragStart(offset: Offset) {
-        listState.layoutInfo.visibleItemsInfo
-            .firstOrNull { item -> offset.y.toInt() in item.offset..(item.offset + item.size) }
-            ?.also {
-                draggingItemIndex = it.index
-                draggingItemInitialOffset = it.offset
-            }
+    internal fun onDragStart(index: Int) {
+        val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index } ?: return
+        draggingItemIndex = index
+        draggingItemInitialOffset = item.offset
     }
 
     internal fun onDragInterrupted() {
@@ -129,20 +127,30 @@ fun rememberDragDropListState(
     return state
 }
 
-/** Long-press anywhere on the item to start dragging it — matches how home-screen icon
- * reordering works, so it reads as familiar rather than needing a dedicated drag handle. */
-fun Modifier.dragToReorder(dragDropListState: DragDropListState): Modifier = this then Modifier.pointerInput(
-    dragDropListState
-) {
-    detectDragGesturesAfterLongPress(
-        onDragStart = { offset -> dragDropListState.onDragStart(offset) },
-        onDrag = { change, offset ->
-            change.consume()
-            dragDropListState.onDrag(offset)
-        },
-        onDragEnd = { dragDropListState.onDragInterrupted() },
-        onDragCancel = { dragDropListState.onDragInterrupted() }
-    )
+/** Apply to a dedicated drag-handle icon inside each reorderable row, keyed by that row's index in
+ * the *visible list*. A handle (rather than long-press-anywhere-on-the-row) is used because the
+ * row itself already has its own tap/click handling (play, add to playlist, more options) — two
+ * long-press-sensitive gesture detectors racing on the same touch would make the drag unreliable.
+ *
+ * The gesture detector is keyed only on [dragDropListState], NOT [index] — reordering swaps change
+ * an in-progress drag's own [index] every time it crosses a neighbor, and keying `pointerInput` on
+ * a value that changes mid-gesture would tear down and restart the detector on every swap (losing
+ * the current touch). [rememberUpdatedState] lets `onDragStart` always read the latest [index]
+ * without needing the detector itself to restart. */
+@Composable
+fun Modifier.dragHandle(dragDropListState: DragDropListState, index: Int): Modifier {
+    val latestIndex = rememberUpdatedState(index)
+    return this.pointerInput(dragDropListState) {
+        detectDragGesturesAfterLongPress(
+            onDragStart = { dragDropListState.onDragStart(latestIndex.value) },
+            onDrag = { change, offset ->
+                change.consume()
+                dragDropListState.onDrag(offset)
+            },
+            onDragEnd = { dragDropListState.onDragInterrupted() },
+            onDragCancel = { dragDropListState.onDragInterrupted() }
+        )
+    }
 }
 
 /** Apply to each reorderable item's modifier, keyed by its position in the *visible list*

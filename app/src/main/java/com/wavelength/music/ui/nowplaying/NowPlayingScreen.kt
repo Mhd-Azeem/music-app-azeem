@@ -35,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -108,7 +109,7 @@ import com.wavelength.music.ui.components.ScreenState
 import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.components.TrackRow
 import com.wavelength.music.ui.components.dragDropItemOffset
-import com.wavelength.music.ui.components.dragToReorder
+import com.wavelength.music.ui.components.dragHandle
 import com.wavelength.music.ui.components.rememberDragDropListState
 import com.wavelength.music.ui.components.swipeHorizontal
 import com.wavelength.music.ui.playlist.AddToPlaylistDialog
@@ -646,21 +647,39 @@ fun NowPlayingScreen(
                     viewModel.moveQueueItem(state.currentIndex + 1 + from, state.currentIndex + 1 + to)
                 }
                 LazyColumn(
-                    modifier = upNextModifier.dragToReorder(dragDropState),
+                    modifier = upNextModifier,
                     state = upNextListState
                 ) {
                     itemsIndexed(upcoming, key = { _, entry -> entry.instanceId }) { offset, entry ->
                         val queueIndex = state.currentIndex + 1 + offset
                         val isDragging = dragDropState.draggingItemIndex == offset
-                        TrackRow(
-                            track = entry.track,
-                            onClick = { viewModel.playQueueItem(queueIndex) },
-                            onAddToPlaylistClick = { quickAddQueueIndex = queueIndex },
-                            onMoreClick = { menuQueueIndex = queueIndex },
+                        Row(
                             modifier = Modifier
+                                .fillMaxWidth()
                                 .dragDropItemOffset(dragDropState, offset)
-                                .zIndex(if (isDragging) 1f else 0f)
-                        )
+                                .zIndex(if (isDragging) 1f else 0f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TrackRow(
+                                track = entry.track,
+                                onClick = { viewModel.playQueueItem(queueIndex) },
+                                onAddToPlaylistClick = { quickAddQueueIndex = queueIndex },
+                                onMoreClick = { menuQueueIndex = queueIndex },
+                                modifier = Modifier.weight(1f)
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .dragHandle(dragDropState, offset),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.DragHandle,
+                                    contentDescription = "Hold and drag to reorder",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 }
             }
