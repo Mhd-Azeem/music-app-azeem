@@ -89,6 +89,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -104,6 +105,9 @@ import com.wavelength.music.ui.components.LoadingView
 import com.wavelength.music.ui.components.ScreenState
 import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.components.TrackRow
+import com.wavelength.music.ui.components.dragDropItemOffset
+import com.wavelength.music.ui.components.dragToReorder
+import com.wavelength.music.ui.components.rememberDragDropListState
 import com.wavelength.music.ui.playlist.AddToPlaylistDialog
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInputScale
@@ -226,7 +230,7 @@ fun NowPlayingScreen(
         )
     }
 
-    val menuTrack = menuQueueIndex?.let { state.queue.getOrNull(it) }
+    val menuTrack = menuQueueIndex?.let { state.queue.getOrNull(it)?.track }
     if (menuTrack != null) {
         val queueIndex = menuQueueIndex!!
         TrackOptionsSheet(
@@ -612,13 +616,23 @@ fun NowPlayingScreen(
                 } else {
                     Modifier.weight(1f)
                 }
-                LazyColumn(modifier = upNextModifier, state = upNextListState) {
-                    itemsIndexed(upcoming) { offset, upcomingTrack ->
+                val dragDropState = rememberDragDropListState(upNextListState) { from, to ->
+                    viewModel.moveQueueItem(state.currentIndex + 1 + from, state.currentIndex + 1 + to)
+                }
+                LazyColumn(
+                    modifier = upNextModifier.dragToReorder(dragDropState),
+                    state = upNextListState
+                ) {
+                    itemsIndexed(upcoming, key = { _, entry -> entry.instanceId }) { offset, entry ->
                         val queueIndex = state.currentIndex + 1 + offset
+                        val isDragging = dragDropState.draggingItemIndex == offset
                         TrackRow(
-                            track = upcomingTrack,
+                            track = entry.track,
                             onClick = { viewModel.playQueueItem(queueIndex) },
-                            onMoreClick = { menuQueueIndex = queueIndex }
+                            onMoreClick = { menuQueueIndex = queueIndex },
+                            modifier = Modifier
+                                .dragDropItemOffset(dragDropState, offset)
+                                .zIndex(if (isDragging) 1f else 0f)
                         )
                     }
                 }

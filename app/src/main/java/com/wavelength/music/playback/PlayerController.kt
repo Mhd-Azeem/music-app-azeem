@@ -34,7 +34,8 @@ class PlayerController @Inject constructor(
 ) {
     private var controller: MediaController? = null
     private var controllerFuture: com.google.common.util.concurrent.ListenableFuture<MediaController>? = null
-    private var currentQueue: List<Track> = emptyList()
+    private var currentQueue: List<QueueEntry> = emptyList()
+    private var nextInstanceId = 0L
     private var aiDjExtendJob: Job? = null
 
     // The user's actual desired volume, distinct from whatever controller.volume momentarily is
@@ -65,7 +66,7 @@ class PlayerController @Inject constructor(
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             val index = controller?.currentMediaItemIndex ?: -1
-            val track = currentQueue.getOrNull(index)
+            val track = currentQueue.getOrNull(index)?.track
             _state.update {
                 it.copy(
                     currentTrack = track,
@@ -139,7 +140,7 @@ class PlayerController @Inject constructor(
             it.copy(
                 isPlaying = c.isPlaying,
                 currentIndex = index,
-                currentTrack = currentQueue.getOrNull(index),
+                currentTrack = currentQueue.getOrNull(index)?.track,
                 queue = currentQueue,
                 positionMs = c.currentPosition.coerceAtLeast(0),
                 durationMs = c.duration.coerceAtLeast(0),
@@ -232,7 +233,7 @@ class PlayerController @Inject constructor(
         crossfadeJob?.cancel()
         fadeOutTriggeredForIndex = -1
         c.volume = targetVolume
-        currentQueue = tracks
+        currentQueue = tracks.map { QueueEntry(nextInstanceId++, it) }
         val items = tracks.map { it.toMediaItem() }
         c.setMediaItems(items, startIndex.coerceIn(0, items.lastIndex), 0L)
         c.prepare()
@@ -300,7 +301,7 @@ class PlayerController @Inject constructor(
 
     fun addToQueue(track: Track) {
         controller?.addMediaItem(track.toMediaItem())
-        currentQueue = currentQueue + track
+        currentQueue = currentQueue + QueueEntry(nextInstanceId++, track)
         _state.update { it.copy(queue = currentQueue) }
     }
 
@@ -311,7 +312,7 @@ class PlayerController @Inject constructor(
         if (aiDjExtendJob?.isActive == true) return
         aiDjExtendJob = controllerScope.launch {
             val results = repository.searchTracks(justPlayed.artistName, limit = 10).getOrDefault(emptyList())
-            val existingIds = currentQueue.map { it.id }.toSet()
+            val existingIds = currentQueue.map { it.track.id }.toSet()
             results.filterNot { it.id in existingIds }.take(5).forEach { addToQueue(it) }
         }
     }
@@ -336,7 +337,7 @@ class PlayerController @Inject constructor(
         val insertIndex = (c.currentMediaItemIndex + 1).coerceIn(0, c.mediaItemCount)
         c.addMediaItem(insertIndex, track.toMediaItem())
         currentQueue = currentQueue.toMutableList().apply {
-            add(insertIndex.coerceAtMost(size), track)
+            add(insertIndex.coerceAtMost(size), QueueEntry(nextInstanceId++, track))
         }
         _state.update { it.copy(queue = currentQueue) }
     }
