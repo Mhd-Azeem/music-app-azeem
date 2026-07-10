@@ -80,6 +80,7 @@ fun WavelengthNavHost() {
                         onClick = { navController.navigate(Screen.NowPlaying.route) },
                         onPlayPause = playerViewModel::playPause,
                         onSkipNext = playerViewModel::skipNext,
+                        onSkipPrevious = playerViewModel::skipPrevious,
                         hazeState = if (isLiquid) hazeState else null,
                         glassStyle = glassStyle
                     )

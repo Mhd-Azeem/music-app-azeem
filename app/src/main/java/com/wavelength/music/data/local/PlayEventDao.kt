@@ -21,6 +21,11 @@ data class ArtistPlayCount(
     val playCount: Int
 )
 
+data class TrackIdPlayCount(
+    val trackId: String,
+    val playCount: Int
+)
+
 @Dao
 interface PlayEventDao {
 
@@ -61,4 +66,10 @@ interface PlayEventDao {
             "GROUP BY artist ORDER BY playCount DESC, MAX(playedAt) DESC LIMIT :limit"
     )
     fun observeTopArtists(limit: Int): Flow<List<ArtistPlayCount>>
+
+    /** One-shot (not observed) counts for a specific set of tracks — used by smart shuffle to
+     * weight a queue reorder by how often each track has actually been played. Tracks with no
+     * play history simply don't appear in the result (treat as a 0 count). */
+    @Query("SELECT trackId, COUNT(*) AS playCount FROM play_events WHERE trackId IN (:trackIds) GROUP BY trackId")
+    suspend fun getPlayCounts(trackIds: List<String>): List<TrackIdPlayCount>
 }

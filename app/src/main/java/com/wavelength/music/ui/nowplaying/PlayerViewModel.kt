@@ -60,6 +60,7 @@ class PlayerViewModel @Inject constructor(
     fun skipNext() = playerController.skipNext()
     fun skipPrevious() = playerController.skipPrevious()
     fun toggleShuffle() = playerController.toggleShuffle()
+    fun smartShuffle() = playerController.smartShuffleQueue()
     fun cycleRepeatMode() = playerController.cycleRepeatMode()
     fun playQueueItem(index: Int) = playerController.playQueueItem(index)
     fun moveQueueItem(from: Int, to: Int) = playerController.moveQueueItem(from, to)

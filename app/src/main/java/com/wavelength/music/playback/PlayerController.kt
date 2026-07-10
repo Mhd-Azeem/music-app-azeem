@@ -332,6 +332,26 @@ class PlayerController @Inject constructor(
         _state.update { it.copy(queue = currentQueue, currentIndex = c.currentMediaItemIndex) }
     }
 
+    /** Reorders the *upcoming* portion of the queue (currently-playing track and anything already
+     * played are left alone) via a weighted-random shuffle that favors tracks with more listening
+     * history — unlike [toggleShuffle]'s uniform-random ExoPlayer shuffle. Tracks with no play
+     * history still get a small chance so the queue doesn't become entirely "greatest hits". */
+    fun smartShuffleQueue() {
+        val c = controller ?: return
+        val remainingStart = c.currentMediaItemIndex + 1
+        if (remainingStart >= currentQueue.size) return
+        controllerScope.launch {
+            val remaining = currentQueue.subList(remainingStart, currentQueue.size)
+            val playCounts = repository.getPlayCounts(remaining.map { it.track.id })
+            val shuffled = weightedShuffle(remaining) { entry -> playCounts[entry.track.id] ?: 0 }
+            shuffled.forEachIndexed { offset, entry ->
+                val targetIndex = remainingStart + offset
+                val fromIndex = currentQueue.indexOfFirst { it.instanceId == entry.instanceId }
+                if (fromIndex != targetIndex) moveQueueItem(fromIndex, targetIndex)
+            }
+        }
+    }
+
     fun playNext(track: Track) {
         val c = controller ?: return
         val insertIndex = (c.currentMediaItemIndex + 1).coerceIn(0, c.mediaItemCount)
@@ -357,4 +377,28 @@ private fun Int.toRepeatMode(): RepeatMode = when (this) {
     Player.REPEAT_MODE_ONE -> RepeatMode.ONE
     Player.REPEAT_MODE_ALL -> RepeatMode.ALL
     else -> RepeatMode.OFF
+}
+
+/** Weighted random sampling without replacement: each remaining item's chance of being picked
+ * next is proportional to `weightOf(item) + 1` (the `+1` keeps zero-play tracks reachable rather
+ * than excluded outright, just less likely than frequently-played ones). */
+private fun <T> weightedShuffle(items: List<T>, weightOf: (T) -> Int): List<T> {
+    val pool = items.toMutableList()
+    val weights = pool.map { (weightOf(it) + 1).toDouble() }.toMutableList()
+    val result = ArrayList<T>(items.size)
+    while (pool.isNotEmpty()) {
+        val totalWeight = weights.sum()
+        var roll = Math.random() * totalWeight
+        var pickIndex = weights.lastIndex
+        for (i in weights.indices) {
+            roll -= weights[i]
+            if (roll <= 0) {
+                pickIndex = i
+                break
+            }
+        }
+        result.add(pool.removeAt(pickIndex))
+        weights.removeAt(pickIndex)
+    }
+    return result
 }

@@ -44,6 +44,7 @@ fun MiniPlayerBar(
     onClick: () -> Unit,
     onPlayPause: () -> Unit,
     onSkipNext: () -> Unit,
+    onSkipPrevious: () -> Unit,
     modifier: Modifier = Modifier,
     hazeState: HazeState? = null,
     glassStyle: HazeStyle = HazeStyle.Unspecified
@@ -51,6 +52,7 @@ fun MiniPlayerBar(
     val track = state.currentTrack ?: return
     val density = LocalDensity.current
     val expandThresholdPx = with(density) { 40.dp.toPx() }
+    val skipThresholdPx = with(density) { 56.dp.toPx() }
     val isLiquid = hazeState != null
     val shape = RoundedCornerShape(28.dp)
 
@@ -68,6 +70,7 @@ fun MiniPlayerBar(
     barModifier = barModifier
         .clickable(onClick = onClick)
         .swipeVertical(thresholdPx = expandThresholdPx, onSwipeUp = onClick)
+        .swipeHorizontal(thresholdPx = skipThresholdPx, onSwipeLeft = onSkipNext, onSwipeRight = onSkipPrevious)
 
     Surface(
         modifier = barModifier,

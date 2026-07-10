@@ -28,6 +28,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,6 +46,7 @@ import com.wavelength.music.ui.components.LoadingView
 import com.wavelength.music.ui.components.ScreenState
 import com.wavelength.music.ui.components.SectionHeader
 import com.wavelength.music.ui.components.TrackCard
+import com.wavelength.music.ui.components.TrackOptionsSheet
 
 @Composable
 fun HomeScreen(
@@ -123,6 +127,12 @@ private fun HomeContent(
     onPlaylistClick: (Long) -> Unit,
     onSearchHistoryClick: (String) -> Unit
 ) {
+    var trackForMenu by remember { mutableStateOf<Track?>(null) }
+
+    trackForMenu?.let { track ->
+        TrackOptionsSheet(track = track, onDismiss = { trackForMenu = null })
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -149,7 +159,11 @@ private fun HomeContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 itemsIndexed(featuredTracks, key = { _, track -> track.id }) { index, track ->
-                    TrackCard(track = track, onClick = { onTrackClick(index, featuredTracks) })
+                    TrackCard(
+                        track = track,
+                        onClick = { onTrackClick(index, featuredTracks) },
+                        onMoreClick = { trackForMenu = track }
+                    )
                 }
             }
         }
@@ -189,7 +203,11 @@ private fun HomeContent(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     itemsIndexed(recentlyPlayed, key = { _, track -> track.id }) { index, track ->
-                        TrackCard(track = track, onClick = { onTrackClick(index, recentlyPlayed) })
+                        TrackCard(
+                            track = track,
+                            onClick = { onTrackClick(index, recentlyPlayed) },
+                            onMoreClick = { trackForMenu = track }
+                        )
                     }
                 }
             }
@@ -203,7 +221,11 @@ private fun HomeContent(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     itemsIndexed(suggestedTracks, key = { _, track -> track.id }) { index, track ->
-                        TrackCard(track = track, onClick = { onTrackClick(index, suggestedTracks) })
+                        TrackCard(
+                            track = track,
+                            onClick = { onTrackClick(index, suggestedTracks) },
+                            onMoreClick = { trackForMenu = track }
+                        )
                     }
                 }
             }
@@ -217,7 +239,11 @@ private fun HomeContent(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     itemsIndexed(dailyMixTracks, key = { _, track -> track.id }) { index, track ->
-                        TrackCard(track = track, onClick = { onTrackClick(index, dailyMixTracks) })
+                        TrackCard(
+                            track = track,
+                            onClick = { onTrackClick(index, dailyMixTracks) },
+                            onMoreClick = { trackForMenu = track }
+                        )
                     }
                 }
             }
@@ -231,7 +257,11 @@ private fun HomeContent(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     itemsIndexed(mostPlayed, key = { _, track -> track.id }) { index, track ->
-                        TrackCard(track = track, onClick = { onTrackClick(index, mostPlayed) })
+                        TrackCard(
+                            track = track,
+                            onClick = { onTrackClick(index, mostPlayed) },
+                            onMoreClick = { trackForMenu = track }
+                        )
                     }
                 }
             }
@@ -245,7 +275,11 @@ private fun HomeContent(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     itemsIndexed(recentlyAdded, key = { _, track -> track.id }) { index, track ->
-                        TrackCard(track = track, onClick = { onTrackClick(index, recentlyAdded) })
+                        TrackCard(
+                            track = track,
+                            onClick = { onTrackClick(index, recentlyAdded) },
+                            onMoreClick = { trackForMenu = track }
+                        )
                     }
                 }
             }

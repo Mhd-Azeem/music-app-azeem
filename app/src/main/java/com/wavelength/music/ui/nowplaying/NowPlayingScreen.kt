@@ -33,6 +33,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -601,11 +602,22 @@ fun NowPlayingScreen(
 
             val upcoming = state.queue.drop(state.currentIndex + 1)
             if (upcoming.isNotEmpty()) {
-                Text(
-                    text = "Up next",
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "Up next", style = MaterialTheme.typography.titleSmall)
+                    if (upcoming.size > 1) {
+                        IconButton(onClick = { viewModel.smartShuffle() }, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                imageVector = Icons.Filled.AutoAwesome,
+                                contentDescription = "Smart shuffle (favors your most-played tracks)",
+                                tint = accentColor
+                            )
+                        }
+                    }
+                }
                 val screenHeight = LocalConfiguration.current.screenHeightDp.dp
                 val upNextHeight by animateDpAsState(
                     targetValue = if (isUpNextExpanded) screenHeight / 2 else 220.dp,

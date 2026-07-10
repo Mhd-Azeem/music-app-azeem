@@ -150,6 +150,10 @@ class MusicRepository @Inject constructor(
             list.map { ArtistStat(it.artist, it.playCount) }
         }
 
+    /** Used by smart shuffle to weight a queue reorder by actual listening history. */
+    suspend fun getPlayCounts(trackIds: List<String>): Map<String, Int> =
+        playEventDao.getPlayCounts(trackIds).associate { it.trackId to it.playCount }
+
     // --- User-created playlists -----------------------------------------------------------------
 
     fun observePlaylists(): Flow<List<PlaylistSummary>> = playlistDao.observePlaylistsWithCount()
