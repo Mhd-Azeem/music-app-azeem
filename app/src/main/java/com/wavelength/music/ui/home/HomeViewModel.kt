@@ -74,25 +74,18 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    /** Mixes general "top hits" with Tamil results so the featured carousel isn't purely
-     * English/Hindi-leaning — JioSaavn search is per-language, so there's no single query that
-     * covers both. */
     fun loadFeatured() {
         viewModelScope.launch {
             _featured.value = ScreenState.Loading
-            coroutineScope {
-                val topHitsDeferred = async { repository.getFeaturedTracks(20) }
-                val tamilDeferred = async { repository.getTracksByTag("tamil", 10) }
-                val topHits = topHitsDeferred.await()
-                val tamilHits = tamilDeferred.await()
-                val combined = (tamilHits.getOrDefault(emptyList()) + topHits.getOrDefault(emptyList()))
-                    .distinctBy { it.id }
-                _featured.value = when {
-                    combined.isNotEmpty() -> ScreenState.Success(combined)
-                    topHits.isFailure -> ScreenState.Error(topHits.exceptionOrNull()?.message ?: "Something went wrong")
-                    else -> ScreenState.Empty
+            repository.getFeaturedTracks(20).fold(
+                onSuccess = { tracks ->
+                    val deduped = tracks.distinctBy { it.id }
+                    _featured.value = if (deduped.isEmpty()) ScreenState.Empty else ScreenState.Success(deduped)
+                },
+                onFailure = { e ->
+                    _featured.value = ScreenState.Error(e.message ?: "Something went wrong")
                 }
-            }
+            )
         }
     }
 

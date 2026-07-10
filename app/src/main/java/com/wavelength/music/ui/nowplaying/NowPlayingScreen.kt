@@ -110,6 +110,7 @@ import com.wavelength.music.ui.components.TrackRow
 import com.wavelength.music.ui.components.dragDropItemOffset
 import com.wavelength.music.ui.components.dragToReorder
 import com.wavelength.music.ui.components.rememberDragDropListState
+import com.wavelength.music.ui.components.swipeHorizontal
 import com.wavelength.music.ui.playlist.AddToPlaylistDialog
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInputScale
@@ -255,6 +256,7 @@ fun NowPlayingScreen(
 
     val density = LocalDensity.current
     val collapseThresholdPx = with(density) { 80.dp.toPx() }
+    val skipThresholdPx = with(density) { 56.dp.toPx() }
 
     var dragOffset by remember { mutableFloatStateOf(0f) }
     val settleAnim = remember { Animatable(0f) }
@@ -365,6 +367,11 @@ fun NowPlayingScreen(
                             dragOffset = (dragOffset + dragAmount).coerceAtLeast(0f)
                         }
                     }
+                    .swipeHorizontal(
+                        thresholdPx = skipThresholdPx,
+                        onSwipeLeft = { viewModel.skipNext() },
+                        onSwipeRight = { viewModel.skipPrevious() }
+                    )
             ) {
                 IconButton(onClick = onCollapse) {
                     Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")

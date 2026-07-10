@@ -241,7 +241,7 @@ class MusicRepository @Inject constructor(
     suspend fun clearSearchHistory() = searchHistoryDao.clearAll()
 
     private companion object {
-        const val FEATURED_SEED_QUERY = "top hits"
+        const val FEATURED_SEED_QUERY = "latest tamil songs"
     }
 }
 

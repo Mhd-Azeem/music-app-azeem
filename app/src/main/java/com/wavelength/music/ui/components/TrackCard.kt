@@ -53,8 +53,8 @@ fun TrackCard(
                     onClick = onAddToPlaylistClick,
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(4.dp)
-                        .size(28.dp)
+                        .padding(3.dp)
+                        .size(20.dp)
                         .clip(CircleShape)
                         .background(Color.Black.copy(alpha = 0.45f))
                 ) {
@@ -62,7 +62,7 @@ fun TrackCard(
                         imageVector = Icons.Filled.Add,
                         contentDescription = "Add to playlist",
                         tint = Color.White,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(12.dp)
                     )
                 }
             }
@@ -71,8 +71,8 @@ fun TrackCard(
                     onClick = onMoreClick,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(4.dp)
-                        .size(28.dp)
+                        .padding(3.dp)
+                        .size(20.dp)
                         .clip(CircleShape)
                         .background(Color.Black.copy(alpha = 0.45f))
                 ) {
@@ -80,7 +80,7 @@ fun TrackCard(
                         imageVector = Icons.Filled.MoreVert,
                         contentDescription = "More options",
                         tint = Color.White,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(12.dp)
                     )
                 }
             }
