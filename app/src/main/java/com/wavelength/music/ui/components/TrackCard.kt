@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,6 +31,7 @@ fun TrackCard(
     track: Track,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onAddToPlaylistClick: (() -> Unit)? = null,
     onMoreClick: (() -> Unit)? = null
 ) {
     Column(
@@ -46,6 +48,24 @@ fun TrackCard(
                     .clip(RoundedCornerShape(8.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             )
+            if (onAddToPlaylistClick != null) {
+                IconButton(
+                    onClick = onAddToPlaylistClick,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(4.dp)
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.45f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "Add to playlist",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
             if (onMoreClick != null) {
                 IconButton(
                     onClick = onMoreClick,

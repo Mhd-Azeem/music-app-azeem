@@ -103,6 +103,7 @@ import com.wavelength.music.data.model.LyricLine
 import com.wavelength.music.playback.RepeatMode
 import com.wavelength.music.ui.components.EmptyView
 import com.wavelength.music.ui.components.LoadingView
+import com.wavelength.music.ui.components.QuickAddToPlaylistDialog
 import com.wavelength.music.ui.components.ScreenState
 import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.components.TrackRow
@@ -146,6 +147,7 @@ fun NowPlayingScreen(
     var showSpeedMenu by remember { mutableStateOf(false) }
     var showLyrics by remember { mutableStateOf(false) }
     var menuQueueIndex by remember { mutableStateOf<Int?>(null) }
+    var quickAddQueueIndex by remember { mutableStateOf<Int?>(null) }
 
     val context = LocalContext.current
     var dynamicAccent by remember { mutableStateOf<Color?>(null) }
@@ -244,6 +246,11 @@ fun NowPlayingScreen(
                 { viewModel.moveQueueItem(queueIndex, queueIndex + 1) }
             } else null
         )
+    }
+
+    val quickAddTrack = quickAddQueueIndex?.let { state.queue.getOrNull(it)?.track }
+    if (quickAddTrack != null) {
+        QuickAddToPlaylistDialog(track = quickAddTrack, onDismiss = { quickAddQueueIndex = null })
     }
 
     val density = LocalDensity.current
@@ -641,6 +648,7 @@ fun NowPlayingScreen(
                         TrackRow(
                             track = entry.track,
                             onClick = { viewModel.playQueueItem(queueIndex) },
+                            onAddToPlaylistClick = { quickAddQueueIndex = queueIndex },
                             onMoreClick = { menuQueueIndex = queueIndex },
                             modifier = Modifier
                                 .dragDropItemOffset(dragDropState, offset)

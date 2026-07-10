@@ -45,6 +45,7 @@ import com.wavelength.music.ui.components.ErrorView
 import com.wavelength.music.ui.components.LoadingView
 import com.wavelength.music.ui.components.ScreenState
 import com.wavelength.music.ui.components.SectionHeader
+import com.wavelength.music.ui.components.QuickAddToPlaylistDialog
 import com.wavelength.music.ui.components.TrackCard
 import com.wavelength.music.ui.components.TrackOptionsSheet
 
@@ -128,9 +129,13 @@ private fun HomeContent(
     onSearchHistoryClick: (String) -> Unit
 ) {
     var trackForMenu by remember { mutableStateOf<Track?>(null) }
+    var trackForQuickAdd by remember { mutableStateOf<Track?>(null) }
 
     trackForMenu?.let { track ->
         TrackOptionsSheet(track = track, onDismiss = { trackForMenu = null })
+    }
+    trackForQuickAdd?.let { track ->
+        QuickAddToPlaylistDialog(track = track, onDismiss = { trackForQuickAdd = null })
     }
 
     LazyColumn(
@@ -162,6 +167,7 @@ private fun HomeContent(
                     TrackCard(
                         track = track,
                         onClick = { onTrackClick(index, featuredTracks) },
+                        onAddToPlaylistClick = { trackForQuickAdd = track },
                         onMoreClick = { trackForMenu = track }
                     )
                 }
@@ -206,6 +212,7 @@ private fun HomeContent(
                         TrackCard(
                             track = track,
                             onClick = { onTrackClick(index, recentlyPlayed) },
+                            onAddToPlaylistClick = { trackForQuickAdd = track },
                             onMoreClick = { trackForMenu = track }
                         )
                     }
@@ -224,6 +231,7 @@ private fun HomeContent(
                         TrackCard(
                             track = track,
                             onClick = { onTrackClick(index, suggestedTracks) },
+                            onAddToPlaylistClick = { trackForQuickAdd = track },
                             onMoreClick = { trackForMenu = track }
                         )
                     }
@@ -242,6 +250,7 @@ private fun HomeContent(
                         TrackCard(
                             track = track,
                             onClick = { onTrackClick(index, dailyMixTracks) },
+                            onAddToPlaylistClick = { trackForQuickAdd = track },
                             onMoreClick = { trackForMenu = track }
                         )
                     }
@@ -260,6 +269,7 @@ private fun HomeContent(
                         TrackCard(
                             track = track,
                             onClick = { onTrackClick(index, mostPlayed) },
+                            onAddToPlaylistClick = { trackForQuickAdd = track },
                             onMoreClick = { trackForMenu = track }
                         )
                     }
@@ -278,6 +288,7 @@ private fun HomeContent(
                         TrackCard(
                             track = track,
                             onClick = { onTrackClick(index, recentlyAdded) },
+                            onAddToPlaylistClick = { trackForQuickAdd = track },
                             onMoreClick = { trackForMenu = track }
                         )
                     }

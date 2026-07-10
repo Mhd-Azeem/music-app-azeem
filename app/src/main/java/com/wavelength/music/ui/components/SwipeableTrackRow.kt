@@ -32,6 +32,7 @@ fun SwipeableTrackRow(
     modifier: Modifier = Modifier,
     isFavorite: Boolean = false,
     onFavoriteClick: (() -> Unit)? = null,
+    onAddToPlaylistClick: (() -> Unit)? = null,
     onMoreClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     isSelected: Boolean = false,
@@ -46,6 +47,7 @@ fun SwipeableTrackRow(
             modifier = modifier,
             isFavorite = isFavorite,
             onFavoriteClick = onFavoriteClick,
+            onAddToPlaylistClick = onAddToPlaylistClick,
             onMoreClick = onMoreClick,
             onLongClick = onLongClick,
             isSelected = isSelected,
@@ -77,6 +79,7 @@ fun SwipeableTrackRow(
             onClick = onClick,
             isFavorite = isFavorite,
             onFavoriteClick = onFavoriteClick,
+            onAddToPlaylistClick = onAddToPlaylistClick,
             onMoreClick = onMoreClick,
             onLongClick = onLongClick
         )

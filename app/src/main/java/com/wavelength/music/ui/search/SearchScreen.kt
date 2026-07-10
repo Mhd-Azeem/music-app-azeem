@@ -57,6 +57,7 @@ import com.wavelength.music.ui.components.EmptyView
 import com.wavelength.music.ui.components.ErrorView
 import com.wavelength.music.ui.components.LoadingView
 import com.wavelength.music.ui.components.ScreenState
+import com.wavelength.music.ui.components.QuickAddToPlaylistDialog
 import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.components.TrackRow
 import java.util.Locale
@@ -70,10 +71,14 @@ fun SearchScreen(
     val results by viewModel.results.collectAsStateWithLifecycle()
     val history by viewModel.searchHistory.collectAsStateWithLifecycle()
     var trackForMenu by remember { mutableStateOf<Track?>(null) }
+    var trackForQuickAdd by remember { mutableStateOf<Track?>(null) }
     val context = LocalContext.current
 
     trackForMenu?.let { track ->
         TrackOptionsSheet(track = track, onDismiss = { trackForMenu = null })
+    }
+    trackForQuickAdd?.let { track ->
+        QuickAddToPlaylistDialog(track = track, onDismiss = { trackForQuickAdd = null })
     }
 
     val voiceSearchLauncher = rememberLauncherForActivityResult(
@@ -175,6 +180,7 @@ fun SearchScreen(
                                 viewModel.playTrack(tracks, index)
                                 onTrackClick()
                             },
+                            onAddToPlaylistClick = { trackForQuickAdd = track },
                             onMoreClick = { trackForMenu = track }
                         )
                     }

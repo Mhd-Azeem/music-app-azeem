@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -38,6 +39,7 @@ fun TrackRow(
     modifier: Modifier = Modifier,
     isFavorite: Boolean = false,
     onFavoriteClick: (() -> Unit)? = null,
+    onAddToPlaylistClick: (() -> Unit)? = null,
     onMoreClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     isSelected: Boolean = false,
@@ -106,6 +108,11 @@ fun TrackRow(
                     contentDescription = null,
                     tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+        if (onAddToPlaylistClick != null) {
+            IconButton(onClick = onAddToPlaylistClick) {
+                Icon(imageVector = Icons.Filled.Add, contentDescription = "Add to playlist")
             }
         }
         if (onMoreClick != null) {

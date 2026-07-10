@@ -92,6 +92,7 @@ fun LibraryScreen(
     var showCreateFolderDialog by remember { mutableStateOf(false) }
     var currentFolderId by remember { mutableStateOf<Long?>(null) }
     var trackForMenu by remember { mutableStateOf<Track?>(null) }
+    var trackForQuickAdd by remember { mutableStateOf<Track?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val scanQrLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
@@ -185,6 +186,15 @@ fun LibraryScreen(
 
     trackForMenu?.let { track ->
         TrackOptionsSheet(track = track, onDismiss = { trackForMenu = null })
+    }
+
+    trackForQuickAdd?.let { track ->
+        AddToPlaylistDialog(
+            playlists = playlists,
+            onDismiss = { trackForQuickAdd = null },
+            onSelect = { playlistId -> viewModel.addTracksToPlaylist(playlistId, listOf(track)) },
+            onCreateNew = { name -> viewModel.createPlaylistWithTracks(name, listOf(track)) }
+        )
     }
 
     Scaffold(
@@ -296,6 +306,7 @@ fun LibraryScreen(
                         onTrackClick()
                     },
                     onFavoriteClick = viewModel::removeFavorite,
+                    onAddToPlaylistClick = { trackForQuickAdd = it },
                     onMoreClick = { trackForMenu = it },
                     selectionMode = selectionMode,
                     selectedIds = selectedIds,
@@ -312,6 +323,7 @@ fun LibraryScreen(
                         onTrackClick()
                     },
                     onFavoriteClick = null,
+                    onAddToPlaylistClick = { trackForQuickAdd = it },
                     onMoreClick = { trackForMenu = it },
                     selectionMode = selectionMode,
                     selectedIds = selectedIds,
@@ -345,6 +357,7 @@ fun LibraryScreen(
                             onTrackClick()
                         },
                         onFavoriteClick = null,
+                        onAddToPlaylistClick = { trackForQuickAdd = it },
                         onMoreClick = { trackForMenu = it },
                         selectionMode = selectionMode,
                         selectedIds = selectedIds,
@@ -362,6 +375,7 @@ fun LibraryScreen(
                         onTrackClick()
                     },
                     onFavoriteClick = null,
+                    onAddToPlaylistClick = { trackForQuickAdd = it },
                     onMoreClick = { trackForMenu = it },
                     emptyMessage = "No downloads yet — use a track's three-dot menu to download it",
                     selectionMode = selectionMode,
@@ -382,6 +396,7 @@ private fun TrackList(
     isFavoriteTab: Boolean,
     onTrackClick: (Int) -> Unit,
     onFavoriteClick: ((Track) -> Unit)?,
+    onAddToPlaylistClick: (Track) -> Unit,
     onMoreClick: (Track) -> Unit,
     selectionMode: Boolean,
     selectedIds: Set<String>,
@@ -406,6 +421,7 @@ private fun TrackList(
                     onLongClick = { onEnterSelection(track) },
                     isFavorite = isFavoriteTab,
                     onFavoriteClick = if (selectionMode) null else onFavoriteClick?.let { { it(track) } },
+                    onAddToPlaylistClick = if (selectionMode) null else { { onAddToPlaylistClick(track) } },
                     onMoreClick = if (selectionMode) null else { { onMoreClick(track) } },
                     isSelected = track.id in selectedIds,
                     showSelectionCheckbox = selectionMode,

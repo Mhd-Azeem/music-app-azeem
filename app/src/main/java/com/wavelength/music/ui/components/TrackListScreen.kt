@@ -50,6 +50,7 @@ fun TrackListScreen(
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     var menuTrackIndex by remember { mutableStateOf<Int?>(null) }
+    var quickAddTrack by remember { mutableStateOf<Track?>(null) }
     val successData = (state as? ScreenState.Success)?.data
     val menuTrack = menuTrackIndex?.let { index -> successData?.getOrNull(index) }
 
@@ -72,6 +73,10 @@ fun TrackListScreen(
                 { onReorder(index, index + 1) }
             } else null
         )
+    }
+
+    quickAddTrack?.let { track ->
+        QuickAddToPlaylistDialog(track = track, onDismiss = { quickAddTrack = null })
     }
 
     Scaffold(
@@ -136,6 +141,7 @@ fun TrackListScreen(
                     TrackRow(
                         track = track,
                         onClick = { onTrackClick(index) },
+                        onAddToPlaylistClick = { quickAddTrack = track },
                         onMoreClick = { menuTrackIndex = index }
                     )
                 }
