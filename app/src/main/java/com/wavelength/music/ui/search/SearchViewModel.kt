@@ -30,10 +30,20 @@ class SearchViewModel @Inject constructor(
     private val _results = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Empty)
     val results: StateFlow<ScreenState<List<Track>>> = _results.asStateFlow()
 
+    private val _isLoadingMore = MutableStateFlow(false)
+    val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
+
     val searchHistory: StateFlow<List<String>> = repository.observeSearchHistory()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var searchJob: Job? = null
+
+    // Paging state for the currently-displayed query only — reset on every new search, not tied
+    // to _query directly since onQueryChange fires on every keystroke but a page only ever
+    // belongs to the query that was actually committed to _results.
+    private var pagedQuery: String = ""
+    private var currentPage = 0
+    private var canLoadMore = true
 
     init {
         pendingSearchQuery.consume()?.let {
@@ -57,18 +67,55 @@ class SearchViewModel @Inject constructor(
     }
 
     private suspend fun runSearch(q: String) {
-        repository.searchTracks(q).fold(
+        pagedQuery = q
+        currentPage = 0
+        canLoadMore = true
+        repository.searchTracks(q, page = 0, limit = SEARCH_PAGE_SIZE).fold(
             onSuccess = { tracks ->
                 // distinctBy guards against the unofficial JioSaavn API occasionally returning
                 // overlapping/duplicate ids within one result set — the list below is keyed by
                 // track.id in Compose, which would crash on a duplicate.
                 val deduped = tracks.distinctBy { it.id }
+                canLoadMore = tracks.size >= SEARCH_PAGE_SIZE
                 _results.value = if (deduped.isEmpty()) ScreenState.Empty else ScreenState.Success(deduped)
             },
             onFailure = { e ->
                 _results.value = ScreenState.Error(e.message ?: "Something went wrong")
             }
         )
+    }
+
+    /** Called as the user scrolls near the bottom of the results list. A no-op while already
+     * loading, once the last page came back short of a full page (nothing more to fetch), or
+     * before any search has actually completed successfully. */
+    fun loadMore() {
+        val current = _results.value
+        if (current !is ScreenState.Success || _isLoadingMore.value || !canLoadMore) return
+        val q = pagedQuery
+        val nextPage = currentPage + 1
+        viewModelScope.launch {
+            _isLoadingMore.value = true
+            repository.searchTracks(q, page = nextPage, limit = SEARCH_PAGE_SIZE).fold(
+                onSuccess = { newTracks ->
+                    // A newer search may have started (and possibly already finished) while this
+                    // page request was in flight - drop this response rather than clobbering it
+                    // with stale results merged on top.
+                    if (pagedQuery == q) {
+                        currentPage = nextPage
+                        canLoadMore = newTracks.size >= SEARCH_PAGE_SIZE
+                        val latest = (_results.value as? ScreenState.Success)?.data ?: current.data
+                        val existingIds = latest.map { it.id }.toSet()
+                        _results.value = ScreenState.Success(latest + newTracks.filterNot { it.id in existingIds })
+                    }
+                },
+                onFailure = {
+                    // Leave existing results on screen; just stop trying to page further until
+                    // the user retries by scrolling again next time results reload from scratch.
+                    if (pagedQuery == q) canLoadMore = false
+                }
+            )
+            _isLoadingMore.value = false
+        }
     }
 
     fun retry() {
@@ -103,5 +150,9 @@ class SearchViewModel @Inject constructor(
 
     fun clearHistory() {
         viewModelScope.launch { repository.clearSearchHistory() }
+    }
+
+    private companion object {
+        const val SEARCH_PAGE_SIZE = 20
     }
 }

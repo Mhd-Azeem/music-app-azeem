@@ -56,8 +56,8 @@ class MusicRepository @Inject constructor(
     suspend fun getTracksByTag(tag: String, limit: Int = 20): Result<List<Track>> =
         jioSaavnRepository.searchSongs(tag, limit)
 
-    suspend fun searchTracks(query: String, limit: Int = 30): Result<List<Track>> =
-        jioSaavnRepository.searchSongs(query, limit)
+    suspend fun searchTracks(query: String, page: Int = 0, limit: Int = 30): Result<List<Track>> =
+        jioSaavnRepository.searchSongs(query, page = page, limit = limit)
 
     suspend fun getApiUsage() = jioSaavnRepository.getUsage()
 

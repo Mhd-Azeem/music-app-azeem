@@ -15,15 +15,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +36,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -149,7 +155,19 @@ fun SearchScreen(
             )
             is ScreenState.Success -> {
                 val tracks = state.data
-                LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
+                val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
+                val listState = rememberLazyListState()
+                val shouldLoadMore by remember {
+                    derivedStateOf {
+                        val layoutInfo = listState.layoutInfo
+                        val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                        layoutInfo.totalItemsCount > 0 && lastVisible >= layoutInfo.totalItemsCount - 3
+                    }
+                }
+                LaunchedEffect(shouldLoadMore) {
+                    if (shouldLoadMore) viewModel.loadMore()
+                }
+                LazyColumn(modifier = Modifier.fillMaxSize().padding(padding), state = listState) {
                     itemsIndexed(tracks, key = { _, track -> track.id }) { index, track ->
                         TrackRow(
                             track = track,
@@ -159,6 +177,13 @@ fun SearchScreen(
                             },
                             onMoreClick = { trackForMenu = track }
                         )
+                    }
+                    if (isLoadingMore) {
+                        item {
+                            Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(modifier = Modifier.size(28.dp))
+                            }
+                        }
                     }
                 }
             }

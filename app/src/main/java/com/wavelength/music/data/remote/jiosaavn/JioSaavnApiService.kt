@@ -12,7 +12,11 @@ import retrofit2.http.Query
 interface JioSaavnApiService {
 
     @GET("search/songs")
-    suspend fun searchSongs(@Query("query") query: String): JioSaavnSearchResponse
+    suspend fun searchSongs(
+        @Query("query") query: String,
+        @Query("page") page: Int = 0,
+        @Query("limit") limit: Int = 20
+    ): JioSaavnSearchResponse
 
     @GET("songs/{id}")
     suspend fun getSong(@Path("id") id: String): JioSaavnSongResponse
