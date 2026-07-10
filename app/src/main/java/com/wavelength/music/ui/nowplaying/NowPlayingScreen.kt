@@ -72,6 +72,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -628,6 +629,7 @@ fun NowPlayingScreen(
             LyricsOverlay(
                 lyricsState = lyricsState,
                 positionMs = state.positionMs,
+                albumArtUrl = track?.albumArtUrl,
                 onClose = { showLyrics = false }
             )
         }
@@ -662,58 +664,71 @@ private suspend fun loadDominantColor(context: android.content.Context, url: Str
 
 /** Full-screen overlay showing synced lyrics (from lrclib.net, best-effort — many tracks won't
  * have a match), auto-scrolling to and highlighting whichever line's timestamp has most recently
- * passed. */
+ * passed. The backdrop is the current album art, heavily blurred and darkened, so the overlay
+ * reads as a continuation of the player rather than a flat, disconnected screen. */
 @Composable
 private fun LyricsOverlay(
     lyricsState: ScreenState<List<LyricLine>>,
     positionMs: Long,
+    albumArtUrl: String?,
     onClose: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Lyrics", style = MaterialTheme.typography.titleMedium)
-            IconButton(onClick = onClose) {
-                Icon(Icons.Filled.Close, contentDescription = "Close lyrics")
-            }
-        }
-        when (lyricsState) {
-            is ScreenState.Loading -> LoadingView(modifier = Modifier.fillMaxSize())
-            is ScreenState.Error -> EmptyView(modifier = Modifier.fillMaxSize(), message = lyricsState.message)
-            is ScreenState.Empty -> EmptyView(
-                modifier = Modifier.fillMaxSize(),
-                message = "No synced lyrics found for this track"
-            )
-            is ScreenState.Success -> {
-                val lines = lyricsState.data
-                val listState = rememberLazyListState()
-                val activeIndex = lines.indexOfLast { it.timestampMs <= positionMs }.coerceAtLeast(0)
-                LaunchedEffect(activeIndex) {
-                    listState.animateScrollToItem((activeIndex - 2).coerceAtLeast(0))
+    Box(modifier = Modifier.fillMaxSize()) {
+        AsyncImage(
+            model = albumArtUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .blur(40.dp)
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.6f))
+        )
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Lyrics", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                IconButton(onClick = onClose) {
+                    Icon(Icons.Filled.Close, contentDescription = "Close lyrics", tint = Color.White)
                 }
-                LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
-                    itemsIndexed(lines) { index, line ->
-                        Text(
-                            text = line.text,
-                            style = if (index == activeIndex) {
-                                MaterialTheme.typography.titleMedium
-                            } else {
-                                MaterialTheme.typography.bodyLarge
-                            },
-                            color = if (index == activeIndex) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)
-                        )
+            }
+            when (lyricsState) {
+                is ScreenState.Loading -> LoadingView(modifier = Modifier.fillMaxSize())
+                is ScreenState.Error -> EmptyView(modifier = Modifier.fillMaxSize(), message = lyricsState.message)
+                is ScreenState.Empty -> EmptyView(
+                    modifier = Modifier.fillMaxSize(),
+                    message = "No synced lyrics found for this track"
+                )
+                is ScreenState.Success -> {
+                    val lines = lyricsState.data
+                    val listState = rememberLazyListState()
+                    val activeIndex = lines.indexOfLast { it.timestampMs <= positionMs }.coerceAtLeast(0)
+                    LaunchedEffect(activeIndex) {
+                        listState.animateScrollToItem((activeIndex - 2).coerceAtLeast(0))
+                    }
+                    LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                        itemsIndexed(lines) { index, line ->
+                            Text(
+                                text = line.text,
+                                style = if (index == activeIndex) {
+                                    MaterialTheme.typography.titleMedium
+                                } else {
+                                    MaterialTheme.typography.bodyLarge
+                                },
+                                color = if (index == activeIndex) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    Color.White.copy(alpha = 0.75f)
+                                },
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)
+                            )
+                        }
                     }
                 }
             }
