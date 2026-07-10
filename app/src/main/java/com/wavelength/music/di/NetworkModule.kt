@@ -1,5 +1,6 @@
 package com.wavelength.music.di
 
+import android.content.Context
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.wavelength.music.BuildConfig
@@ -8,11 +9,14 @@ import com.wavelength.music.data.remote.lrclib.LrcLibApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import java.io.File
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
@@ -28,7 +32,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpClient(@ApplicationContext context: Context): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG) {
                 HttpLoggingInterceptor.Level.BASIC
@@ -36,7 +40,11 @@ object NetworkModule {
                 HttpLoggingInterceptor.Level.NONE
             }
         }
+        // Transparently honors the backend's Cache-Control headers (max-age, stale-while-revalidate),
+        // so responses survive process death and app restarts without any repository-level bookkeeping.
+        val httpCache = Cache(File(context.cacheDir, "http_cache"), 25L * 1024 * 1024)
         return OkHttpClient.Builder()
+            .cache(httpCache)
             .addInterceptor(logging)
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
