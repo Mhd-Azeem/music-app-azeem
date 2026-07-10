@@ -122,6 +122,20 @@
             </intent-filter>
         </service>
 
+        <receiver
+            android:name=".widget.MusicWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.wavelength.music.widget.ACTION_PLAY_PAUSE" />
+                <action android:name="com.wavelength.music.widget.ACTION_NEXT" />
+                <action android:name="com.wavelength.music.widget.ACTION_PREVIOUS" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/music_widget_info" />
+        </receiver>
+
     </application>
 
 </manifest>

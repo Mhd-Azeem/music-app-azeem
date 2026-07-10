@@ -9,6 +9,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.wavelength.music.MainActivity
+import com.wavelength.music.widget.MusicWidgetUpdater
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -27,6 +28,18 @@ class PlaybackService : MediaSessionService() {
         override fun onAudioSessionIdChanged(audioSessionId: Int) {
             equalizerController.onAudioSessionIdChanged(audioSessionId)
             visualizerController.onAudioSessionIdChanged(audioSessionId)
+        }
+
+        override fun onEvents(player: Player, events: Player.Events) {
+            if (
+                events.containsAny(
+                    Player.EVENT_MEDIA_METADATA_CHANGED,
+                    Player.EVENT_IS_PLAYING_CHANGED,
+                    Player.EVENT_MEDIA_ITEM_TRANSITION
+                )
+            ) {
+                MusicWidgetUpdater.update(this@PlaybackService, player)
+            }
         }
     }
 
