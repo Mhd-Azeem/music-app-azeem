@@ -108,7 +108,10 @@ class HomeViewModel @Inject constructor(
         repository.searchTracks(topArtist, limit = 20).fold(
             onSuccess = { tracks ->
                 val excludeIds = recentTracks.map { it.id }.toSet()
-                val filtered = tracks.filterNot { it.id in excludeIds }
+                // distinctBy guards against the unofficial JioSaavn API occasionally returning
+                // overlapping/duplicate ids within one result set — the list below is keyed by
+                // track.id in Compose, which would crash on a duplicate.
+                val filtered = tracks.distinctBy { it.id }.filterNot { it.id in excludeIds }
                 _suggested.value = if (filtered.isEmpty()) ScreenState.Empty else ScreenState.Success(filtered)
             },
             onFailure = { e ->

@@ -135,7 +135,7 @@ private fun HomeContent(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(searchHistory) { query ->
+                    items(searchHistory, key = { it }) { query ->
                         AssistChip(onClick = { onSearchHistoryClick(query) }, label = { Text(query) })
                     }
                 }
@@ -148,7 +148,7 @@ private fun HomeContent(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                itemsIndexed(featuredTracks) { index, track ->
+                itemsIndexed(featuredTracks, key = { _, track -> track.id }) { index, track ->
                     TrackCard(track = track, onClick = { onTrackClick(index, featuredTracks) })
                 }
             }
@@ -160,7 +160,7 @@ private fun HomeContent(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(genreShortcuts) { tag ->
+                items(genreShortcuts, key = { it }) { tag ->
                     val label = tag.replaceFirstChar { it.uppercase() }
                     AssistChip(onClick = { onGenreClick(tag, label) }, label = { Text(label) })
                 }
@@ -188,7 +188,7 @@ private fun HomeContent(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    itemsIndexed(recentlyPlayed) { index, track ->
+                    itemsIndexed(recentlyPlayed, key = { _, track -> track.id }) { index, track ->
                         TrackCard(track = track, onClick = { onTrackClick(index, recentlyPlayed) })
                     }
                 }
@@ -202,7 +202,7 @@ private fun HomeContent(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    itemsIndexed(suggestedTracks) { index, track ->
+                    itemsIndexed(suggestedTracks, key = { _, track -> track.id }) { index, track ->
                         TrackCard(track = track, onClick = { onTrackClick(index, suggestedTracks) })
                     }
                 }
@@ -216,7 +216,7 @@ private fun HomeContent(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    itemsIndexed(dailyMixTracks) { index, track ->
+                    itemsIndexed(dailyMixTracks, key = { _, track -> track.id }) { index, track ->
                         TrackCard(track = track, onClick = { onTrackClick(index, dailyMixTracks) })
                     }
                 }
@@ -230,7 +230,7 @@ private fun HomeContent(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    itemsIndexed(mostPlayed) { index, track ->
+                    itemsIndexed(mostPlayed, key = { _, track -> track.id }) { index, track ->
                         TrackCard(track = track, onClick = { onTrackClick(index, mostPlayed) })
                     }
                 }
@@ -244,7 +244,7 @@ private fun HomeContent(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    itemsIndexed(recentlyAdded) { index, track ->
+                    itemsIndexed(recentlyAdded, key = { _, track -> track.id }) { index, track ->
                         TrackCard(track = track, onClick = { onTrackClick(index, recentlyAdded) })
                     }
                 }

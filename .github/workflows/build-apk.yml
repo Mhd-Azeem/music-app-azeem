@@ -37,14 +37,14 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build debug APK
-        run: ./gradlew assembleDebug --stacktrace
+      - name: Build release APK
+        run: ./gradlew assembleRelease --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wavelength-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: wavelength-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
       - name: Publish to Releases
@@ -56,8 +56,9 @@ jobs:
           body: |
             Automatically rebuilt from commit ${{ github.sha }}.
 
-            This is a debug APK — download `app-debug.apk` below and install it directly
-            (you'll need to allow "install unknown apps" for whichever app you use to open it).
+            This is a minified, optimized release build (not from the Play Store) — download
+            `app-release.apk` below and install it directly (you'll need to allow "install unknown
+            apps" for whichever app you use to open it).
           prerelease: true
           make_latest: true
-          files: app/build/outputs/apk/debug/app-debug.apk
+          files: app/build/outputs/apk/release/app-release.apk

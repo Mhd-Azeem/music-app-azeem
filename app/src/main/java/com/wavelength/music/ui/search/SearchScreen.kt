@@ -150,7 +150,7 @@ fun SearchScreen(
             is ScreenState.Success -> {
                 val tracks = state.data
                 LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
-                    itemsIndexed(tracks) { index, track ->
+                    itemsIndexed(tracks, key = { _, track -> track.id }) { index, track ->
                         TrackRow(
                             track = track,
                             onClick = {

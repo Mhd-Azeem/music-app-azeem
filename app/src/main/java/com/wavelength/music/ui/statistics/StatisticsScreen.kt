@@ -71,7 +71,7 @@ fun StatisticsScreen(
 
                 if (topArtists.isNotEmpty()) {
                     item { SectionHeader("Top artists") }
-                    items(topArtists) { artist ->
+                    items(topArtists, key = { it.artistName }) { artist ->
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
@@ -86,7 +86,7 @@ fun StatisticsScreen(
 
                 if (topTracks.isNotEmpty()) {
                     item { SectionHeader("Most played") }
-                    itemsIndexed(topTracks) { index, track ->
+                    itemsIndexed(topTracks, key = { _, track -> track.id }) { index, track ->
                         TrackRow(track = track, onClick = { viewModel.playTrack(topTracks, index) })
                     }
                 }

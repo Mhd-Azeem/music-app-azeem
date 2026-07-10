@@ -59,7 +59,11 @@ class SearchViewModel @Inject constructor(
     private suspend fun runSearch(q: String) {
         repository.searchTracks(q).fold(
             onSuccess = { tracks ->
-                _results.value = if (tracks.isEmpty()) ScreenState.Empty else ScreenState.Success(tracks)
+                // distinctBy guards against the unofficial JioSaavn API occasionally returning
+                // overlapping/duplicate ids within one result set — the list below is keyed by
+                // track.id in Compose, which would crash on a duplicate.
+                val deduped = tracks.distinctBy { it.id }
+                _results.value = if (deduped.isEmpty()) ScreenState.Empty else ScreenState.Success(deduped)
             },
             onFailure = { e ->
                 _results.value = ScreenState.Error(e.message ?: "Something went wrong")

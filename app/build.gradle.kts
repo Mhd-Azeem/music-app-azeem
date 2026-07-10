@@ -38,11 +38,20 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Signed with the auto-provisioned debug key so it stays a straightforward sideload
+            // build (no keystore secret to manage) while still getting R8's code shrinking/
+            // optimization, which the debug build type intentionally skips for fast iteration.
+            // Note: CI runs on a fresh runner each time with no persisted ~/.android, so this key
+            // isn't guaranteed stable across builds — same pre-existing limitation the old
+            // debug-only pipeline had, unrelated to this change. If installing a "latest" update
+            // over an older one ever fails with a signature mismatch, uninstall first.
+            signingConfig = signingConfigs.getByName("debug")
         }
         debug {
             isMinifyEnabled = false
@@ -97,7 +106,6 @@ dependencies {
 
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.moshi)
-    implementation(libs.moshi.kotlin)
     ksp(libs.moshi.codegen)
     implementation(libs.okhttp.logging)
 

@@ -2,7 +2,6 @@ package com.wavelength.music.di
 
 import android.content.Context
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.wavelength.music.BuildConfig
 import com.wavelength.music.data.remote.jiosaavn.JioSaavnApiService
 import com.wavelength.music.data.remote.lrclib.LrcLibApiService
@@ -24,11 +23,13 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
+    // Every model Moshi parses (JioSaavn/LrcLib DTOs, backup/QR export models) is annotated with
+    // @JsonClass(generateAdapter = true), so a compile-time-generated adapter always exists —
+    // no runtime-reflection Kotlin adapter fallback needed, which keeps this R8/minification-safe
+    // without extra keep rules and avoids reflection's per-lookup overhead.
     @Provides
     @Singleton
-    fun provideMoshi(): Moshi = Moshi.Builder()
-        .add(KotlinJsonAdapterFactory())
-        .build()
+    fun provideMoshi(): Moshi = Moshi.Builder().build()
 
     @Provides
     @Singleton

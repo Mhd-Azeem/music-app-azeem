@@ -211,7 +211,7 @@ fun SettingsScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(IconPreset.entries) { preset ->
+                        items(IconPreset.entries, key = { it.name }) { preset ->
                             IconPresetOption(
                                 preset = preset,
                                 selected = settings.iconPreset == preset,
@@ -314,7 +314,7 @@ fun SettingsScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(AppTheme.entries.filter { !it.isGlass }) { theme ->
+                        items(AppTheme.entries.filter { !it.isGlass }, key = { it.name }) { theme ->
                             ThemeOption(
                                 theme = theme,
                                 selected = settings.theme == theme,
@@ -332,7 +332,7 @@ fun SettingsScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(AppTheme.entries.filter { it.isGlass }) { theme ->
+                        items(AppTheme.entries.filter { it.isGlass }, key = { it.name }) { theme ->
                             ThemeOption(
                                 theme = theme,
                                 selected = settings.theme == theme,
@@ -574,7 +574,7 @@ fun SettingsScreen(
                                 contentPadding = PaddingValues(horizontal = 16.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                items(EqualizerPreset.entries) { preset ->
+                                items(EqualizerPreset.entries, key = { it.name }) { preset ->
                                     FilterChip(
                                         selected = false,
                                         onClick = { equalizerViewModel.applyPreset(preset) },

@@ -1,13 +1,17 @@
 package com.wavelength.music.data.backup
 
+import com.squareup.moshi.JsonClass
+
 /** Compact QR payload — a QR code can only hold so much data before it's too dense to scan
  * reliably, so this only carries enough per track (id, name, artist) to re-find it on JioSaavn on
  * the receiving end, not full playback URLs like [BackupTrack] does. */
+@JsonClass(generateAdapter = true)
 data class QrPlaylist(
     val n: String,
     val t: List<QrTrack>
 )
 
+@JsonClass(generateAdapter = true)
 data class QrTrack(
     val i: String,
     val n: String,
