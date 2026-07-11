@@ -29,6 +29,16 @@ val genreShortcuts = listOf(
     "tamil", "hindi", "telugu", "english", "punjabi", "malayalam", "kannada", "bengali"
 )
 
+/** Tapping one reuses the Genre screen's plain-text-search mechanism (the artist's name works
+ * fine as a JioSaavn search query, same as [genreShortcuts]'s language tags do) — no dedicated
+ * artist API or screen needed. There's no artist-photo endpoint on this JioSaavn deployment, so
+ * these are shown as plain text chips (like recent searches) rather than photo avatars. */
+val featuredArtists = listOf(
+    "Anirudh Ravichander", "Sai Abhyankkar", "GV Prakash Kumar", "Vijay Antony",
+    "Hiphop Tamizha", "Yuvan Shankar Raja", "Santhosh Narayanan", "D. Imman",
+    "A.R. Rahman", "Thaman S"
+)
+
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val repository: MusicRepository,
