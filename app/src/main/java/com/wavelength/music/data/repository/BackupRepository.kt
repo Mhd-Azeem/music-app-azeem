@@ -20,6 +20,10 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/** UTF-8 byte-order mark some apps/clouds prepend to text files; stripped before parsing since
+ * Moshi's JSON reader treats it as a syntax error rather than whitespace. */
+private const val BOM = "\uFEFF"
+
 /** Exports/imports favorites, playlists (not folders — see [BackupData]), every user-configurable
  * setting, the current background, and every favorite wallpaper to a single JSON file the user
  * picks via the system file picker, so it can be backed up anywhere (Drive, email, a computer)
@@ -31,7 +35,10 @@ class BackupRepository @Inject constructor(
     private val repository: MusicRepository,
     private val settingsRepository: SettingsRepository
 ) {
-    private val adapter = moshi.adapter(BackupData::class.java).indent("  ")
+    /** Lenient because backup files often get moved through clouds/chat apps before a restore,
+     * which can prepend a UTF-8 BOM or otherwise lightly mangle the JSON without corrupting the
+     * data itself — strict parsing rejects those files outright with a cryptic Moshi error. */
+    private val adapter = moshi.adapter(BackupData::class.java).indent("  ").lenient()
 
     suspend fun exportTo(uri: Uri): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
@@ -81,7 +88,7 @@ class BackupRepository @Inject constructor(
         runCatching {
             val stream = context.contentResolver.openInputStream(uri)
                 ?: error("Couldn't open the selected file for reading")
-            val json = stream.use { it.reader().readText() }
+            val json = stream.use { it.reader().readText() }.removePrefix(BOM).trim()
             val data = adapter.fromJson(json) ?: error("This doesn't look like a valid backup file")
 
             data.favorites.forEach { repository.addFavorite(it.toTrack()) }
