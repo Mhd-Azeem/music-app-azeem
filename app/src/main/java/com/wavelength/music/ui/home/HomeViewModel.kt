@@ -74,28 +74,57 @@ class HomeViewModel @Inject constructor(
     private val _dailyMix = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Loading)
     val dailyMix: StateFlow<ScreenState<List<Track>>> = _dailyMix.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    // Snapshots of whatever [loadSuggested]/[loadDailyMix] were last driven by, so pull-to-refresh
+    // can re-run those two searches on demand without needing its own separate query logic.
+    private var latestRecentTracks: List<Track> = emptyList()
+    private var latestTopArtists: List<ArtistStat> = emptyList()
+
     init {
         loadFeatured()
         viewModelScope.launch {
-            repository.observeRecentlyPlayed(30).collectLatest { tracks -> loadSuggested(tracks) }
+            repository.observeRecentlyPlayed(30).collectLatest { tracks ->
+                latestRecentTracks = tracks
+                loadSuggested(tracks)
+            }
         }
         viewModelScope.launch {
-            repository.observeTopArtists(2).collectLatest { artists -> loadDailyMix(artists) }
+            repository.observeTopArtists(2).collectLatest { artists ->
+                latestTopArtists = artists
+                loadDailyMix(artists)
+            }
         }
     }
 
     fun loadFeatured() {
+        viewModelScope.launch { loadFeaturedInternal() }
+    }
+
+    private suspend fun loadFeaturedInternal() {
+        _featured.value = ScreenState.Loading
+        repository.getFeaturedTracks(20).fold(
+            onSuccess = { tracks ->
+                val deduped = tracks.distinctBy { it.id }
+                _featured.value = if (deduped.isEmpty()) ScreenState.Empty else ScreenState.Success(deduped)
+            },
+            onFailure = { e ->
+                _featured.value = ScreenState.Error(e.message ?: "Something went wrong")
+            }
+        )
+    }
+
+    /** Pull-to-refresh: re-fetches Featured plus the two search-backed sections. Most of the rest
+     * of Home (recently played, playlists, most played, recently added) is already a live Room
+     * flow that updates on its own and needs no manual refresh. */
+    fun refresh() {
         viewModelScope.launch {
-            _featured.value = ScreenState.Loading
-            repository.getFeaturedTracks(20).fold(
-                onSuccess = { tracks ->
-                    val deduped = tracks.distinctBy { it.id }
-                    _featured.value = if (deduped.isEmpty()) ScreenState.Empty else ScreenState.Success(deduped)
-                },
-                onFailure = { e ->
-                    _featured.value = ScreenState.Error(e.message ?: "Something went wrong")
-                }
-            )
+            _isRefreshing.value = true
+            loadFeaturedInternal()
+            loadSuggested(latestRecentTracks)
+            loadDailyMix(latestTopArtists)
+            _isRefreshing.value = false
         }
     }
 

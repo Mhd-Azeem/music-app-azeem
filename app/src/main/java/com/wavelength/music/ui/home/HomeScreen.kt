@@ -20,12 +20,14 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +51,7 @@ import com.wavelength.music.ui.components.QuickAddToPlaylistDialog
 import com.wavelength.music.ui.components.TrackCard
 import com.wavelength.music.ui.components.TrackOptionsSheet
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onTrackClick: () -> Unit,
@@ -66,6 +69,7 @@ fun HomeScreen(
     val recentlyPlayed by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     val searchHistory by viewModel.searchHistory.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -79,35 +83,41 @@ fun HomeScreen(
             )
         }
     ) { padding ->
-        when (val state = featured) {
-            is ScreenState.Loading -> LoadingView(modifier = Modifier.padding(padding))
-            is ScreenState.Error -> ErrorView(
-                onRetry = viewModel::loadFeatured,
-                modifier = Modifier.padding(padding),
-                message = state.message
-            )
-            is ScreenState.Empty -> EmptyView(modifier = Modifier.padding(padding))
-            is ScreenState.Success -> HomeContent(
-                padding = padding,
-                featuredTracks = state.data,
-                suggestedTracks = (suggested as? ScreenState.Success)?.data.orEmpty(),
-                dailyMixTracks = (dailyMix as? ScreenState.Success)?.data.orEmpty(),
-                mostPlayed = mostPlayed,
-                recentlyAdded = recentlyAdded,
-                recentlyPlayed = recentlyPlayed,
-                playlists = playlists.filter { !it.isFolder },
-                searchHistory = searchHistory,
-                onTrackClick = { index, queue ->
-                    viewModel.playTrack(queue, index)
-                    onTrackClick()
-                },
-                onGenreClick = onGenreClick,
-                onPlaylistClick = onPlaylistClick,
-                onSearchHistoryClick = { query ->
-                    viewModel.prepareSearch(query)
-                    onSearchClick()
-                }
-            )
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = viewModel::refresh,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            when (val state = featured) {
+                is ScreenState.Loading -> LoadingView(modifier = Modifier.padding(padding))
+                is ScreenState.Error -> ErrorView(
+                    onRetry = viewModel::loadFeatured,
+                    modifier = Modifier.padding(padding),
+                    message = state.message
+                )
+                is ScreenState.Empty -> EmptyView(modifier = Modifier.padding(padding))
+                is ScreenState.Success -> HomeContent(
+                    padding = padding,
+                    featuredTracks = state.data,
+                    suggestedTracks = (suggested as? ScreenState.Success)?.data.orEmpty(),
+                    dailyMixTracks = (dailyMix as? ScreenState.Success)?.data.orEmpty(),
+                    mostPlayed = mostPlayed,
+                    recentlyAdded = recentlyAdded,
+                    recentlyPlayed = recentlyPlayed,
+                    playlists = playlists.filter { !it.isFolder },
+                    searchHistory = searchHistory,
+                    onTrackClick = { index, queue ->
+                        viewModel.playTrack(queue, index)
+                        onTrackClick()
+                    },
+                    onGenreClick = onGenreClick,
+                    onPlaylistClick = onPlaylistClick,
+                    onSearchHistoryClick = { query ->
+                        viewModel.prepareSearch(query)
+                        onSearchClick()
+                    }
+                )
+            }
         }
     }
 }

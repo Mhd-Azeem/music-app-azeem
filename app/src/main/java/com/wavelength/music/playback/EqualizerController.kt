@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.audiofx.BassBoost
 import android.media.audiofx.Equalizer
 import android.media.audiofx.LoudnessEnhancer
+import android.util.Log
 import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -91,7 +92,9 @@ class EqualizerController @Inject constructor(
     /** Called from [PlaybackService] whenever ExoPlayer's audio session id changes (including the
      * first time it becomes non-zero once playback actually starts). */
     fun onAudioSessionIdChanged(sessionId: Int) {
-        if (sessionId == currentSessionId && equalizer != null) return
+        if (sessionId == currentSessionId && equalizer != null && bassBoost != null && loudnessEnhancer != null) {
+            return
+        }
         release()
         currentSessionId = sessionId
         if (sessionId == 0) return
@@ -132,6 +135,15 @@ class EqualizerController @Inject constructor(
             _bassBoostSupported.value = false
         }
 
+        createLoudnessEnhancer(sessionId)
+    }
+
+    /** Broken out so it can be retried later by [ensureLoudnessEnhancer] — [LoudnessEnhancer]
+     * construction can fail transiently even when [Equalizer]/[BassBoost] on the same session
+     * succeed, and without a retry path that failure would silently disable the boost for the
+     * rest of the playback session (every later toggle/slider change just no-ops against a null
+     * effect). */
+    private fun createLoudnessEnhancer(sessionId: Int) {
         runCatching {
             val le = LoudnessEnhancer(sessionId)
             le.setTargetGain(percentToMillibel(_volumeBoostPercent.value))
@@ -139,8 +151,19 @@ class EqualizerController @Inject constructor(
             loudnessEnhancer = le
             _volumeBoostSupported.value = true
         }.onFailure {
+            Log.w(TAG, "LoudnessEnhancer init failed for session $sessionId", it)
             _volumeBoostSupported.value = false
         }
+    }
+
+    /** Returns the current [LoudnessEnhancer], (re)constructing it first if it's missing but a
+     * real audio session is active — see [createLoudnessEnhancer]'s doc for why this retry is
+     * needed rather than trusting whatever got set during the last session change. */
+    private fun ensureLoudnessEnhancer(): LoudnessEnhancer? {
+        loudnessEnhancer?.let { return it }
+        if (currentSessionId == 0) return null
+        createLoudnessEnhancer(currentSessionId)
+        return loudnessEnhancer
     }
 
     fun setEnabled(value: Boolean) {
@@ -169,7 +192,7 @@ class EqualizerController @Inject constructor(
     fun setVolumeBoostPercent(percent: Int) {
         val clamped = percent.coerceIn(100, 400)
         runCatching {
-            loudnessEnhancer?.let { le ->
+            ensureLoudnessEnhancer()?.let { le ->
                 le.setTargetGain(percentToMillibel(clamped))
                 le.enabled = _volumeBoostEnabled.value && clamped > 100
             }
@@ -182,7 +205,7 @@ class EqualizerController @Inject constructor(
         prefs.edit { putBoolean(KEY_VOLUME_BOOST_ENABLED, enabled) }
         _volumeBoostEnabled.value = enabled
         runCatching {
-            loudnessEnhancer?.enabled = enabled && _volumeBoostPercent.value > 100
+            ensureLoudnessEnhancer()?.enabled = enabled && _volumeBoostPercent.value > 100
         }
     }
 
@@ -255,6 +278,7 @@ class EqualizerController @Inject constructor(
     private fun bandKey(index: Int) = "band_$index"
 
     private companion object {
+        const val TAG = "EqualizerController"
         const val KEY_ENABLED = "enabled"
         const val KEY_BASS = "bass_strength"
         const val KEY_MODE = "mode"
