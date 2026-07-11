@@ -85,6 +85,8 @@ class AppSettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.addFavoriteWallpaper(bitmap) }
     }
 
+    suspend fun addFavoriteWallpapers(uris: List<Uri>): Int = settingsRepository.addFavoriteWallpapers(uris)
+
     fun removeFavoriteWallpaper(file: File) = settingsRepository.removeFavoriteWallpaper(file)
 
     fun applyFavoriteWallpaper(file: File) {

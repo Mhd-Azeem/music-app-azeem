@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.net.Uri
 import androidx.core.content.edit
 import com.wavelength.music.ui.settings.IconPreset
 import com.wavelength.music.ui.theme.AppTheme
@@ -129,6 +130,24 @@ class SettingsRepository @Inject constructor(
         }.onSuccess {
             _favoriteWallpapers.value = listFavoriteWallpapersFromDisk()
         }
+    }
+
+    /** Adds every picked image directly as a new favorite wallpaper, skipping the crop step and
+     * bitmap re-encode that [addFavoriteWallpaper] does — lets the user build up a gallery from
+     * several gallery picks at once instead of cropping and confirming one at a time. Returns how
+     * many of [uris] were saved successfully. */
+    suspend fun addFavoriteWallpapers(uris: List<Uri>): Int = withContext(Dispatchers.IO) {
+        var count = 0
+        uris.forEach { uri ->
+            runCatching {
+                val file = File(favoriteWallpapersDir, "wallpaper_${System.nanoTime()}.jpg")
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    file.outputStream().use { output -> input.copyTo(output) }
+                } ?: error("Couldn't open picked image")
+            }.onSuccess { count++ }
+        }
+        _favoriteWallpapers.value = listFavoriteWallpapersFromDisk()
+        count
     }
 
     fun removeFavoriteWallpaper(file: File) {

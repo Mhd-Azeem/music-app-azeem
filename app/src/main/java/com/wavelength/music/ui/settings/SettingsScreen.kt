@@ -176,6 +176,18 @@ fun SettingsScreen(
     ) { uri -> uri?.let { pendingFavoriteWallpaperCropUri = it } }
 
     val scope = rememberCoroutineScope()
+
+    val pickFavoriteWallpapersBulkLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickMultipleVisualMedia()
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            scope.launch {
+                val count = viewModel.addFavoriteWallpapers(uris)
+                Toast.makeText(context, "Added $count wallpaper${if (count == 1) "" else "s"}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     val exportBackupLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
@@ -336,13 +348,25 @@ fun SettingsScreen(
 
             item {
                 SettingsSection(title = "Favorite Wallpapers") {
-                    Text(
-                        text = "Save a few pictures here to switch your background instantly, " +
-                            "without picking and cropping from your gallery each time.",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
+                    ) {
+                        Text(
+                            text = "Save a few pictures here to switch your background instantly, " +
+                                "without picking and cropping from your gallery each time.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = {
+                            pickFavoriteWallpapersBulkLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        }) {
+                            Text("Add multiple")
+                        }
+                    }
                     LazyRow(
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
