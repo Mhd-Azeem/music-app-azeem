@@ -6,6 +6,7 @@ import android.graphics.drawable.BitmapDrawable
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
@@ -281,12 +282,28 @@ fun NowPlayingScreen(
     // "reveal more of the queue" direction that caused the expansion in the first place — so the
     // delta's direction is checked too, and only a delta trying to move back *toward* the top
     // counts as the user asking to collapse it.
+    //
+    // Collapsing is two-stage rather than firing the instant the list reaches the top: the first
+    // scroll-to-top just lands the list at its top (so you can see the start of the queue) without
+    // shrinking the panel out from under you mid-gesture. Only a *second*, separate pull — one
+    // that starts already pinned at the top — actually collapses it. upNextTopArmed tracks whether
+    // the list was already sitting at the top when the CURRENT scroll/fling gesture began; it's
+    // (re)computed only once a gesture fully settles, so reaching the top partway through one
+    // continuous drag never arms it for that same drag.
     var upNextExpandedLatch by remember { mutableStateOf(false) }
+    var upNextTopArmed by remember { mutableStateOf(false) }
+    LaunchedEffect(upNextListState.isScrollInProgress) {
+        if (!upNextListState.isScrollInProgress) {
+            upNextTopArmed = upNextListState.firstVisibleItemIndex == 0 &&
+                upNextListState.firstVisibleItemScrollOffset == 0
+        }
+    }
     val upNextNestedScrollConnection = remember(upNextListState) {
         object : NestedScrollConnection {
             override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
                 val towardTop = consumed.y + available.y > 0f
                 if (towardTop &&
+                    upNextTopArmed &&
                     upNextListState.firstVisibleItemIndex == 0 &&
                     upNextListState.firstVisibleItemScrollOffset == 0
                 ) {
@@ -301,6 +318,7 @@ fun NowPlayingScreen(
     }
     LaunchedEffect(track?.id) {
         upNextExpandedLatch = false
+        upNextTopArmed = false
     }
     // Album art hides to free up room for the queue to actually grow into — without this, "half
     // the screen" has nowhere to expand into since art + controls already fill most of the
@@ -382,17 +400,19 @@ fun NowPlayingScreen(
                     Box(modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
                         if (vinylStyleAlbumArt) {
                             Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f).padding(20.dp)) {
-                                AsyncImage(
-                                    model = track?.albumArtUrl,
-                                    contentDescription = track?.name,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .graphicsLayer { rotationZ = vinylAngle.value }
-                                        .clip(CircleShape)
-                                        .border(2.dp, Color.White.copy(alpha = 0.3f), CircleShape)
-                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                )
+                                Crossfade(targetState = track, animationSpec = tween(300), label = "vinylArt") { t ->
+                                    AsyncImage(
+                                        model = t?.albumArtUrl,
+                                        contentDescription = t?.name,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .graphicsLayer { rotationZ = vinylAngle.value }
+                                            .clip(CircleShape)
+                                            .border(2.dp, Color.White.copy(alpha = 0.3f), CircleShape)
+                                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    )
+                                }
                                 Box(
                                     modifier = Modifier
                                         .align(Alignment.Center)
@@ -402,15 +422,17 @@ fun NowPlayingScreen(
                                 )
                             }
                         } else {
-                            AsyncImage(
-                                model = track?.albumArtUrl,
-                                contentDescription = track?.name,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(1f)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                            )
+                            Crossfade(targetState = track, animationSpec = tween(300), label = "albumArt") { t ->
+                                AsyncImage(
+                                    model = t?.albumArtUrl,
+                                    contentDescription = t?.name,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(1f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                )
+                            }
                         }
                     }
                 }
@@ -418,20 +440,27 @@ fun NowPlayingScreen(
 
             Column(modifier = Modifier.fillMaxWidth().padding(top = 32.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = track?.name.orEmpty(),
-                            style = MaterialTheme.typography.headlineSmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = track?.artistName.orEmpty(),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                    Crossfade(
+                        targetState = track,
+                        animationSpec = tween(300),
+                        label = "trackInfo",
+                        modifier = Modifier.weight(1f)
+                    ) { t ->
+                        Column {
+                            Text(
+                                text = t?.name.orEmpty(),
+                                style = MaterialTheme.typography.headlineSmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = t?.artistName.orEmpty(),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                     var topIconRowModifier: Modifier = Modifier
                     if (isLiquid) {

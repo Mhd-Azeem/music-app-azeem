@@ -1,5 +1,7 @@
 package com.wavelength.music.ui.components
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -84,28 +86,37 @@ fun MiniPlayerBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            AsyncImage(
-                model = track.albumArtUrl,
-                contentDescription = track.name,
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = track.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+            Crossfade(targetState = track, animationSpec = tween(300), label = "miniPlayerArt") { t ->
+                AsyncImage(
+                    model = t.albumArtUrl,
+                    contentDescription = t.name,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(MaterialTheme.colorScheme.surface)
                 )
-                Text(
-                    text = track.artistName,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+            }
+            Crossfade(
+                targetState = track,
+                animationSpec = tween(300),
+                label = "miniPlayerInfo",
+                modifier = Modifier.weight(1f)
+            ) { t ->
+                Column {
+                    Text(
+                        text = t.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = t.artistName,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
             if (state.isBuffering) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)

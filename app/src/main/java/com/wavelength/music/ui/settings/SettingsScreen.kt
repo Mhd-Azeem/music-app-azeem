@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,8 +23,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -96,6 +99,8 @@ fun SettingsScreen(
 
     var pendingBackgroundCropUri by remember { mutableStateOf<Uri?>(null) }
     var pendingIconCropUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingFavoriteWallpaperCropUri by remember { mutableStateOf<Uri?>(null) }
+    val favoriteWallpapers by viewModel.favoriteWallpapers.collectAsStateWithLifecycle()
 
     if (showClearDownloadsConfirm) {
         AlertDialog(
@@ -146,6 +151,18 @@ fun SettingsScreen(
         )
     }
 
+    pendingFavoriteWallpaperCropUri?.let { uri ->
+        ImageCropDialog(
+            imageUri = uri,
+            aspectRatio = 9f / 19.5f,
+            onDismiss = { pendingFavoriteWallpaperCropUri = null },
+            onCropped = { bitmap ->
+                viewModel.addFavoriteWallpaper(bitmap)
+                pendingFavoriteWallpaperCropUri = null
+            }
+        )
+    }
+
     val pickBackgroundLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri -> uri?.let { pendingBackgroundCropUri = it } }
@@ -153,6 +170,10 @@ fun SettingsScreen(
     val pickIconPhotoLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri -> uri?.let { pendingIconCropUri = it } }
+
+    val pickFavoriteWallpaperLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri -> uri?.let { pendingFavoriteWallpaperCropUri = it } }
 
     val scope = rememberCoroutineScope()
     val exportBackupLauncher = rememberLauncherForActivityResult(
@@ -303,6 +324,76 @@ fun SettingsScreen(
                             onValueChange = { viewModel.setBackgroundOpacity(it) },
                             valueRange = 0f..1f
                         )
+                    }
+                }
+            }
+
+            item {
+                SettingsSection(title = "Favorite Wallpapers") {
+                    Text(
+                        text = "Save a few pictures here to switch your background instantly, " +
+                            "without picking and cropping from your gallery each time.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .border(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.outline,
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable {
+                                        pickFavoriteWallpaperLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Filled.Add, contentDescription = "Add favorite wallpaper")
+                            }
+                        }
+                        items(favoriteWallpapers, key = { it.absolutePath }) { file ->
+                            Box(modifier = Modifier.size(72.dp)) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(file)
+                                        .memoryCacheKey("${file.absolutePath}_${file.lastModified()}")
+                                        .diskCacheKey("${file.absolutePath}_${file.lastModified()}")
+                                        .build(),
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable { viewModel.applyFavoriteWallpaper(file) }
+                                )
+                                IconButton(
+                                    onClick = { viewModel.removeFavoriteWallpaper(file) },
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(2.dp)
+                                        .size(20.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.Black.copy(alpha = 0.45f))
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Close,
+                                        contentDescription = "Remove favorite wallpaper",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

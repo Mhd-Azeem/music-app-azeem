@@ -38,6 +38,7 @@ class AppSettingsViewModel @Inject constructor(
 
     val state: StateFlow<AppSettingsState> = settingsRepository.state
     val customBackgroundFile: File get() = settingsRepository.customBackgroundFile
+    val favoriteWallpapers: StateFlow<List<File>> = settingsRepository.favoriteWallpapers
 
     val downloadsSummary: StateFlow<DownloadsSummary> = repository.observeDownloadsSummary()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DownloadsSummary(0, 0L))
@@ -79,6 +80,16 @@ class AppSettingsViewModel @Inject constructor(
     }
 
     fun resetBackground() = settingsRepository.resetBackground()
+
+    fun addFavoriteWallpaper(bitmap: Bitmap) {
+        viewModelScope.launch { settingsRepository.addFavoriteWallpaper(bitmap) }
+    }
+
+    fun removeFavoriteWallpaper(file: File) = settingsRepository.removeFavoriteWallpaper(file)
+
+    fun applyFavoriteWallpaper(file: File) {
+        viewModelScope.launch { settingsRepository.applyFavoriteWallpaper(file) }
+    }
 
     fun setBackgroundOpacity(opacity: Float) = settingsRepository.setBackgroundOpacity(opacity)
 

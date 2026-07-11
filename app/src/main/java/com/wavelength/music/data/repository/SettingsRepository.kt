@@ -42,8 +42,17 @@ class SettingsRepository @Inject constructor(
 
     val customBackgroundFile: File = File(context.filesDir, "custom_background.jpg")
 
+    private val favoriteWallpapersDir: File = File(context.filesDir, "favorite_wallpapers").apply { mkdirs() }
+
     private val _state = MutableStateFlow(loadState())
     val state: StateFlow<AppSettingsState> = _state.asStateFlow()
+
+    private val _favoriteWallpapers = MutableStateFlow(listFavoriteWallpapersFromDisk())
+    val favoriteWallpapers: StateFlow<List<File>> = _favoriteWallpapers.asStateFlow()
+
+    private fun listFavoriteWallpapersFromDisk(): List<File> =
+        favoriteWallpapersDir.listFiles()?.filter { it.isFile }?.sortedByDescending { it.lastModified() }
+            ?: emptyList()
 
     private fun loadState(): AppSettingsState = AppSettingsState(
         iconPreset = runCatching {
@@ -87,6 +96,38 @@ class SettingsRepository @Inject constructor(
     fun resetBackground() {
         if (customBackgroundFile.exists()) customBackgroundFile.delete()
         _state.update { it.copy(hasCustomBackground = false) }
+    }
+
+    /** Saves [bitmap] as a new favorite wallpaper, separate from the currently-applied
+     * background — lets the user build up a small gallery of pictures to switch between later
+     * without re-picking/re-cropping from their device photos each time. */
+    suspend fun addFavoriteWallpaper(bitmap: Bitmap): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val file = File(favoriteWallpapersDir, "wallpaper_${System.currentTimeMillis()}.jpg")
+            file.outputStream().use { output ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 92, output)
+            }
+            Unit
+        }.onSuccess {
+            _favoriteWallpapers.value = listFavoriteWallpapersFromDisk()
+        }
+    }
+
+    fun removeFavoriteWallpaper(file: File) {
+        if (file.exists()) file.delete()
+        _favoriteWallpapers.value = listFavoriteWallpapersFromDisk()
+    }
+
+    /** Applies a saved favorite as the current background immediately, reusing
+     * [customBackgroundFile]'s existing cache-busted-by-lastModified() display path — no separate
+     * "current wallpaper" state needed. */
+    suspend fun applyFavoriteWallpaper(file: File): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            file.copyTo(customBackgroundFile, overwrite = true)
+            Unit
+        }.onSuccess {
+            _state.update { it.copy(hasCustomBackground = true) }
+        }
     }
 
     fun setBackgroundOpacity(opacity: Float) {
