@@ -99,11 +99,13 @@ class HomeViewModel @Inject constructor(
     }
 
     fun loadFeatured() {
-        viewModelScope.launch { loadFeaturedInternal() }
+        viewModelScope.launch {
+            _featured.value = ScreenState.Loading
+            fetchFeatured()
+        }
     }
 
-    private suspend fun loadFeaturedInternal() {
-        _featured.value = ScreenState.Loading
+    private suspend fun fetchFeatured() {
         repository.getFeaturedTracks(20).fold(
             onSuccess = { tracks ->
                 val deduped = tracks.distinctBy { it.id }
@@ -115,28 +117,33 @@ class HomeViewModel @Inject constructor(
         )
     }
 
-    /** Pull-to-refresh: re-fetches Featured plus the two search-backed sections. Most of the rest
-     * of Home (recently played, playlists, most played, recently added) is already a live Room
-     * flow that updates on its own and needs no manual refresh. */
+    /** Pull-to-refresh: re-fetches Featured plus the two search-backed sections. Unlike
+     * [loadFeatured]/the initial load, this never sets any section to [ScreenState.Loading] —
+     * doing so would swap the whole `Success` branch in HomeScreen out for a full-screen
+     * [com.wavelength.music.ui.components.LoadingView] mid-pull, which both looks broken and
+     * hides the very sections meant to visibly refresh. Existing content stays on screen (the
+     * pull-to-refresh spinner is the only loading indicator) until fresh data replaces it. Most
+     * of the rest of Home (recently played, playlists, most played, recently added) is already a
+     * live Room flow that updates on its own and needs no manual refresh. */
     fun refresh() {
         viewModelScope.launch {
             _isRefreshing.value = true
-            loadFeaturedInternal()
-            loadSuggested(latestRecentTracks)
-            loadDailyMix(latestTopArtists)
+            fetchFeatured()
+            loadSuggested(latestRecentTracks, showLoading = false)
+            loadDailyMix(latestTopArtists, showLoading = false)
             _isRefreshing.value = false
         }
     }
 
     /** Seeds "suggested for you" from whichever artist appears most often in recent plays, then
      * searches JioSaavn for more from that artist, excluding tracks already recently played. */
-    private suspend fun loadSuggested(recentTracks: List<Track>) {
+    private suspend fun loadSuggested(recentTracks: List<Track>, showLoading: Boolean = true) {
         val topArtist = recentTracks.groupingBy { it.artistName }.eachCount().maxByOrNull { it.value }?.key
         if (topArtist.isNullOrBlank()) {
             _suggested.value = ScreenState.Empty
             return
         }
-        _suggested.value = ScreenState.Loading
+        if (showLoading) _suggested.value = ScreenState.Loading
         repository.searchTracks(topArtist, limit = 20).fold(
             onSuccess = { tracks ->
                 val excludeIds = recentTracks.map { it.id }.toSet()
@@ -155,12 +162,12 @@ class HomeViewModel @Inject constructor(
     /** Mixes tracks from whichever 2 artists have the most plays across your whole listening
      * history (unlike [suggested], which only looks at your most-recent plays), giving a broader
      * "you'll probably like this too" mix. */
-    private suspend fun loadDailyMix(topArtists: List<ArtistStat>) {
+    private suspend fun loadDailyMix(topArtists: List<ArtistStat>, showLoading: Boolean = true) {
         if (topArtists.isEmpty()) {
             _dailyMix.value = ScreenState.Empty
             return
         }
-        _dailyMix.value = ScreenState.Loading
+        if (showLoading) _dailyMix.value = ScreenState.Loading
         coroutineScope {
             val results = topArtists
                 .map { artist -> async { repository.searchTracks(artist.artistName, limit = 15) } }

@@ -82,7 +82,9 @@ fun WavelengthNavHost() {
                         onSkipNext = playerViewModel::skipNext,
                         onSkipPrevious = playerViewModel::skipPrevious,
                         hazeState = if (isLiquid) hazeState else null,
-                        glassStyle = glassStyle
+                        glassStyle = glassStyle,
+                        trackTransitionEnabled = settings.trackTransitionEnabled,
+                        trackTransitionDurationMs = settings.trackTransitionDurationMs
                     )
                     NavigationBar(
                         modifier = navBarModifier,
@@ -181,7 +183,9 @@ fun WavelengthNavHost() {
                         expandUpNextOnScroll = settings.expandUpNextOnScroll,
                         dynamicThemeFromAlbumArt = settings.dynamicThemeFromAlbumArt,
                         vinylStyleAlbumArt = settings.vinylStyleAlbumArt,
-                        audioVisualizerEnabled = settings.audioVisualizerEnabled
+                        audioVisualizerEnabled = settings.audioVisualizerEnabled,
+                        trackTransitionEnabled = settings.trackTransitionEnabled,
+                        trackTransitionDurationMs = settings.trackTransitionDurationMs
                     )
                 }
                 composable(Screen.Settings.route) {

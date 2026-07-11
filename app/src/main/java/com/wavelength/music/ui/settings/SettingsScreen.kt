@@ -199,9 +199,15 @@ fun SettingsScreen(
             scope.launch {
                 viewModel.importBackup(uri).fold(
                     onSuccess = { summary ->
+                        val parts = mutableListOf(
+                            "${summary.favoriteCount} favorites",
+                            "${summary.playlistCount} playlists"
+                        )
+                        if (summary.wallpaperCount > 0) parts += "${summary.wallpaperCount} wallpapers"
+                        if (summary.settingsRestored) parts += "settings"
                         Toast.makeText(
                             context,
-                            "Restored ${summary.favoriteCount} favorites and ${summary.playlistCount} playlists",
+                            "Restored ${parts.joinToString(", ")}",
                             Toast.LENGTH_LONG
                         ).show()
                     },
@@ -474,6 +480,33 @@ fun SettingsScreen(
                             checked = settings.vinylStyleAlbumArt,
                             onCheckedChange = { viewModel.setVinylStyleAlbumArt(it) }
                         )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Animate album art/title when the track changes",
+                            modifier = Modifier.weight(1f)
+                        )
+                        Switch(
+                            checked = settings.trackTransitionEnabled,
+                            onCheckedChange = { viewModel.setTrackTransitionEnabled(it) }
+                        )
+                    }
+                    if (settings.trackTransitionEnabled) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                            Text(
+                                text = "Transition speed: ${settings.trackTransitionDurationMs}ms",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Slider(
+                                value = settings.trackTransitionDurationMs.toFloat(),
+                                onValueChange = { viewModel.setTrackTransitionDurationMs(it.roundToInt()) },
+                                valueRange = 100f..1000f
+                            )
+                        }
                     }
                 }
             }

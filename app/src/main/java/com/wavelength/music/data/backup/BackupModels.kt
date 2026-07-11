@@ -12,9 +12,15 @@ import com.squareup.moshi.JsonClass
  * to resolve at runtime besides. */
 @JsonClass(generateAdapter = true)
 data class BackupData(
-    val version: Int = 1,
+    val version: Int = 2,
     val favorites: List<BackupTrack> = emptyList(),
-    val playlists: List<BackupPlaylist> = emptyList()
+    val playlists: List<BackupPlaylist> = emptyList(),
+    val settings: BackupSettings? = null,
+    /** Base64 JPEG of the currently-applied background, if any. Null on older backups (version 1)
+     * and simply skipped on import — no image data existed in the file to restore. */
+    val customBackgroundBase64: String? = null,
+    /** Base64 JPEGs of every saved favorite wallpaper. */
+    val favoriteWallpapersBase64: List<String> = emptyList()
 )
 
 @JsonClass(generateAdapter = true)
@@ -33,4 +39,28 @@ data class BackupTrack(
     val source: String
 )
 
-data class ImportSummary(val favoriteCount: Int, val playlistCount: Int)
+/** Snapshot of every user-configurable setting, so a restore puts the app back exactly how it
+ * looked/behaved, not just the music library. Enums are stored by name and re-parsed defensively
+ * on import, matching how [com.wavelength.music.data.repository.SettingsRepository] itself
+ * already loads them from SharedPreferences. */
+@JsonClass(generateAdapter = true)
+data class BackupSettings(
+    val iconPreset: String,
+    val theme: String,
+    val backgroundOpacity: Float,
+    val expandUpNextOnScroll: Boolean,
+    val dynamicThemeFromAlbumArt: Boolean,
+    val vinylStyleAlbumArt: Boolean,
+    val aiDjEnabled: Boolean,
+    val crossfadeDurationMs: Int,
+    val audioVisualizerEnabled: Boolean,
+    val trackTransitionEnabled: Boolean,
+    val trackTransitionDurationMs: Int
+)
+
+data class ImportSummary(
+    val favoriteCount: Int,
+    val playlistCount: Int,
+    val settingsRestored: Boolean = false,
+    val wallpaperCount: Int = 0
+)

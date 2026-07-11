@@ -2,13 +2,17 @@ package com.wavelength.music.data.repository
 
 import android.content.Context
 import android.net.Uri
+import android.util.Base64
 import com.squareup.moshi.Moshi
 import com.wavelength.music.data.backup.BackupData
 import com.wavelength.music.data.backup.BackupPlaylist
+import com.wavelength.music.data.backup.BackupSettings
 import com.wavelength.music.data.backup.BackupTrack
 import com.wavelength.music.data.backup.ImportSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.model.TrackSource
+import com.wavelength.music.ui.settings.IconPreset
+import com.wavelength.music.ui.theme.AppTheme
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -16,14 +20,16 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Exports/imports favorites and playlists (not folders — see [BackupData]) to a single JSON
- * file the user picks via the system file picker, so it can be backed up anywhere (Drive, email,
- * a computer) and restored after a reinstall or on a fresh install of any future app version. */
+/** Exports/imports favorites, playlists (not folders — see [BackupData]), every user-configurable
+ * setting, the current background, and every favorite wallpaper to a single JSON file the user
+ * picks via the system file picker, so it can be backed up anywhere (Drive, email, a computer)
+ * and restored after a reinstall or on a fresh install of any future app version. */
 @Singleton
 class BackupRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     moshi: Moshi,
-    private val repository: MusicRepository
+    private val repository: MusicRepository,
+    private val settingsRepository: SettingsRepository
 ) {
     private val adapter = moshi.adapter(BackupData::class.java).indent("  ")
 
@@ -35,7 +41,36 @@ class BackupRepository @Inject constructor(
                 val tracks = repository.observePlaylistTracks(summary.id).first().map { it.toBackupTrack() }
                 BackupPlaylist(name = summary.name, tracks = tracks)
             }
-            val json = adapter.toJson(BackupData(favorites = favorites, playlists = playlists))
+
+            val settingsState = settingsRepository.state.value
+            val settings = BackupSettings(
+                iconPreset = settingsState.iconPreset.name,
+                theme = settingsState.theme.name,
+                backgroundOpacity = settingsState.backgroundOpacity,
+                expandUpNextOnScroll = settingsState.expandUpNextOnScroll,
+                dynamicThemeFromAlbumArt = settingsState.dynamicThemeFromAlbumArt,
+                vinylStyleAlbumArt = settingsState.vinylStyleAlbumArt,
+                aiDjEnabled = settingsState.aiDjEnabled,
+                crossfadeDurationMs = settingsState.crossfadeDurationMs,
+                audioVisualizerEnabled = settingsState.audioVisualizerEnabled,
+                trackTransitionEnabled = settingsState.trackTransitionEnabled,
+                trackTransitionDurationMs = settingsState.trackTransitionDurationMs
+            )
+            val customBackgroundBase64 = settingsRepository.customBackgroundFile
+                .takeIf { it.exists() }
+                ?.let { Base64.encodeToString(it.readBytes(), Base64.NO_WRAP) }
+            val favoriteWallpapersBase64 = settingsRepository.favoriteWallpapers.value
+                .map { Base64.encodeToString(it.readBytes(), Base64.NO_WRAP) }
+
+            val json = adapter.toJson(
+                BackupData(
+                    favorites = favorites,
+                    playlists = playlists,
+                    settings = settings,
+                    customBackgroundBase64 = customBackgroundBase64,
+                    favoriteWallpapersBase64 = favoriteWallpapersBase64
+                )
+            )
             val stream = context.contentResolver.openOutputStream(uri)
                 ?: error("Couldn't open the selected file for writing")
             stream.use { it.write(json.toByteArray()) }
@@ -54,8 +89,45 @@ class BackupRepository @Inject constructor(
                 val playlistId = repository.createPlaylist(backupPlaylist.name)
                 backupPlaylist.tracks.forEach { repository.addTrackToPlaylist(playlistId, it.toTrack()) }
             }
-            ImportSummary(favoriteCount = data.favorites.size, playlistCount = data.playlists.size)
+
+            val settingsRestored = data.settings?.also { restoreSettings(it) } != null
+
+            data.customBackgroundBase64?.let { base64 ->
+                runCatching { Base64.decode(base64, Base64.NO_WRAP) }.getOrNull()?.let { bytes ->
+                    settingsRepository.restoreCustomBackground(bytes)
+                }
+            }
+
+            var wallpaperCount = 0
+            data.favoriteWallpapersBase64.forEach { base64 ->
+                runCatching { Base64.decode(base64, Base64.NO_WRAP) }.getOrNull()?.let { bytes ->
+                    if (settingsRepository.restoreFavoriteWallpaper(bytes).isSuccess) wallpaperCount++
+                }
+            }
+
+            ImportSummary(
+                favoriteCount = data.favorites.size,
+                playlistCount = data.playlists.size,
+                settingsRestored = settingsRestored,
+                wallpaperCount = wallpaperCount
+            )
         }
+    }
+
+    private fun restoreSettings(settings: BackupSettings) {
+        runCatching { IconPreset.valueOf(settings.iconPreset) }.getOrNull()
+            ?.let { settingsRepository.setIconPreset(it) }
+        runCatching { AppTheme.valueOf(settings.theme) }.getOrNull()
+            ?.let { settingsRepository.setTheme(it) }
+        settingsRepository.setBackgroundOpacity(settings.backgroundOpacity)
+        settingsRepository.setExpandUpNextOnScroll(settings.expandUpNextOnScroll)
+        settingsRepository.setDynamicThemeFromAlbumArt(settings.dynamicThemeFromAlbumArt)
+        settingsRepository.setVinylStyleAlbumArt(settings.vinylStyleAlbumArt)
+        settingsRepository.setAiDjEnabled(settings.aiDjEnabled)
+        settingsRepository.setCrossfadeDurationMs(settings.crossfadeDurationMs)
+        settingsRepository.setAudioVisualizerEnabled(settings.audioVisualizerEnabled)
+        settingsRepository.setTrackTransitionEnabled(settings.trackTransitionEnabled)
+        settingsRepository.setTrackTransitionDurationMs(settings.trackTransitionDurationMs)
     }
 }
 

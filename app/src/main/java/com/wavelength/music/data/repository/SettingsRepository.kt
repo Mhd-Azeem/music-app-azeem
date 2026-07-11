@@ -29,10 +29,15 @@ data class AppSettingsState(
     val aiDjEnabled: Boolean = false,
     /** Milliseconds to fade out the ending track and fade in the next one; 0 disables it. */
     val crossfadeDurationMs: Int = 0,
-    val audioVisualizerEnabled: Boolean = false
+    val audioVisualizerEnabled: Boolean = false,
+    /** Whether album art/title crossfade when the track changes (swipe, transport buttons, or
+     * auto-advance) — separate from [crossfadeDurationMs], which fades the *audio* between songs. */
+    val trackTransitionEnabled: Boolean = true,
+    val trackTransitionDurationMs: Int = DEFAULT_TRACK_TRANSITION_DURATION_MS
 )
 
 const val DEFAULT_BACKGROUND_OPACITY = 0.25f
+const val DEFAULT_TRACK_TRANSITION_DURATION_MS = 300
 
 @Singleton
 class SettingsRepository @Inject constructor(
@@ -68,7 +73,9 @@ class SettingsRepository @Inject constructor(
         vinylStyleAlbumArt = prefs.getBoolean(KEY_VINYL_STYLE, false),
         aiDjEnabled = prefs.getBoolean(KEY_AI_DJ, false),
         crossfadeDurationMs = prefs.getInt(KEY_CROSSFADE, 0),
-        audioVisualizerEnabled = prefs.getBoolean(KEY_VISUALIZER, false)
+        audioVisualizerEnabled = prefs.getBoolean(KEY_VISUALIZER, false),
+        trackTransitionEnabled = prefs.getBoolean(KEY_TRACK_TRANSITION_ENABLED, true),
+        trackTransitionDurationMs = prefs.getInt(KEY_TRACK_TRANSITION_DURATION, DEFAULT_TRACK_TRANSITION_DURATION_MS)
     )
 
     fun setIconPreset(preset: IconPreset) {
@@ -98,6 +105,17 @@ class SettingsRepository @Inject constructor(
         _state.update { it.copy(hasCustomBackground = false) }
     }
 
+    /** Used by [com.wavelength.music.data.repository.BackupRepository] to restore the background
+     * from raw already-decoded JPEG bytes (a backup's base64 payload), rather than a freshly
+     * picked [Bitmap] that would need re-compressing. */
+    suspend fun restoreCustomBackground(bytes: ByteArray): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            customBackgroundFile.writeBytes(bytes)
+        }.onSuccess {
+            _state.update { it.copy(hasCustomBackground = true) }
+        }
+    }
+
     /** Saves [bitmap] as a new favorite wallpaper, separate from the currently-applied
      * background — lets the user build up a small gallery of pictures to switch between later
      * without re-picking/re-cropping from their device photos each time. */
@@ -116,6 +134,20 @@ class SettingsRepository @Inject constructor(
     fun removeFavoriteWallpaper(file: File) {
         if (file.exists()) file.delete()
         _favoriteWallpapers.value = listFavoriteWallpapersFromDisk()
+    }
+
+    /** Restores a favorite wallpaper from raw already-decoded JPEG bytes (a backup's base64
+     * payload) as a new file — mirrors [addFavoriteWallpaper] but skips the Bitmap round-trip
+     * since the bytes are already a valid JPEG. [System.nanoTime] (rather than
+     * [System.currentTimeMillis]) avoids filename collisions when restoring many wallpapers in
+     * quick succession. */
+    suspend fun restoreFavoriteWallpaper(bytes: ByteArray): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val file = File(favoriteWallpapersDir, "wallpaper_${System.nanoTime()}.jpg")
+            file.writeBytes(bytes)
+        }.onSuccess {
+            _favoriteWallpapers.value = listFavoriteWallpapersFromDisk()
+        }
     }
 
     /** Applies a saved favorite as the current background immediately, reusing
@@ -167,6 +199,17 @@ class SettingsRepository @Inject constructor(
         _state.update { it.copy(audioVisualizerEnabled = enabled) }
     }
 
+    fun setTrackTransitionEnabled(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_TRACK_TRANSITION_ENABLED, enabled) }
+        _state.update { it.copy(trackTransitionEnabled = enabled) }
+    }
+
+    fun setTrackTransitionDurationMs(durationMs: Int) {
+        val clamped = durationMs.coerceIn(100, 1000)
+        prefs.edit { putInt(KEY_TRACK_TRANSITION_DURATION, clamped) }
+        _state.update { it.copy(trackTransitionDurationMs = clamped) }
+    }
+
     /** Enables the alias matching [preset] and disables the others, so exactly one launcher
      * icon is ever active at a time. */
     private fun applyIconPreset(preset: IconPreset) {
@@ -195,5 +238,7 @@ class SettingsRepository @Inject constructor(
         const val KEY_AI_DJ = "ai_dj_enabled"
         const val KEY_CROSSFADE = "crossfade_duration_ms"
         const val KEY_VISUALIZER = "audio_visualizer_enabled"
+        const val KEY_TRACK_TRANSITION_ENABLED = "track_transition_enabled"
+        const val KEY_TRACK_TRANSITION_DURATION = "track_transition_duration_ms"
     }
 }

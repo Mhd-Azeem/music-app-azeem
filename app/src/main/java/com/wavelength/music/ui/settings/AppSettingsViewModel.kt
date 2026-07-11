@@ -105,6 +105,10 @@ class AppSettingsViewModel @Inject constructor(
 
     fun setAudioVisualizerEnabled(enabled: Boolean) = settingsRepository.setAudioVisualizerEnabled(enabled)
 
+    fun setTrackTransitionEnabled(enabled: Boolean) = settingsRepository.setTrackTransitionEnabled(enabled)
+
+    fun setTrackTransitionDurationMs(durationMs: Int) = settingsRepository.setTrackTransitionDurationMs(durationMs)
+
     fun clearAllDownloads() {
         viewModelScope.launch { repository.clearAllDownloads() }
     }

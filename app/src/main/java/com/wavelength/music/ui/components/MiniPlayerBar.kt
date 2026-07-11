@@ -1,6 +1,8 @@
 package com.wavelength.music.ui.components
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -49,9 +51,16 @@ fun MiniPlayerBar(
     onSkipPrevious: () -> Unit,
     modifier: Modifier = Modifier,
     hazeState: HazeState? = null,
-    glassStyle: HazeStyle = HazeStyle.Unspecified
+    glassStyle: HazeStyle = HazeStyle.Unspecified,
+    trackTransitionEnabled: Boolean = true,
+    trackTransitionDurationMs: Int = 300
 ) {
     val track = state.currentTrack ?: return
+    val trackTransitionSpec: FiniteAnimationSpec<Float> = if (trackTransitionEnabled) {
+        tween(trackTransitionDurationMs)
+    } else {
+        snap()
+    }
     val density = LocalDensity.current
     val expandThresholdPx = with(density) { 40.dp.toPx() }
     val skipThresholdPx = with(density) { 56.dp.toPx() }
@@ -86,7 +95,7 @@ fun MiniPlayerBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Crossfade(targetState = track, animationSpec = tween(300), label = "miniPlayerArt") { t ->
+            Crossfade(targetState = track, animationSpec = trackTransitionSpec, label = "miniPlayerArt") { t ->
                 AsyncImage(
                     model = t.albumArtUrl,
                     contentDescription = t.name,
@@ -98,7 +107,7 @@ fun MiniPlayerBar(
             }
             Crossfade(
                 targetState = track,
-                animationSpec = tween(300),
+                animationSpec = trackTransitionSpec,
                 label = "miniPlayerInfo",
                 modifier = Modifier.weight(1f)
             ) { t ->

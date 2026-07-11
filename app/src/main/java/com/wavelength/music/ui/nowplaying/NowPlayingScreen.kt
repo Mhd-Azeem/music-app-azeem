@@ -8,9 +8,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -135,8 +137,15 @@ fun NowPlayingScreen(
     expandUpNextOnScroll: Boolean = false,
     dynamicThemeFromAlbumArt: Boolean = false,
     vinylStyleAlbumArt: Boolean = false,
-    audioVisualizerEnabled: Boolean = false
+    audioVisualizerEnabled: Boolean = false,
+    trackTransitionEnabled: Boolean = true,
+    trackTransitionDurationMs: Int = 300
 ) {
+    val trackTransitionSpec: FiniteAnimationSpec<Float> = if (trackTransitionEnabled) {
+        tween(trackTransitionDurationMs)
+    } else {
+        snap()
+    }
     val hazeState = remember { HazeState() }
     val pillShape = RoundedCornerShape(28.dp)
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -400,7 +409,7 @@ fun NowPlayingScreen(
                     Box(modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
                         if (vinylStyleAlbumArt) {
                             Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f).padding(20.dp)) {
-                                Crossfade(targetState = track, animationSpec = tween(300), label = "vinylArt") { t ->
+                                Crossfade(targetState = track, animationSpec = trackTransitionSpec, label = "vinylArt") { t ->
                                     AsyncImage(
                                         model = t?.albumArtUrl,
                                         contentDescription = t?.name,
@@ -422,7 +431,7 @@ fun NowPlayingScreen(
                                 )
                             }
                         } else {
-                            Crossfade(targetState = track, animationSpec = tween(300), label = "albumArt") { t ->
+                            Crossfade(targetState = track, animationSpec = trackTransitionSpec, label = "albumArt") { t ->
                                 AsyncImage(
                                     model = t?.albumArtUrl,
                                     contentDescription = t?.name,
@@ -442,7 +451,7 @@ fun NowPlayingScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Crossfade(
                         targetState = track,
-                        animationSpec = tween(300),
+                        animationSpec = trackTransitionSpec,
                         label = "trackInfo",
                         modifier = Modifier.weight(1f)
                     ) { t ->
