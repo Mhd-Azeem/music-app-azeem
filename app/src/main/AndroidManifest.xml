@@ -113,6 +113,97 @@
             </intent-filter>
         </activity-alias>
 
+        <activity-alias
+            android:name=".IconWaveform"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_waveform"
+            android:roundIcon="@drawable/ic_launcher_waveform"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".IconNote"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_note"
+            android:roundIcon="@drawable/ic_launcher_note"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".IconPlayButton"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_play_button"
+            android:roundIcon="@drawable/ic_launcher_play_button"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".IconLetterABold"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_letter_a_bold"
+            android:roundIcon="@drawable/ic_launcher_letter_a_bold"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".IconLetterARounded"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_letter_a_rounded"
+            android:roundIcon="@drawable/ic_launcher_letter_a_rounded"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".IconLetterAMono"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_letter_a_mono"
+            android:roundIcon="@drawable/ic_launcher_letter_a_mono"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".IconMonogramAz"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_monogram_az"
+            android:roundIcon="@drawable/ic_launcher_monogram_az"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
         <service
             android:name=".playback.PlaybackService"
             android:exported="true"

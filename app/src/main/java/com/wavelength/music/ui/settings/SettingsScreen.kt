@@ -924,8 +924,15 @@ private fun IconPresetOption(preset: IconPreset, selected: Boolean, onClick: () 
         IconPreset.HEADPHONES -> R.drawable.ic_launcher_headphones
         IconPreset.VINYL -> R.drawable.ic_launcher_vinyl
         IconPreset.EQUALIZER -> R.drawable.ic_launcher_equalizer
+        IconPreset.WAVEFORM -> R.drawable.ic_launcher_waveform
+        IconPreset.NOTE -> R.drawable.ic_launcher_note
+        IconPreset.PLAY_BUTTON -> R.drawable.ic_launcher_play_button
         IconPreset.LETTER_A_PURPLE -> R.drawable.ic_launcher_letter_a_purple
         IconPreset.LETTER_A_DARK -> R.drawable.ic_launcher_letter_a_dark
+        IconPreset.LETTER_A_BOLD -> R.drawable.ic_launcher_letter_a_bold
+        IconPreset.LETTER_A_ROUNDED -> R.drawable.ic_launcher_letter_a_rounded
+        IconPreset.LETTER_A_MONO -> R.drawable.ic_launcher_letter_a_mono
+        IconPreset.MONOGRAM_AZ -> R.drawable.ic_launcher_monogram_az
     }
     Column(
         modifier = Modifier.clickable(onClick = onClick),
