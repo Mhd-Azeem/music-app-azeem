@@ -153,7 +153,7 @@ private fun HomeContent(
                     AssistChip(onClick = { onSearchHistoryClick(query) }, label = { Text(query) })
                 }
                 items(featuredArtists, key = { "artist_$it" }) { artist ->
-                    AssistChip(onClick = { onGenreClick(artist, artist) }, label = { Text(artist) })
+                    AssistChip(onClick = { onSearchHistoryClick(artist) }, label = { Text(artist) })
                 }
             }
         }
