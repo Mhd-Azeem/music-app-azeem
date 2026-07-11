@@ -143,16 +143,27 @@ private fun HomeContent(
             .fillMaxSize()
             .padding(padding)
     ) {
-        item { SectionHeader("Recent searches") }
+        if (searchHistory.isNotEmpty()) {
+            item { SectionHeader("Recent searches") }
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(searchHistory, key = { it }) { query ->
+                        AssistChip(onClick = { onSearchHistoryClick(query) }, label = { Text(query) })
+                    }
+                }
+            }
+        }
+
+        item { SectionHeader("Artists") }
         item {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(searchHistory, key = { "history_$it" }) { query ->
-                    AssistChip(onClick = { onSearchHistoryClick(query) }, label = { Text(query) })
-                }
-                items(featuredArtists, key = { "artist_$it" }) { artist ->
+                items(featuredArtists, key = { it }) { artist ->
                     AssistChip(onClick = { onSearchHistoryClick(artist) }, label = { Text(artist) })
                 }
             }

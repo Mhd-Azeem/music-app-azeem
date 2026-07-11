@@ -45,7 +45,11 @@ class SearchViewModel @Inject constructor(
     private var currentPage = 0
     private var canLoadMore = true
 
-    init {
+    /** Called from [SearchScreen] every time it's actually navigated to (via `LaunchedEffect`),
+     * not just once from `init` — bottom-nav tabs reuse the same ViewModel instance across
+     * revisits (`restoreState`/`launchSingleTop`), so a query set by a later Home chip tap would
+     * otherwise never be picked up once this ViewModel already exists from an earlier visit. */
+    fun consumePendingSearch() {
         pendingSearchQuery.consume()?.let {
             onQueryChange(it)
             commitSearch()

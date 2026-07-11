@@ -74,6 +74,8 @@ fun SearchScreen(
     var trackForQuickAdd by remember { mutableStateOf<Track?>(null) }
     val context = LocalContext.current
 
+    LaunchedEffect(Unit) { viewModel.consumePendingSearch() }
+
     trackForMenu?.let { track ->
         TrackOptionsSheet(track = track, onDismiss = { trackForMenu = null })
     }
