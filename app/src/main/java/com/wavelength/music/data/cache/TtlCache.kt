@@ -28,15 +28,26 @@ class TtlCache<K : Any, V>(
     private val entries = ConcurrentHashMap<K, Entry<V>>()
     private val locks = ConcurrentHashMap<K, Mutex>()
 
-    suspend fun getOrPut(key: K, freshForMs: Long, staleForMs: Long, fetch: suspend () -> V): V {
-        val cached = entries[key]
-        val ageMs = cached?.let { System.currentTimeMillis() - it.cachedAtMs }
+    /** [forceRefresh] skips both the fresh and stale hits below and always blocks on [fetch] for a
+     * genuine call, still deduplicated via the same per-key lock — for callers like pull-to-refresh
+     * where returning an instantly-cached value would defeat the point of a visible loading state. */
+    suspend fun getOrPut(
+        key: K,
+        freshForMs: Long,
+        staleForMs: Long,
+        forceRefresh: Boolean = false,
+        fetch: suspend () -> V
+    ): V {
+        if (!forceRefresh) {
+            val cached = entries[key]
+            val ageMs = cached?.let { System.currentTimeMillis() - it.cachedAtMs }
 
-        if (cached != null && ageMs != null) {
-            if (ageMs < freshForMs) return cached.value
-            if (ageMs < freshForMs + staleForMs) {
-                refreshInBackground(key, fetch)
-                return cached.value
+            if (cached != null && ageMs != null) {
+                if (ageMs < freshForMs) return cached.value
+                if (ageMs < freshForMs + staleForMs) {
+                    refreshInBackground(key, fetch)
+                    return cached.value
+                }
             }
         }
 
@@ -45,7 +56,7 @@ class TtlCache<K : Any, V>(
             // Another caller may have already populated this key while we were waiting for the lock.
             val recheck = entries[key]
             val recheckAgeMs = recheck?.let { System.currentTimeMillis() - it.cachedAtMs }
-            if (recheck != null && recheckAgeMs != null && recheckAgeMs < freshForMs + staleForMs) {
+            if (!forceRefresh && recheck != null && recheckAgeMs != null && recheckAgeMs < freshForMs + staleForMs) {
                 recheck.value
             } else {
                 val fresh = fetch()

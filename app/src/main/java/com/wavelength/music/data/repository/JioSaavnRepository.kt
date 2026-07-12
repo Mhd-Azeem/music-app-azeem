@@ -28,9 +28,14 @@ class JioSaavnRepository @Inject constructor(
     private val detailCache = TtlCache<String, List<Track>>()
     private val songCache = TtlCache<String, Track?>()
 
-    suspend fun searchSongs(query: String, page: Int = 0, limit: Int = 20): Result<List<Track>> = runCatching {
+    suspend fun searchSongs(
+        query: String,
+        page: Int = 0,
+        limit: Int = 20,
+        forceRefresh: Boolean = false
+    ): Result<List<Track>> = runCatching {
         if (query.isBlank()) return@runCatching emptyList()
-        searchCache.getOrPut("search:$query:$page:$limit", SEARCH_FRESH_MS, SEARCH_STALE_MS) {
+        searchCache.getOrPut("search:$query:$page:$limit", SEARCH_FRESH_MS, SEARCH_STALE_MS, forceRefresh) {
             api.searchSongs(query, page, limit).data?.results.orEmpty()
                 .take(limit)
                 .map { it.toDomain().toTrack() }

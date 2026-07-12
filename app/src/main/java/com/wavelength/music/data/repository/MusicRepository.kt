@@ -51,16 +51,21 @@ class MusicRepository @Inject constructor(
 
     /** Query includes the current year since JioSaavn search has no explicit "sort by newest" —
      * asking for the year by name is what actually surfaces this year's releases first. */
-    suspend fun getFeaturedTracks(limit: Int = 20): Result<List<Track>> =
-        jioSaavnRepository.searchSongs("latest tamil songs $currentYear", limit)
+    suspend fun getFeaturedTracks(limit: Int = 20, forceRefresh: Boolean = false): Result<List<Track>> =
+        jioSaavnRepository.searchSongs("latest tamil songs $currentYear", limit = limit, forceRefresh = forceRefresh)
 
     /** [tag] here is a language/mood term (e.g. "tamil", "hindi") rather than a fixed taxonomy —
      * JioSaavn search already returns language-relevant results for those terms. */
-    suspend fun getTracksByTag(tag: String, limit: Int = 20): Result<List<Track>> =
-        jioSaavnRepository.searchSongs(tag, limit)
+    suspend fun getTracksByTag(tag: String, limit: Int = 20, forceRefresh: Boolean = false): Result<List<Track>> =
+        jioSaavnRepository.searchSongs(tag, limit = limit, forceRefresh = forceRefresh)
 
-    suspend fun searchTracks(query: String, page: Int = 0, limit: Int = 30): Result<List<Track>> =
-        jioSaavnRepository.searchSongs(query, page = page, limit = limit)
+    suspend fun searchTracks(
+        query: String,
+        page: Int = 0,
+        limit: Int = 30,
+        forceRefresh: Boolean = false
+    ): Result<List<Track>> =
+        jioSaavnRepository.searchSongs(query, page = page, limit = limit, forceRefresh = forceRefresh)
 
     suspend fun getApiUsage() = jioSaavnRepository.getUsage()
 

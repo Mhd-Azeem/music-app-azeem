@@ -105,8 +105,8 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private suspend fun fetchFeatured() {
-        repository.getFeaturedTracks(20).fold(
+    private suspend fun fetchFeatured(forceRefresh: Boolean = false) {
+        repository.getFeaturedTracks(20, forceRefresh = forceRefresh).fold(
             onSuccess = { tracks ->
                 val deduped = tracks.distinctBy { it.id }
                 _featured.value = if (deduped.isEmpty()) ScreenState.Empty else ScreenState.Success(deduped)
@@ -128,23 +128,27 @@ class HomeViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             _isRefreshing.value = true
-            fetchFeatured()
-            loadSuggested(latestRecentTracks, showLoading = false)
-            loadDailyMix(latestTopArtists, showLoading = false)
+            fetchFeatured(forceRefresh = true)
+            loadSuggested(latestRecentTracks, showLoading = false, forceRefresh = true)
+            loadDailyMix(latestTopArtists, showLoading = false, forceRefresh = true)
             _isRefreshing.value = false
         }
     }
 
     /** Seeds "suggested for you" from whichever artist appears most often in recent plays, then
      * searches JioSaavn for more from that artist, excluding tracks already recently played. */
-    private suspend fun loadSuggested(recentTracks: List<Track>, showLoading: Boolean = true) {
+    private suspend fun loadSuggested(
+        recentTracks: List<Track>,
+        showLoading: Boolean = true,
+        forceRefresh: Boolean = false
+    ) {
         val topArtist = recentTracks.groupingBy { it.artistName }.eachCount().maxByOrNull { it.value }?.key
         if (topArtist.isNullOrBlank()) {
             _suggested.value = ScreenState.Empty
             return
         }
         if (showLoading) _suggested.value = ScreenState.Loading
-        repository.searchTracks(topArtist, limit = 20).fold(
+        repository.searchTracks(topArtist, limit = 20, forceRefresh = forceRefresh).fold(
             onSuccess = { tracks ->
                 val excludeIds = recentTracks.map { it.id }.toSet()
                 // distinctBy guards against the unofficial JioSaavn API occasionally returning
@@ -162,7 +166,11 @@ class HomeViewModel @Inject constructor(
     /** Mixes tracks from whichever 2 artists have the most plays across your whole listening
      * history (unlike [suggested], which only looks at your most-recent plays), giving a broader
      * "you'll probably like this too" mix. */
-    private suspend fun loadDailyMix(topArtists: List<ArtistStat>, showLoading: Boolean = true) {
+    private suspend fun loadDailyMix(
+        topArtists: List<ArtistStat>,
+        showLoading: Boolean = true,
+        forceRefresh: Boolean = false
+    ) {
         if (topArtists.isEmpty()) {
             _dailyMix.value = ScreenState.Empty
             return
@@ -170,7 +178,7 @@ class HomeViewModel @Inject constructor(
         if (showLoading) _dailyMix.value = ScreenState.Loading
         coroutineScope {
             val results = topArtists
-                .map { artist -> async { repository.searchTracks(artist.artistName, limit = 15) } }
+                .map { artist -> async { repository.searchTracks(artist.artistName, limit = 15, forceRefresh = forceRefresh) } }
                 .awaitAll()
             val combined = results.flatMap { it.getOrDefault(emptyList()) }.distinctBy { it.id }.shuffled()
             _dailyMix.value = if (combined.isEmpty()) ScreenState.Empty else ScreenState.Success(combined)
