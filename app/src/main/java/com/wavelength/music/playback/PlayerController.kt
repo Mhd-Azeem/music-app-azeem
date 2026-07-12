@@ -2,7 +2,6 @@ package com.wavelength.music.playback
 
 import android.content.ComponentName
 import android.content.Context
-import android.util.Log
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackParameters
@@ -27,8 +26,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
-
-private const val CROSSFADE_TAG = "Crossfade"
 
 @Singleton
 class PlayerController @Inject constructor(
@@ -95,11 +92,6 @@ class PlayerController @Inject constructor(
             // as "natural" a progression as AUTO and should fade the same way.
             val isNaturalProgression = reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
                 reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT
-            Log.d(
-                CROSSFADE_TAG,
-                "onMediaItemTransition reason=$reason isNaturalProgression=$isNaturalProgression " +
-                    "crossfadeMs=$crossfadeMs targetVolume=$targetVolume"
-            )
             if (crossfadeMs > 0 && isNaturalProgression) {
                 startFade(from = 0f, to = targetVolume, durationMs = crossfadeMs)
             } else {
@@ -210,14 +202,8 @@ class PlayerController @Inject constructor(
         val currentIndex = c.currentMediaItemIndex
         if (fadeOutTriggeredForIndex == currentIndex) return
         val remaining = duration - c.currentPosition
-        // Twice the crossfade window rather than the window itself, so logcat shows a couple of
-        // approaching ticks leading up to the actual trigger instead of just the trigger itself.
-        if (remaining in 0..(crossfadeMs.toLong() * 2)) {
-            Log.d(CROSSFADE_TAG, "tick duration=$duration position=${c.currentPosition} remaining=$remaining crossfadeMs=$crossfadeMs")
-        }
         if (remaining in 0..crossfadeMs.toLong()) {
             fadeOutTriggeredForIndex = currentIndex
-            Log.d(CROSSFADE_TAG, "starting fade-out at index=$currentIndex remaining=$remaining")
             startFade(from = targetVolume, to = 0f, durationMs = remaining.toInt().coerceIn(1, crossfadeMs))
         }
     }
@@ -225,7 +211,6 @@ class PlayerController @Inject constructor(
     /** Ramps controller.volume from [from] to [to] over [durationMs] in ~50ms steps. Cancels any
      * fade already in progress, so a fade-in from a new track always wins over a stale fade-out. */
     private fun startFade(from: Float, to: Float, durationMs: Int) {
-        Log.d(CROSSFADE_TAG, "startFade from=$from to=$to durationMs=$durationMs controllerNull=${controller == null}")
         crossfadeJob?.cancel()
         isFading = true
         lateinit var job: Job
@@ -238,7 +223,6 @@ class PlayerController @Inject constructor(
                     controller?.volume = (from + (to - from) * t).coerceIn(0f, 1f)
                     delay(stepMs.toLong())
                 }
-                Log.d(CROSSFADE_TAG, "fade complete from=$from to=$to actualVolume=${controller?.volume}")
             } finally {
                 // Cancelling the old job to start a new fade doesn't stop it instantly — it only
                 // unwinds at its next suspension point, which can land after the new fade has

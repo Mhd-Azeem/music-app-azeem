@@ -40,11 +40,16 @@ jobs:
       - name: Build release APK
         run: ./gradlew assembleRelease --stacktrace
 
+      - name: Rename release APK
+        run: |
+          mkdir -p app/build/outputs/apk/release/renamed
+          cp "app/build/outputs/apk/release/app-release.apk" "app/build/outputs/apk/release/renamed/Azeem's Music.apk"
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wavelength-release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          name: azeems-music-apk
+          path: "app/build/outputs/apk/release/renamed/Azeem's Music.apk"
           retention-days: 30
 
       - name: Publish to Releases
@@ -57,8 +62,8 @@ jobs:
             Automatically rebuilt from commit ${{ github.sha }}.
 
             This is a minified, optimized release build (not from the Play Store) — download
-            `app-release.apk` below and install it directly (you'll need to allow "install unknown
-            apps" for whichever app you use to open it).
+            `Azeem's Music.apk` below and install it directly (you'll need to allow "install
+            unknown apps" for whichever app you use to open it).
           prerelease: true
           make_latest: true
-          files: app/build/outputs/apk/release/app-release.apk
+          files: "app/build/outputs/apk/release/renamed/Azeem's Music.apk"
