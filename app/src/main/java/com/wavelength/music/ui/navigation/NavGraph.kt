@@ -144,6 +144,20 @@ fun WavelengthNavHost() {
                                 launchSingleTop = true
                                 restoreState = true
                             }
+                        },
+                        onSwipeToSearch = {
+                            navController.navigate(Screen.Search.route) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        onSwipeToLibrary = {
+                            navController.navigate(Screen.Library.route) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
                     )
                 }

@@ -37,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -53,6 +54,7 @@ import com.wavelength.music.ui.components.SectionHeader
 import com.wavelength.music.ui.components.QuickAddToPlaylistDialog
 import com.wavelength.music.ui.components.TrackCard
 import com.wavelength.music.ui.components.TrackOptionsSheet
+import com.wavelength.music.ui.components.swipeHorizontal
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +64,8 @@ fun HomeScreen(
     onSettingsClick: () -> Unit,
     onPlaylistClick: (Long) -> Unit,
     onSearchClick: () -> Unit,
+    onSwipeToSearch: () -> Unit = {},
+    onSwipeToLibrary: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val featured by viewModel.featured.collectAsStateWithLifecycle()
@@ -86,12 +90,20 @@ fun HomeScreen(
             )
         }
     ) { padding ->
+        val density = LocalDensity.current
+        val tabSwipeThresholdPx = with(density) { 96.dp.toPx() }
         val pullToRefreshState = rememberPullToRefreshState()
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = viewModel::refresh,
             state = pullToRefreshState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .swipeHorizontal(
+                    thresholdPx = tabSwipeThresholdPx,
+                    onSwipeLeft = onSwipeToSearch,
+                    onSwipeRight = onSwipeToLibrary
+                ),
             indicator = {
                 PullToRefreshDefaults.Indicator(
                     state = pullToRefreshState,

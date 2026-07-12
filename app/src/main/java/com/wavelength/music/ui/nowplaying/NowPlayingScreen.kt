@@ -340,8 +340,12 @@ fun NowPlayingScreen(
         modifier = Modifier
             .fillMaxSize()
             .graphicsLayer {
+                // translationY only — no alpha fade here. This Box (and its opaque background
+                // Column below) sits directly above the shared AppBackground that's rendered
+                // underneath the whole NavHost (see NavGraph.kt), which can be the user's own
+                // custom wallpaper. Fading this screen's alpha during the drag let that image
+                // bleed through as an ugly, disconnected flash instead of a clean slide-away.
                 translationY = dragOffset
-                alpha = 1f - (dragOffset / 900f).coerceIn(0f, 0.5f)
             }
     ) {
         if (isLiquid) {
