@@ -81,7 +81,7 @@ fun AboutSheet(onDismiss: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(
@@ -115,11 +115,6 @@ fun AboutSheet(onDismiss: () -> Unit) {
                     }
                 }
             }
-            Text(
-                text = "Created and Developed by Mohammed Azeem.",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 20.dp, bottom = 24.dp)
-            )
         }
     }
 }
