@@ -532,6 +532,26 @@ fun SettingsScreen(
                             )
                         }
                     }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Sync volume slider with system volume",
+                            modifier = Modifier.weight(1f)
+                        )
+                        Switch(
+                            checked = settings.syncVolumeWithSystem,
+                            onCheckedChange = { viewModel.setSyncVolumeWithSystem(it) }
+                        )
+                    }
+                    Text(
+                        text = "When on, the Now Playing volume slider controls the same volume as " +
+                            "your device's hardware buttons. When off, it's a separate in-app level.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
                 }
             }
 

@@ -61,7 +61,8 @@ class BackupRepository @Inject constructor(
                 crossfadeDurationMs = settingsState.crossfadeDurationMs,
                 audioVisualizerEnabled = settingsState.audioVisualizerEnabled,
                 trackTransitionEnabled = settingsState.trackTransitionEnabled,
-                trackTransitionDurationMs = settingsState.trackTransitionDurationMs
+                trackTransitionDurationMs = settingsState.trackTransitionDurationMs,
+                syncVolumeWithSystem = settingsState.syncVolumeWithSystem
             )
             val customBackgroundBase64 = settingsRepository.customBackgroundFile
                 .takeIf { it.exists() }
@@ -135,6 +136,7 @@ class BackupRepository @Inject constructor(
         settingsRepository.setAudioVisualizerEnabled(settings.audioVisualizerEnabled)
         settingsRepository.setTrackTransitionEnabled(settings.trackTransitionEnabled)
         settingsRepository.setTrackTransitionDurationMs(settings.trackTransitionDurationMs)
+        settingsRepository.setSyncVolumeWithSystem(settings.syncVolumeWithSystem)
     }
 }
 

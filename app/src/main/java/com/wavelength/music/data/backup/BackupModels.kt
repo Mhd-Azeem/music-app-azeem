@@ -55,7 +55,8 @@ data class BackupSettings(
     val crossfadeDurationMs: Int,
     val audioVisualizerEnabled: Boolean,
     val trackTransitionEnabled: Boolean,
-    val trackTransitionDurationMs: Int
+    val trackTransitionDurationMs: Int,
+    val syncVolumeWithSystem: Boolean = true
 )
 
 data class ImportSummary(

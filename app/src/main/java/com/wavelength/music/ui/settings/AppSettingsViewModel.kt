@@ -111,6 +111,8 @@ class AppSettingsViewModel @Inject constructor(
 
     fun setTrackTransitionDurationMs(durationMs: Int) = settingsRepository.setTrackTransitionDurationMs(durationMs)
 
+    fun setSyncVolumeWithSystem(enabled: Boolean) = settingsRepository.setSyncVolumeWithSystem(enabled)
+
     fun clearAllDownloads() {
         viewModelScope.launch { repository.clearAllDownloads() }
     }

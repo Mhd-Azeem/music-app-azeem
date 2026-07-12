@@ -9,6 +9,7 @@ import com.wavelength.music.data.repository.MusicRepository
 import com.wavelength.music.playback.PlaybackUiState
 import com.wavelength.music.playback.PlayerController
 import com.wavelength.music.playback.SleepTimerController
+import com.wavelength.music.playback.SystemVolumeController
 import com.wavelength.music.playback.VisualizerController
 import com.wavelength.music.ui.components.ScreenState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,6 +31,7 @@ class PlayerViewModel @Inject constructor(
     private val repository: MusicRepository,
     private val sleepTimerController: SleepTimerController,
     private val visualizerController: VisualizerController,
+    private val systemVolumeController: SystemVolumeController,
     private val lyricsRepository: LyricsRepository
 ) : ViewModel() {
 
@@ -37,6 +39,7 @@ class PlayerViewModel @Inject constructor(
     val sleepTimerRemainingMs: StateFlow<Long?> = sleepTimerController.remainingMs
     val sleepTimerIsEndOfTrack: StateFlow<Boolean> = sleepTimerController.isEndOfTrack
     val visualizerWaveform: StateFlow<ByteArray?> = visualizerController.waveform
+    val systemVolume: StateFlow<Float> = systemVolumeController.volume
 
     private val _lyrics = MutableStateFlow<ScreenState<List<LyricLine>>>(ScreenState.Empty)
     val lyrics: StateFlow<ScreenState<List<LyricLine>>> = _lyrics.asStateFlow()
@@ -65,6 +68,7 @@ class PlayerViewModel @Inject constructor(
     fun playQueueItem(index: Int) = playerController.playQueueItem(index)
     fun moveQueueItem(from: Int, to: Int) = playerController.moveQueueItem(from, to)
     fun setVolume(volume: Float) = playerController.setVolume(volume)
+    fun setSystemVolume(volume: Float) = systemVolumeController.setVolume(volume)
     fun setPlaybackSpeed(speed: Float) = playerController.setPlaybackSpeed(speed)
     fun setVisualizerCaptureEnabled(enabled: Boolean) = visualizerController.setCaptureEnabled(enabled)
 

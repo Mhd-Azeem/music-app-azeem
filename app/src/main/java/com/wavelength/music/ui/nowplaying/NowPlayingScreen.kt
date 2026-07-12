@@ -139,7 +139,8 @@ fun NowPlayingScreen(
     vinylStyleAlbumArt: Boolean = false,
     audioVisualizerEnabled: Boolean = false,
     trackTransitionEnabled: Boolean = true,
-    trackTransitionDurationMs: Int = 300
+    trackTransitionDurationMs: Int = 300,
+    syncVolumeWithSystem: Boolean = true
 ) {
     val trackTransitionSpec: FiniteAnimationSpec<Float> = if (trackTransitionEnabled) {
         tween(trackTransitionDurationMs)
@@ -149,6 +150,7 @@ fun NowPlayingScreen(
     val hazeState = remember { HazeState() }
     val pillShape = RoundedCornerShape(28.dp)
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val systemVolume by viewModel.systemVolume.collectAsStateWithLifecycle()
     val isFavorite by viewModel.isCurrentFavorite.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     val sleepTimerRemaining by viewModel.sleepTimerRemainingMs.collectAsStateWithLifecycle()
@@ -614,18 +616,21 @@ fun NowPlayingScreen(
                 modifier = volumeRowModifier,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val displayedVolume = if (syncVolumeWithSystem) systemVolume else state.volume
                 Icon(
                     imageVector = when {
-                        state.volume <= 0f -> Icons.Filled.VolumeOff
-                        state.volume < 0.5f -> Icons.Filled.VolumeDown
+                        displayedVolume <= 0f -> Icons.Filled.VolumeOff
+                        displayedVolume < 0.5f -> Icons.Filled.VolumeDown
                         else -> Icons.Filled.VolumeUp
                     },
                     contentDescription = "Volume",
                     tint = Color.White
                 )
                 Slider(
-                    value = state.volume,
-                    onValueChange = { viewModel.setVolume(it) },
+                    value = displayedVolume,
+                    onValueChange = {
+                        if (syncVolumeWithSystem) viewModel.setSystemVolume(it) else viewModel.setVolume(it)
+                    },
                     valueRange = 0f..1f,
                     modifier = Modifier.weight(1f).padding(start = 8.dp),
                     colors = SliderDefaults.colors(

@@ -185,7 +185,8 @@ fun WavelengthNavHost() {
                         vinylStyleAlbumArt = settings.vinylStyleAlbumArt,
                         audioVisualizerEnabled = settings.audioVisualizerEnabled,
                         trackTransitionEnabled = settings.trackTransitionEnabled,
-                        trackTransitionDurationMs = settings.trackTransitionDurationMs
+                        trackTransitionDurationMs = settings.trackTransitionDurationMs,
+                        syncVolumeWithSystem = settings.syncVolumeWithSystem
                     )
                 }
                 composable(Screen.Settings.route) {

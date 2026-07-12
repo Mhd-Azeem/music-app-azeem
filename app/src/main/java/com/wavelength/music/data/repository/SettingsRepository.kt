@@ -34,7 +34,10 @@ data class AppSettingsState(
     /** Whether album art/title crossfade when the track changes (swipe, transport buttons, or
      * auto-advance) — separate from [crossfadeDurationMs], which fades the *audio* between songs. */
     val trackTransitionEnabled: Boolean = true,
-    val trackTransitionDurationMs: Int = DEFAULT_TRACK_TRANSITION_DURATION_MS
+    val trackTransitionDurationMs: Int = DEFAULT_TRACK_TRANSITION_DURATION_MS,
+    /** Whether the Now Playing volume slider controls the device's actual media volume (the same
+     * one the hardware rocker controls) instead of an app-only software gain. */
+    val syncVolumeWithSystem: Boolean = true
 )
 
 const val DEFAULT_BACKGROUND_OPACITY = 0.25f
@@ -76,7 +79,8 @@ class SettingsRepository @Inject constructor(
         crossfadeDurationMs = prefs.getInt(KEY_CROSSFADE, 0),
         audioVisualizerEnabled = prefs.getBoolean(KEY_VISUALIZER, false),
         trackTransitionEnabled = prefs.getBoolean(KEY_TRACK_TRANSITION_ENABLED, true),
-        trackTransitionDurationMs = prefs.getInt(KEY_TRACK_TRANSITION_DURATION, DEFAULT_TRACK_TRANSITION_DURATION_MS)
+        trackTransitionDurationMs = prefs.getInt(KEY_TRACK_TRANSITION_DURATION, DEFAULT_TRACK_TRANSITION_DURATION_MS),
+        syncVolumeWithSystem = prefs.getBoolean(KEY_SYNC_VOLUME_WITH_SYSTEM, true)
     )
 
     fun setIconPreset(preset: IconPreset) {
@@ -229,6 +233,11 @@ class SettingsRepository @Inject constructor(
         _state.update { it.copy(trackTransitionDurationMs = clamped) }
     }
 
+    fun setSyncVolumeWithSystem(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_SYNC_VOLUME_WITH_SYSTEM, enabled) }
+        _state.update { it.copy(syncVolumeWithSystem = enabled) }
+    }
+
     /** Enables the alias matching [preset] and disables the others, so exactly one launcher
      * icon is ever active at a time. */
     private fun applyIconPreset(preset: IconPreset) {
@@ -259,5 +268,6 @@ class SettingsRepository @Inject constructor(
         const val KEY_VISUALIZER = "audio_visualizer_enabled"
         const val KEY_TRACK_TRANSITION_ENABLED = "track_transition_enabled"
         const val KEY_TRACK_TRANSITION_DURATION = "track_transition_duration_ms"
+        const val KEY_SYNC_VOLUME_WITH_SYSTEM = "sync_volume_with_system"
     }
 }
