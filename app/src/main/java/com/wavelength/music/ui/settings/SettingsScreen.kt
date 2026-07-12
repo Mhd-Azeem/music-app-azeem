@@ -937,25 +937,65 @@ fun SettingsScreen(
                                 )
                             }
                         }
-                        Text(
-                            text = "Features",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
+                        val featureGroups = listOf(
+                            "Playback" to listOf(
+                                "Stream millions of songs via JioSaavn, plus play files already on your device",
+                                "Gapless playback with adjustable crossfade between tracks",
+                                "Adjustable playback speed",
+                                "Sleep timer — countdown or end-of-track",
+                                "Synced lyrics, shown alongside the track",
+                                "Audio visualizer on Now Playing",
+                                "AI DJ — keeps the queue topped up automatically",
+                                "Smart shuffle weighted by your listening history",
+                                "Drag-to-reorder Up Next queue",
+                                "Volume slider, optionally synced with your device's system volume"
+                            ),
+                            "Library & organization" to listOf(
+                                "Custom playlists with folders and drag-to-reorder",
+                                "Smart playlists — Most Played, Recently Added",
+                                "Daily Mix, built from your top artists",
+                                "Favorites, recently played, and listening statistics",
+                                "Offline downloads with a storage/usage view",
+                                "Share playlists with a QR code",
+                                "Multi-select for bulk actions in your library"
+                            ),
+                            "Search & discovery" to listOf(
+                                "Search history and voice search",
+                                "Browse by artist and by genre/language",
+                                "Paginated search results with infinite scroll"
+                            ),
+                            "Personalization" to listOf(
+                                "Multiple app icon presets",
+                                "Custom background photo, plus a gallery of favorite wallpapers",
+                                "Liquid Glass, dynamic (album-art-based), and vinyl-style themes",
+                                "Adjustable background opacity",
+                                "Configurable track-change animation, on/off with adjustable speed"
+                            ),
+                            "Sound" to listOf(
+                                "Full equalizer with genre presets (Rock, Pop, Classical, Jazz, and more)",
+                                "Bass boost and volume booster",
+                                "Simple mode with circular Bass/Treble/Vocals knobs"
+                            ),
+                            "Convenience" to listOf(
+                                "Home screen widget",
+                                "Swipe gestures — collapse Now Playing, skip tracks, switch between Home/Search/Library",
+                                "Pull-to-refresh on Home",
+                                "Local backup and restore — playlists, favorites, settings, and wallpapers",
+                                "Offline mode banner when there's no connection"
+                            )
                         )
-                        val features = listOf(
-                            "Stream and search millions of songs",
-                            "Download tracks for offline listening",
-                            "Custom playlists with reordering and bulk actions",
-                            "Equalizer with bass boost and genre presets",
-                            "Sleep timer with countdown or end-of-track modes",
-                            "Custom app icon, background, and themes — including Liquid Glass",
-                            "Recently played, favorites, and search history"
-                        )
-                        features.forEach { feature ->
-                            Row(modifier = Modifier.padding(vertical = 2.dp)) {
-                                Text("•  ", color = MaterialTheme.colorScheme.primary)
-                                Text(feature, style = MaterialTheme.typography.bodySmall)
+                        featureGroups.forEach { (group, items) ->
+                            Text(
+                                text = group,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
+                            )
+                            items.forEach { feature ->
+                                Row(modifier = Modifier.padding(vertical = 2.dp)) {
+                                    Text("•  ", color = MaterialTheme.colorScheme.primary)
+                                    Text(feature, style = MaterialTheme.typography.bodySmall)
+                                }
                             }
                         }
                         Text(
