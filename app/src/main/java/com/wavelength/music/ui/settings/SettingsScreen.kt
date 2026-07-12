@@ -85,6 +85,7 @@ fun SettingsScreen(
     val downloadsSummary by viewModel.downloadsSummary.collectAsStateWithLifecycle()
     val usageState by viewModel.usageState.collectAsStateWithLifecycle()
     var showClearDownloadsConfirm by remember { mutableStateOf(false) }
+    var showAbout by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     val eqSupported by equalizerViewModel.isSupported.collectAsStateWithLifecycle()
@@ -117,6 +118,10 @@ fun SettingsScreen(
                 TextButton(onClick = { showClearDownloadsConfirm = false }) { Text("Cancel") }
             }
         )
+    }
+
+    if (showAbout) {
+        AboutSheet(onDismiss = { showAbout = false })
     }
 
     pendingBackgroundCropUri?.let { uri ->
@@ -918,91 +923,29 @@ fun SettingsScreen(
 
             item {
                 SettingsSection(title = "About") {
-                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Image(
-                                painter = painterResource(R.drawable.ic_launcher_classic),
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp))
-                            )
-                            Column(modifier = Modifier.padding(start = 12.dp)) {
-                                Text(
-                                    text = stringResource(R.string.app_name),
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = "Version ${BuildConfig.VERSION_NAME}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        val featureGroups = listOf(
-                            "Playback" to listOf(
-                                "Stream millions of songs via JioSaavn, plus play files already on your device",
-                                "Gapless playback with adjustable crossfade between tracks",
-                                "Adjustable playback speed",
-                                "Sleep timer — countdown or end-of-track",
-                                "Synced lyrics, shown alongside the track",
-                                "Audio visualizer on Now Playing",
-                                "AI DJ — keeps the queue topped up automatically",
-                                "Smart shuffle weighted by your listening history",
-                                "Drag-to-reorder Up Next queue",
-                                "Volume slider, optionally synced with your device's system volume"
-                            ),
-                            "Library & organization" to listOf(
-                                "Custom playlists with folders and drag-to-reorder",
-                                "Smart playlists — Most Played, Recently Added",
-                                "Daily Mix, built from your top artists",
-                                "Favorites, recently played, and listening statistics",
-                                "Offline downloads with a storage/usage view",
-                                "Share playlists with a QR code",
-                                "Multi-select for bulk actions in your library"
-                            ),
-                            "Search & discovery" to listOf(
-                                "Search history and voice search",
-                                "Browse by artist and by genre/language",
-                                "Paginated search results with infinite scroll"
-                            ),
-                            "Personalization" to listOf(
-                                "Multiple app icon presets",
-                                "Custom background photo, plus a gallery of favorite wallpapers",
-                                "Liquid Glass, dynamic (album-art-based), and vinyl-style themes",
-                                "Adjustable background opacity",
-                                "Configurable track-change animation, on/off with adjustable speed"
-                            ),
-                            "Sound" to listOf(
-                                "Full equalizer with genre presets (Rock, Pop, Classical, Jazz, and more)",
-                                "Bass boost and volume booster",
-                                "Simple mode with circular Bass/Treble/Vocals knobs"
-                            ),
-                            "Convenience" to listOf(
-                                "Home screen widget",
-                                "Swipe gestures — collapse Now Playing, skip tracks, switch between Home/Search/Library",
-                                "Pull-to-refresh on Home",
-                                "Local backup and restore — playlists, favorites, settings, and wallpapers",
-                                "Offline mode banner when there's no connection"
-                            )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = { showAbout = true })
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.ic_launcher_classic),
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp))
                         )
-                        featureGroups.forEach { (group, items) ->
+                        Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                             Text(
-                                text = group,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
+                                text = stringResource(R.string.app_name),
+                                style = MaterialTheme.typography.titleMedium
                             )
-                            items.forEach { feature ->
-                                Row(modifier = Modifier.padding(vertical = 2.dp)) {
-                                    Text("•  ", color = MaterialTheme.colorScheme.primary)
-                                    Text(feature, style = MaterialTheme.typography.bodySmall)
-                                }
-                            }
+                            Text(
+                                text = "Version ${BuildConfig.VERSION_NAME}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                        Text(
-                            text = "Created and Developed by Mohammed Azeem.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(top = 20.dp, bottom = 16.dp)
-                        )
                     }
                 }
             }
