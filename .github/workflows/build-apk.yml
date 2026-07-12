@@ -41,16 +41,33 @@ jobs:
         run: ./gradlew assembleRelease --stacktrace
 
       - name: Rename release APK
+        # GitHub's release-asset upload strips/mangles apostrophes and spaces (they silently
+        # become dots), so this avoids both rather than shipping a filename that looks different
+        # once actually downloaded.
         run: |
           mkdir -p app/build/outputs/apk/release/renamed
-          cp "app/build/outputs/apk/release/app-release.apk" "app/build/outputs/apk/release/renamed/Azeem's Music.apk"
+          cp "app/build/outputs/apk/release/app-release.apk" "app/build/outputs/apk/release/renamed/Azeems-Music.apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: azeems-music-apk
-          path: "app/build/outputs/apk/release/renamed/Azeem's Music.apk"
+          path: app/build/outputs/apk/release/renamed/Azeems-Music.apk
           retention-days: 30
+
+      - name: Remove stale release assets
+        # softprops/action-gh-release only overwrites assets that share the new upload's exact
+        # filename — it never deletes ones left behind by a prior naming scheme — so this clears
+        # every existing asset on the "latest" release before each publish, keeping it to just the
+        # current build's APK instead of accumulating old copies under old names.
+        if: github.ref == 'refs/heads/claude/wavelength-music-app-hm1q2a'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view latest --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' 2>/dev/null | \
+            while read -r asset; do
+              gh release delete-asset latest "$asset" --repo "$GITHUB_REPOSITORY" -y
+            done || true
 
       - name: Publish to Releases
         if: github.ref == 'refs/heads/claude/wavelength-music-app-hm1q2a'
@@ -62,8 +79,8 @@ jobs:
             Automatically rebuilt from commit ${{ github.sha }}.
 
             This is a minified, optimized release build (not from the Play Store) — download
-            `Azeem's Music.apk` below and install it directly (you'll need to allow "install
+            `Azeems-Music.apk` below and install it directly (you'll need to allow "install
             unknown apps" for whichever app you use to open it).
           prerelease: true
           make_latest: true
-          files: "app/build/outputs/apk/release/renamed/Azeem's Music.apk"
+          files: app/build/outputs/apk/release/renamed/Azeems-Music.apk
