@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -60,11 +61,14 @@ import com.wavelength.music.ui.components.ScreenState
 import com.wavelength.music.ui.components.QuickAddToPlaylistDialog
 import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.components.TrackRow
+import com.wavelength.music.ui.components.swipeHorizontal
 import java.util.Locale
 
 @Composable
 fun SearchScreen(
     onTrackClick: () -> Unit,
+    onSwipeToHome: () -> Unit = {},
+    onSwipeToLibrary: () -> Unit = {},
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     val query by viewModel.query.collectAsStateWithLifecycle()
@@ -109,6 +113,18 @@ fun SearchScreen(
         }
     }
 
+    val density = LocalDensity.current
+    val tabSwipeThresholdPx = with(density) { 96.dp.toPx() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .swipeHorizontal(
+                thresholdPx = tabSwipeThresholdPx,
+                onSwipeLeft = onSwipeToLibrary,
+                onSwipeRight = onSwipeToHome
+            )
+    ) {
     Scaffold(
         topBar = {
             OutlinedTextField(
@@ -196,6 +212,7 @@ fun SearchScreen(
                 }
             }
         }
+    }
     }
 }
 

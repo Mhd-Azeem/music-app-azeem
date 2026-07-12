@@ -151,9 +151,21 @@ fun WavelengthNavHost() {
                                 launchSingleTop = true
                                 restoreState = true
                             }
-                        },
+                        }
+                    )
+                }
+                composable(Screen.Search.route) {
+                    SearchScreen(
+                        onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
                         onSwipeToLibrary = {
                             navController.navigate(Screen.Library.route) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        onSwipeToHome = {
+                            navController.navigate(Screen.Home.route) {
                                 popUpTo(navController.graph.startDestinationId) { saveState = true }
                                 launchSingleTop = true
                                 restoreState = true
@@ -161,16 +173,18 @@ fun WavelengthNavHost() {
                         }
                     )
                 }
-                composable(Screen.Search.route) {
-                    SearchScreen(
-                        onTrackClick = { navController.navigate(Screen.NowPlaying.route) }
-                    )
-                }
                 composable(Screen.Library.route) {
                     LibraryScreen(
                         onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
                         onPlaylistClick = { id ->
                             navController.navigate(Screen.PlaylistDetail.createRoute(id))
+                        },
+                        onSwipeToSearch = {
+                            navController.navigate(Screen.Search.route) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
                     )
                 }

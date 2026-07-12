@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -48,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -63,6 +65,7 @@ import com.wavelength.music.ui.components.EmptyView
 import com.wavelength.music.ui.components.ErrorView
 import com.wavelength.music.ui.components.SwipeableTrackRow
 import com.wavelength.music.ui.components.TrackOptionsSheet
+import com.wavelength.music.ui.components.swipeHorizontal
 import com.wavelength.music.ui.playlist.AddToPlaylistDialog
 import kotlinx.coroutines.launch
 import com.wavelength.music.ui.playlist.CreatePlaylistDialog
@@ -78,6 +81,7 @@ private val audioPermission: String
 fun LibraryScreen(
     onTrackClick: () -> Unit,
     onPlaylistClick: (Long) -> Unit,
+    onSwipeToSearch: () -> Unit = {},
     viewModel: LibraryViewModel = hiltViewModel()
 ) {
     val favorites by viewModel.favorites.collectAsStateWithLifecycle()
@@ -197,6 +201,20 @@ fun LibraryScreen(
         )
     }
 
+    val density = LocalDensity.current
+    val tabSwipeThresholdPx = with(density) { 96.dp.toPx() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .swipeHorizontal(
+                thresholdPx = tabSwipeThresholdPx,
+                // Rows fall back to a plain, non-swipeable TrackRow while selecting (see
+                // SwipeableTrackRow's usage below), which would otherwise leave a horizontal drag
+                // free to reach this page-level gesture and navigate away mid-selection.
+                onSwipeRight = if (selectionMode) null else onSwipeToSearch
+            )
+    ) {
     Scaffold(
         topBar = {
             if (selectionMode) {
@@ -387,6 +405,7 @@ fun LibraryScreen(
                 )
             }
         }
+    }
     }
 }
 

@@ -369,7 +369,12 @@ fun NowPlayingScreen(
                         detectVerticalDragGestures(
                             onDragEnd = {
                                 if (dragOffset > collapseThresholdPx) {
-                                    dragOffset = 0f
+                                    // Leave dragOffset where the drag ended rather than snapping it
+                                    // to 0 first — this composable is about to be popped off the
+                                    // back stack anyway, and resetting the offset here made the
+                                    // screen visibly jump back to its start position for a frame
+                                    // before the nav pop's own slide-out transition took over,
+                                    // producing a jarring double-motion glitch on release.
                                     onCollapse()
                                 } else {
                                     scope.launch {

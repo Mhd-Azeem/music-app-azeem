@@ -65,7 +65,6 @@ fun HomeScreen(
     onPlaylistClick: (Long) -> Unit,
     onSearchClick: () -> Unit,
     onSwipeToSearch: () -> Unit = {},
-    onSwipeToLibrary: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val featured by viewModel.featured.collectAsStateWithLifecycle()
@@ -101,8 +100,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .swipeHorizontal(
                     thresholdPx = tabSwipeThresholdPx,
-                    onSwipeLeft = onSwipeToSearch,
-                    onSwipeRight = onSwipeToLibrary
+                    onSwipeLeft = onSwipeToSearch
                 ),
             indicator = {
                 PullToRefreshDefaults.Indicator(
