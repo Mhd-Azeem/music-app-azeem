@@ -23,6 +23,13 @@ data class AppSettingsState(
     val iconPreset: IconPreset = IconPreset.CLASSIC,
     val theme: AppTheme = AppTheme.CLASSIC,
     val hasCustomBackground: Boolean = false,
+    /** Bumped on every write to the background file, even when [hasCustomBackground] itself stays
+     * `true` (picking a new photo while one's already set). `MutableStateFlow` skips emitting when
+     * an update produces a structurally-equal value, so without this a straight `true` -> `true`
+     * background change would silently never reach collectors — the UI would only pick up the new
+     * photo after some other field also changed (e.g. resetting first, which flips this same
+     * boolean to `false`). */
+    val backgroundVersion: Long = 0L,
     val backgroundOpacity: Float = DEFAULT_BACKGROUND_OPACITY,
     val expandUpNextOnScroll: Boolean = false,
     val dynamicThemeFromAlbumArt: Boolean = false,
@@ -101,7 +108,7 @@ class SettingsRepository @Inject constructor(
             }
             Unit
         }.onSuccess {
-            _state.update { it.copy(hasCustomBackground = true) }
+            _state.update { it.copy(hasCustomBackground = true, backgroundVersion = System.nanoTime()) }
         }
     }
 
@@ -117,7 +124,7 @@ class SettingsRepository @Inject constructor(
         runCatching {
             customBackgroundFile.writeBytes(bytes)
         }.onSuccess {
-            _state.update { it.copy(hasCustomBackground = true) }
+            _state.update { it.copy(hasCustomBackground = true, backgroundVersion = System.nanoTime()) }
         }
     }
 
@@ -181,7 +188,7 @@ class SettingsRepository @Inject constructor(
             file.copyTo(customBackgroundFile, overwrite = true)
             Unit
         }.onSuccess {
-            _state.update { it.copy(hasCustomBackground = true) }
+            _state.update { it.copy(hasCustomBackground = true, backgroundVersion = System.nanoTime()) }
         }
     }
 
