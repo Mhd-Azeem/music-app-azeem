@@ -31,7 +31,27 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*','**/gradle-wrapper.properties') }}
 
+      - name: Install Android SDK (command-line tools + platform)
+        env:
+          ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
+        run: |
+          set -e
+          sudo apt-get update -y
+          sudo apt-get install -y unzip wget
+          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+          TMP_ZIP=/tmp/cmdline-tools.zip
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O $TMP_ZIP
+          unzip -q $TMP_ZIP -d /tmp/cmdline-tools
+          # Move contents into the expected layout
+          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools/latest
+          mv /tmp/cmdline-tools/cmdline-tools/* $ANDROID_SDK_ROOT/cmdline-tools/latest/
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
+          yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses
+          sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+
       - name: Build release APK (unsigned)
+        env:
+          ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
         run: |
           chmod +x ./gradlew
           ./gradlew clean assembleRelease --no-daemon
