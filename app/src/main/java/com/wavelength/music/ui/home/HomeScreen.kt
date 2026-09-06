@@ -70,6 +70,7 @@ fun HomeScreen(
     val featured by viewModel.featured.collectAsStateWithLifecycle()
     val suggested by viewModel.suggested.collectAsStateWithLifecycle()
     val dailyMix by viewModel.dailyMix.collectAsStateWithLifecycle()
+    val topCharts by viewModel.topCharts.collectAsStateWithLifecycle()
     val mostPlayed by viewModel.mostPlayed.collectAsStateWithLifecycle()
     val recentlyAdded by viewModel.recentlyAdded.collectAsStateWithLifecycle()
     val recentlyPlayed by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
@@ -125,6 +126,7 @@ fun HomeScreen(
                     featuredTracks = state.data,
                     suggestedTracks = (suggested as? ScreenState.Success)?.data.orEmpty(),
                     dailyMixTracks = (dailyMix as? ScreenState.Success)?.data.orEmpty(),
+                    topChartTracks = (topCharts as? ScreenState.Success)?.data.orEmpty(),
                     mostPlayed = mostPlayed,
                     recentlyAdded = recentlyAdded,
                     recentlyPlayed = recentlyPlayed,
@@ -152,6 +154,7 @@ private fun HomeContent(
     featuredTracks: List<Track>,
     suggestedTracks: List<Track>,
     dailyMixTracks: List<Track>,
+    topChartTracks: List<Track>,
     mostPlayed: List<Track>,
     recentlyAdded: List<Track>,
     recentlyPlayed: List<Track>,
@@ -258,6 +261,25 @@ private fun HomeContent(
                         TrackCard(
                             track = track,
                             onClick = { onTrackClick(index, recentlyPlayed) },
+                            onAddToPlaylistClick = { trackForQuickAdd = track },
+                            onMoreClick = { trackForMenu = track }
+                        )
+                    }
+                }
+            }
+        }
+
+        if (topChartTracks.isNotEmpty()) {
+            item { SectionHeader("Top Charts") }
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    itemsIndexed(topChartTracks, key = { _, track -> track.id }) { index, track ->
+                        TrackCard(
+                            track = track,
+                            onClick = { onTrackClick(index, topChartTracks) },
                             onAddToPlaylistClick = { trackForQuickAdd = track },
                             onMoreClick = { trackForMenu = track }
                         )
