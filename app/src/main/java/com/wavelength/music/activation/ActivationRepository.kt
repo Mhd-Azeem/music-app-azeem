@@ -17,6 +17,7 @@ interface ActivationRepository {
     val activation: StateFlow<ActivationRecord>
 
     suspend fun requestActivation(email: String): Result<ActivationRecord>
+    suspend fun loginExisting(email: String): Result<ActivationRecord>
     suspend fun checkActivationStatus(): Result<ActivationRecord>
     suspend fun refreshStatus(): Result<ActivationRecord>
     fun logout()
@@ -57,6 +58,22 @@ class ActivationRepositoryImpl @Inject constructor(
 
         return runCatching {
             val response = api.requestActivation(ActivationRequestBody(normalized))
+            persistVerified(response)
+            response.activation
+        }
+    }
+
+    override suspend fun loginExisting(email: String): Result<ActivationRecord> {
+        val normalized = email.trim().lowercase()
+        if (!Patterns.EMAIL_ADDRESS.matcher(normalized).matches()) {
+            return Result.failure(IllegalArgumentException("Enter a valid email address."))
+        }
+
+        return runCatching {
+            val response = api.getActivationStatus(normalized)
+            if (response.activation.status == ActivationStatus.NOT_ACTIVATED) {
+                throw IllegalArgumentException("This email is not registered. Use Register to request access.")
+            }
             persistVerified(response)
             response.activation
         }
