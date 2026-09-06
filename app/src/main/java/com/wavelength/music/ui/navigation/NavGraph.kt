@@ -11,25 +11,32 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.wavelength.music.activation.ActivationScreen
+import com.wavelength.music.activation.ActivationStatus
+import com.wavelength.music.activation.ActivationViewModel
 import com.wavelength.music.ui.components.AppBackground
 import com.wavelength.music.ui.components.MiniPlayerBar
 import com.wavelength.music.ui.home.GenreScreen
@@ -57,13 +64,35 @@ fun WavelengthNavHost() {
     val playbackState by playerViewModel.state.collectAsStateWithLifecycle()
     val settingsViewModel: AppSettingsViewModel = hiltViewModel()
     val settings by settingsViewModel.state.collectAsStateWithLifecycle()
+    val activationViewModel: ActivationViewModel = hiltViewModel()
+    val activation by activationViewModel.activation.collectAsStateWithLifecycle()
+    var dismissedActivationPrompt by remember { mutableStateOf(false) }
     val isLiquid = settings.theme.isGlass
     val glassStyle = glassStyleFor(settings.theme)
     val hazeState = remember { HazeState() }
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
-    val showChrome = currentRoute != Screen.NowPlaying.route && currentRoute != Screen.Settings.route
+    val showChrome = currentRoute != Screen.NowPlaying.route &&
+        currentRoute != Screen.Settings.route &&
+        currentRoute != Screen.Activation.route
+
+    if (!dismissedActivationPrompt && activation.status == ActivationStatus.NOT_ACTIVATED) {
+        AlertDialog(
+            onDismissRequest = { dismissedActivationPrompt = true },
+            title = { Text("Activate your email to unlock your music") },
+            text = { Text("Your account needs activation before online music can be unlocked. Local music stays available.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    dismissedActivationPrompt = true
+                    navController.navigate(Screen.Activation.route)
+                }) { Text("Activate Email") }
+            },
+            dismissButton = {
+                TextButton(onClick = { dismissedActivationPrompt = true }) { Text("Later") }
+            }
+        )
+    }
 
     Scaffold(
         bottomBar = {
@@ -223,6 +252,9 @@ fun WavelengthNavHost() {
                         onStatisticsClick = { navController.navigate(Screen.Statistics.route) }
                     )
                 }
+                composable(Screen.Activation.route) {
+                    ActivationScreen(onBack = { navController.popBackStack() })
+                }
                 composable(Screen.Statistics.route) {
                     StatisticsScreen(onBack = { navController.popBackStack() })
                 }
@@ -257,11 +289,4 @@ private fun iconFor(screen: Screen) = when (screen) {
     Screen.Search -> Icons.Filled.Search
     Screen.Library -> Icons.Filled.LibraryMusic
     else -> Icons.Filled.Home
-}
-
-private fun labelFor(screen: Screen) = when (screen) {
-    Screen.Home -> "Home"
-    Screen.Search -> "Search"
-    Screen.Library -> "Library"
-    else -> ""
 }
