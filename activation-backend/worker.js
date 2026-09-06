@@ -1,7 +1,7 @@
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8' };
 const ALLOWED_DURATIONS = new Set([30, 60, 90]);
 const DAY_MS = 24 * 60 * 60 * 1000;
-const SESSION_MS = 12 * 60 * 60 * 1000;
+const PERSISTENT_SESSION_EXPIRES_AT = Number.MAX_SAFE_INTEGER;
 const REQUEST_COOLDOWN_MS = 60 * 1000;
 
 export default {
@@ -100,7 +100,9 @@ async function adminLogin(request, env) {
   const validPassword = timingSafeEqual(password, env.ADMIN_PASSWORD);
   if (!validEmail || !validPassword) return json({ error: 'Invalid credentials' }, 401);
 
-  const expiresAt = Date.now() + SESSION_MS;
+  // This signed token remains valid until the app explicitly removes it on logout, or the
+  // SESSION_SECRET is rotated on Cloudflare. The admin password itself is never stored in the app.
+  const expiresAt = PERSISTENT_SESSION_EXPIRES_AT;
   const payload = `${email}|${expiresAt}`;
   const signature = await sign(payload, env.SESSION_SECRET);
   return json({ token: `${base64Url(payload)}.${signature}`, expiresAt });
@@ -158,7 +160,7 @@ async function verifyToken(token, secret) {
   const split = payload.lastIndexOf('|');
   if (split < 0) return false;
   const expiresAt = Number(payload.slice(split + 1));
-  return Number.isFinite(expiresAt) && Date.now() < expiresAt;
+  return Number.isFinite(expiresAt);
 }
 
 async function sign(payload, secret) {
