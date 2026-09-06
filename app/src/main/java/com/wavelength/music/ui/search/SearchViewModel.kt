@@ -165,7 +165,6 @@ class SearchViewModel @Inject constructor(
             // Remove common dash suffixes added by catalog metadata.
             .replace(Regex("\\s*[-–—:]\\s*(from|original motion picture soundtrack|motion picture soundtrack|soundtrack|ost|single|song|theme|version|remix|mix|edit|lofi|lo-fi|slowed|reverb|karaoke|instrumental).*", RegexOption.IGNORE_CASE), " ")
             // Remove explicit 'from <movie>' tail even without punctuation.
-            .replace(Regex("\\s+from\\s+[\\"'“”].*?[\\"'“”].*$", RegexOption.IGNORE_CASE), " ")
             .replace(Regex("\\s+from\\s+.+$", RegexOption.IGNORE_CASE), " ")
             // Normalize punctuation/spacing so tiny naming differences collapse.
             .replace("&", " and ")
