@@ -79,7 +79,7 @@ fun AdminActivationScreen(
                         TextButton(onClick = viewModel::loadRequests, enabled = !isLoading) {
                             Text("Refresh")
                         }
-                        TextButton(onClick = viewModel::logout) { Text("Sign out") }
+                        TextButton(onClick = viewModel::logout) { Text("Log out") }
                     }
                 }
                 message?.let { text ->
