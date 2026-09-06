@@ -73,7 +73,13 @@ class AdminActivationViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             runCatching { api.getAdminRequests(bearer) }
-                .onSuccess { _requests.value = it.requests }
+                .onSuccess { response ->
+                    val hidden = prefs.getStringSet(KEY_HIDDEN_REVOKED_IDS, emptySet()).orEmpty()
+                    _requests.value = response.requests.filterNot { record ->
+                        record.status == ActivationStatus.REVOKED &&
+                            record.id?.toString() in hidden
+                    }
+                }
                 .onFailure { error -> handleAdminFailure(error) }
             _isLoading.value = false
         }
@@ -150,17 +156,11 @@ class AdminActivationViewModel @Inject constructor(
     }
 
     fun deleteRevoked(id: Long) {
-        val bearer = token?.let { "Bearer $it" } ?: return
-        viewModelScope.launch {
-            _isLoading.value = true
-            runCatching { api.deleteRevokedRequest(bearer, id) }
-                .onSuccess {
-                    _message.value = "Revoked email removed from activation history."
-                    _requests.value = _requests.value.filterNot { it.id == id }
-                }
-                .onFailure { error -> handleAdminFailure(error) }
-            _isLoading.value = false
-        }
+        val hidden = prefs.getStringSet(KEY_HIDDEN_REVOKED_IDS, emptySet()).orEmpty().toMutableSet()
+        hidden += id.toString()
+        prefs.edit().putStringSet(KEY_HIDDEN_REVOKED_IDS, hidden).apply()
+        _requests.value = _requests.value.filterNot { it.id == id }
+        _message.value = "Revoked email hidden from this app's history."
     }
 
     fun logout() {
@@ -199,5 +199,6 @@ class AdminActivationViewModel @Inject constructor(
     private companion object {
         const val PREFS_NAME = "activation_admin_session"
         const val KEY_TOKEN = "admin_session_token"
+        const val KEY_HIDDEN_REVOKED_IDS = "hidden_revoked_ids"
     }
 }
