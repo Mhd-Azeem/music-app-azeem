@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -54,7 +53,6 @@ import com.wavelength.music.ui.settings.AppSettingsViewModel
 import com.wavelength.music.ui.settings.SettingsScreen
 import com.wavelength.music.ui.statistics.StatisticsScreen
 import com.wavelength.music.ui.theme.glassStyleFor
-import com.wavelength.music.ui.youtube.YouTubeScreen
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
@@ -110,7 +108,6 @@ fun WavelengthNavHost() {
                     }
                 }
                 Column {
-                    if (currentRoute != Screen.YouTube.route) {
                         MiniPlayerBar(
                             state = playbackState,
                             onClick = { navController.navigate(Screen.NowPlaying.route) },
@@ -122,7 +119,6 @@ fun WavelengthNavHost() {
                             trackTransitionEnabled = settings.trackTransitionEnabled,
                             trackTransitionDurationMs = settings.trackTransitionDurationMs
                         )
-                    }
                     NavigationBar(
                         modifier = navBarModifier,
                         containerColor = if (isLiquid) Color.Transparent else NavigationBarDefaults.containerColor
@@ -226,14 +222,8 @@ fun WavelengthNavHost() {
                         }
                     )
                 }
-                composable(Screen.YouTube.route) {
-                    LaunchedEffect(Unit) {
-                        playerViewModel.pause()
-                    }
-                    YouTubeScreen()
-                }
 
-                composable(
+composable(
                     route = Screen.NowPlaying.route,
                     enterTransition = {
                         slideInVertically(initialOffsetY = { it }, animationSpec = tween(320))
@@ -318,7 +308,6 @@ private fun iconFor(screen: Screen) = when (screen) {
     Screen.Home -> Icons.Filled.Home
     Screen.Search -> Icons.Filled.Search
     Screen.Library -> Icons.Filled.LibraryMusic
-    Screen.YouTube -> Icons.Filled.SmartDisplay
     else -> Icons.Filled.Home
 }
 
@@ -327,6 +316,5 @@ private fun navLabelFor(screen: Screen) = when (screen) {
     Screen.Home -> "Home"
     Screen.Search -> "Search"
     Screen.Library -> "Library"
-    Screen.YouTube -> "YouTube"
     else -> ""
 }
