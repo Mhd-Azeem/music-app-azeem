@@ -8,7 +8,8 @@ data class JioSaavnSong(
     val artist: String,
     val durationSeconds: Int,
     val imageUrl: String,
-    val streamUrl: String
+    val streamUrl: String,
+    val language: String = ""
 )
 
 fun JioSaavnSong.toTrack(): Track = Track(
@@ -21,5 +22,6 @@ fun JioSaavnSong.toTrack(): Track = Track(
     albumArtUrl = imageUrl,
     audioUrl = streamUrl,
     durationSeconds = durationSeconds,
-    source = TrackSource.JIOSAAVN
+    source = TrackSource.JIOSAAVN,
+    language = language
 )
