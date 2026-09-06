@@ -1,0 +1,13 @@
+name = "activation-api"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "music-activation"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+# Configure secrets with Wrangler instead of committing them:
+# wrangler secret put ADMIN_EMAIL
+# wrangler secret put ADMIN_PASSWORD
+# wrangler secret put SESSION_SECRET
