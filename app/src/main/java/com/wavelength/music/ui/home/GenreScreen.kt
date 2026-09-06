@@ -15,6 +15,7 @@ fun GenreScreen(
     viewModel: GenreViewModel = hiltViewModel()
 ) {
     val state by viewModel.tracks.collectAsStateWithLifecycle()
+    val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
 
     TrackListScreen(
         title = viewModel.label,
@@ -32,6 +33,7 @@ fun GenreScreen(
             onTrackClick()
         },
         emptyMessage = stringResource(R.string.search_empty_hint),
-        onLoadMore = viewModel::loadMore
+        onLoadMore = viewModel::loadMore,
+        isLoadingMore = isLoadingMore
     )
 }
