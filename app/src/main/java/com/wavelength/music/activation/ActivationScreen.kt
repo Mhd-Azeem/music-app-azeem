@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -25,7 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -35,6 +35,7 @@ import java.util.Date
 @Composable
 fun ActivationScreen(
     onBack: () -> Unit,
+    onAdminClick: () -> Unit = {},
     viewModel: ActivationViewModel = hiltViewModel()
 ) {
     val activation by viewModel.activation.collectAsStateWithLifecycle()
@@ -52,6 +53,9 @@ fun ActivationScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                     }
+                },
+                actions = {
+                    TextButton(onClick = onAdminClick) { Text("Admin") }
                 }
             )
         }
@@ -100,7 +104,7 @@ fun ActivationScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     if (isLoading) CircularProgressIndicator()
-                    else Text(if (activation.status == ActivationStatus.EXPIRED) "Request Activation" else "Request Activation")
+                    else Text("Request Activation")
                 }
             } else {
                 TextButton(onClick = viewModel::refresh, enabled = !isLoading) {
