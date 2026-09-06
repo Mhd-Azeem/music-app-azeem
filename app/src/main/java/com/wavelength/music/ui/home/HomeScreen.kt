@@ -36,6 +36,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -62,6 +63,7 @@ fun HomeScreen(
     onTrackClick: () -> Unit,
     onGenreClick: (tag: String, label: String) -> Unit,
     onSettingsClick: () -> Unit,
+    onStatisticsClick: () -> Unit,
     onPlaylistClick: (Long) -> Unit,
     onSearchClick: () -> Unit,
     onSwipeToSearch: () -> Unit = {},
@@ -83,6 +85,12 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
+                    TextButton(
+                        onClick = onStatisticsClick,
+                        modifier = Modifier.alpha(0.55f)
+                    ) {
+                        Text("Stats")
+                    }
                     IconButton(onClick = onSettingsClick) {
                         Icon(Icons.Filled.Settings, contentDescription = "Settings")
                     }
