@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -74,6 +75,7 @@ fun SearchScreen(
     val query by viewModel.query.collectAsStateWithLifecycle()
     val results by viewModel.results.collectAsStateWithLifecycle()
     val history by viewModel.searchHistory.collectAsStateWithLifecycle()
+    val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
     var trackForMenu by remember { mutableStateOf<Track?>(null) }
     var trackForQuickAdd by remember { mutableStateOf<Track?>(null) }
     val context = LocalContext.current
@@ -177,7 +179,9 @@ fun SearchScreen(
                 message = stringResource(R.string.search_empty_hint)
             )
             is ScreenState.Success -> {
-                val tracks = state.data
+                val allTracks = state.data
+                val languages = viewModel.availableLanguages(allTracks)
+                val tracks = viewModel.filteredTracks(allTracks)
                 val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
                 val listState = rememberLazyListState()
                 val shouldLoadMore by remember {
@@ -191,6 +195,24 @@ fun SearchScreen(
                     if (shouldLoadMore) viewModel.loadMore()
                 }
                 LazyColumn(modifier = Modifier.fillMaxSize().padding(padding), state = listState) {
+                if (languages.size > 1) {
+                    item {
+                        androidx.compose.foundation.lazy.LazyRow(
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(languages, key = { it }) { language ->
+                                AssistChip(
+                                    onClick = { viewModel.selectLanguage(language) },
+                                    label = { Text(language) },
+                                    leadingIcon = if (selectedLanguage == language) {
+                                        { Text("✓") }
+                                    } else null
+                                )
+                            }
+                        }
+                    }
+                }
                     itemsIndexed(tracks, key = { _, track -> track.id }) { index, track ->
                         TrackRow(
                             track = track,
@@ -199,7 +221,8 @@ fun SearchScreen(
                                 onTrackClick()
                             },
                             onAddToPlaylistClick = { trackForQuickAdd = track },
-                            onMoreClick = { trackForMenu = track }
+                            onMoreClick = { trackForMenu = track },
+                            showLanguage = true
                         )
                     }
                     if (isLoadingMore) {
