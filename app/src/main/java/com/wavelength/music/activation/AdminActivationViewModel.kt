@@ -135,6 +135,20 @@ class AdminActivationViewModel @Inject constructor(
         }
     }
 
+    fun resetDevice(id: Long) {
+        val bearer = token?.let { "Bearer $it" } ?: return
+        viewModelScope.launch {
+            _isLoading.value = true
+            runCatching { api.resetDevice(bearer, id) }
+                .onSuccess {
+                    _message.value = "Linked device reset. The next phone that logs in with this email will be linked."
+                    loadRequests()
+                }
+                .onFailure { error -> handleAdminFailure(error) }
+            _isLoading.value = false
+        }
+    }
+
     fun logout() {
         token = null
         prefs.edit().remove(KEY_TOKEN).apply()
