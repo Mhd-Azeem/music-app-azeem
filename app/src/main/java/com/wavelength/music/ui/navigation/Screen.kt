@@ -9,6 +9,7 @@ sealed class Screen(val route: String) {
     data object NowPlaying : Screen("now_playing")
     data object Settings : Screen("settings")
     data object Activation : Screen("activation")
+    data object AdminActivation : Screen("activation_admin")
     data object Statistics : Screen("statistics")
 
     data object Genre : Screen("genre/{tag}/{label}") {
