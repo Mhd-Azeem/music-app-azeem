@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -22,7 +23,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -45,6 +48,7 @@ fun TrackListScreen(
     onPlayAll: () -> Unit,
     onTrackClick: (Int) -> Unit,
     emptyMessage: String? = null,
+    onLoadMore: (() -> Unit)? = null,
     onRemoveFromPlaylist: ((Track) -> Unit)? = null,
     onReorder: ((from: Int, to: Int) -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
@@ -52,6 +56,17 @@ fun TrackListScreen(
     var menuTrackIndex by remember { mutableStateOf<Int?>(null) }
     var quickAddTrack by remember { mutableStateOf<Track?>(null) }
     val successData = (state as? ScreenState.Success)?.data
+    val listState = rememberLazyListState()
+    val shouldLoadMore by remember(successData, onLoadMore) {
+        derivedStateOf {
+            val total = listState.layoutInfo.totalItemsCount
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            onLoadMore != null && total > 0 && lastVisible >= total - 5
+        }
+    }
+    LaunchedEffect(shouldLoadMore) {
+        if (shouldLoadMore) onLoadMore?.invoke()
+    }
     val menuTrack = menuTrackIndex?.let { index -> successData?.getOrNull(index) }
 
     if (menuTrack != null && successData != null) {
@@ -104,7 +119,7 @@ fun TrackListScreen(
             } else {
                 EmptyView(modifier = Modifier.padding(padding))
             }
-            is ScreenState.Success -> LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
+            is ScreenState.Success -> LazyColumn(state = listState, modifier = Modifier.fillMaxSize().padding(padding)) {
                 item {
                     Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                         if (imageUrl != null) {
