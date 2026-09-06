@@ -37,6 +37,7 @@ import androidx.navigation.navArgument
 import com.wavelength.music.activation.ActivationScreen
 import com.wavelength.music.activation.ActivationStatus
 import com.wavelength.music.activation.ActivationViewModel
+import com.wavelength.music.activation.AdminActivationScreen
 import com.wavelength.music.ui.components.AppBackground
 import com.wavelength.music.ui.components.MiniPlayerBar
 import com.wavelength.music.ui.home.GenreScreen
@@ -75,7 +76,8 @@ fun WavelengthNavHost() {
     val currentRoute = backStackEntry?.destination?.route
     val showChrome = currentRoute != Screen.NowPlaying.route &&
         currentRoute != Screen.Settings.route &&
-        currentRoute != Screen.Activation.route
+        currentRoute != Screen.Activation.route &&
+        currentRoute != Screen.AdminActivation.route
 
     if (!dismissedActivationPrompt && activation.status == ActivationStatus.NOT_ACTIVATED) {
         AlertDialog(
@@ -253,7 +255,13 @@ fun WavelengthNavHost() {
                     )
                 }
                 composable(Screen.Activation.route) {
-                    ActivationScreen(onBack = { navController.popBackStack() })
+                    ActivationScreen(
+                        onBack = { navController.popBackStack() },
+                        onAdminClick = { navController.navigate(Screen.AdminActivation.route) }
+                    )
+                }
+                composable(Screen.AdminActivation.route) {
+                    AdminActivationScreen(onBack = { navController.popBackStack() })
                 }
                 composable(Screen.Statistics.route) {
                     StatisticsScreen(onBack = { navController.popBackStack() })
