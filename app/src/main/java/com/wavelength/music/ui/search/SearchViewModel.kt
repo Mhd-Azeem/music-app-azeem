@@ -142,19 +142,36 @@ class SearchViewModel @Inject constructor(
     }
 
     private fun dedupeTracks(tracks: List<Track>): List<Track> {
-        return tracks.distinctBy { track ->
-            val normalizedTitle = track.name
-                .lowercase()
-                .replace(Regex("\\s*[-–—]\\s*(from|remix|version|song).*", RegexOption.IGNORE_CASE), "")
-                .replace(Regex("[^a-z0-9\\p{L}]+"), " ")
-                .trim()
-            val primaryArtist = track.artistName
-                .substringBefore(',')
-                .lowercase()
-                .replace(Regex("[^a-z0-9\\p{L}]+"), " ")
-                .trim()
-            Triple(normalizedTitle, primaryArtist, track.language.lowercase())
+        val seen = linkedSetOf<String>()
+        return tracks.filter { track ->
+            val canonicalTitle = canonicalSongTitle(track.name)
+            val canonicalLanguage = track.language.lowercase().trim()
+
+            // JioSaavn often returns the same recording several times with different IDs,
+            // album metadata, featured-artist ordering, or suffixes such as "(From ...)",
+            // "- Single", "Original Motion Picture Soundtrack", etc. For search results,
+            // title + language is intentionally the primary identity so those copies collapse.
+            val key = "$canonicalLanguage|$canonicalTitle"
+            key.isNotBlank() && seen.add(key)
         }
+    }
+
+    private fun canonicalSongTitle(raw: String): String {
+        return raw
+            .lowercase()
+            // Remove bracketed metadata/version labels.
+            .replace(Regex("\\([^)]*(from|movie|film|soundtrack|version|remix|mix|edit|single|theme|ost|original|lofi|lo-fi|slowed|reverb|karaoke|instrumental)[^)]*\\)", RegexOption.IGNORE_CASE), " ")
+            .replace(Regex("\\[[^]]*(from|movie|film|soundtrack|version|remix|mix|edit|single|theme|ost|original|lofi|lo-fi|slowed|reverb|karaoke|instrumental)[^]]*]", RegexOption.IGNORE_CASE), " ")
+            // Remove common dash suffixes added by catalog metadata.
+            .replace(Regex("\\s*[-–—:]\\s*(from|original motion picture soundtrack|motion picture soundtrack|soundtrack|ost|single|song|theme|version|remix|mix|edit|lofi|lo-fi|slowed|reverb|karaoke|instrumental).*", RegexOption.IGNORE_CASE), " ")
+            // Remove explicit 'from <movie>' tail even without punctuation.
+            .replace(Regex("\\s+from\\s+[\\"'“”].*?[\\"'“”].*$", RegexOption.IGNORE_CASE), " ")
+            .replace(Regex("\\s+from\\s+.+$", RegexOption.IGNORE_CASE), " ")
+            // Normalize punctuation/spacing so tiny naming differences collapse.
+            .replace("&", " and ")
+            .replace(Regex("[^a-z0-9\\p{L}]+"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
     }
 
     fun retry() {
