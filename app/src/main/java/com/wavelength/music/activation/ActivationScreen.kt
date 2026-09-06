@@ -169,7 +169,11 @@ private fun statusTitle(status: ActivationStatus): String = when (status) {
 private fun statusDescription(record: ActivationRecord, remainingDays: Long): String = when (record.status) {
     ActivationStatus.NOT_ACTIVATED -> "Enter your email address to request access to online music."
     ActivationStatus.PENDING -> "Your activation request is being reviewed."
-    ActivationStatus.ACTIVE -> "Access is active. Expires in $remainingDays day${if (remainingDays == 1L) "" else "s"}."
+    ActivationStatus.ACTIVE -> if (record.expirationDate == null) {
+        "Lifetime access is active."
+    } else {
+        "Access is active. Expires in $remainingDays day${if (remainingDays == 1L) "" else "s"}."
+    }
     ActivationStatus.EXPIRED -> "Your email activation has expired. Request a new activation to restore online music access."
     ActivationStatus.REJECTED -> "Your activation request was not approved."
     ActivationStatus.REVOKED -> "This activation has been deactivated."
