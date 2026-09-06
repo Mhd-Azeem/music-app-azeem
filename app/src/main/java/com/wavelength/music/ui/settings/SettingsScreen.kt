@@ -145,7 +145,7 @@ fun SettingsScreen(
             onDismiss = { pendingIconCropUri = null },
             onCropped = { bitmap ->
                 if (HomeScreenShortcut.isSupported(context)) {
-                    HomeScreenShortcut.pinPhotoAsShortcut(context, bitmap, "Azeem's Music")
+                    HomeScreenShortcut.pinPhotoAsShortcut(context, bitmap, "AzMusic")
                 } else {
                     Toast.makeText(
                         context,
