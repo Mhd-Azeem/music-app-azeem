@@ -46,13 +46,13 @@ jobs:
         # once actually downloaded.
         run: |
           mkdir -p app/build/outputs/apk/release/renamed
-          cp "app/build/outputs/apk/release/app-release.apk" "app/build/outputs/apk/release/renamed/Azeems-Music.apk"
+          cp "app/build/outputs/apk/release/app-release.apk" "app/build/outputs/apk/release/renamed/AzMusic.apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: azeems-music-apk
-          path: app/build/outputs/apk/release/renamed/Azeems-Music.apk
+          name: azmusic-apk
+          path: app/build/outputs/apk/release/renamed/AzMusic.apk
           retention-days: 30
 
       - name: Remove stale release assets
@@ -79,8 +79,8 @@ jobs:
             Automatically rebuilt from commit ${{ github.sha }}.
 
             This is a minified, optimized release build (not from the Play Store) — download
-            `Azeems-Music.apk` below and install it directly (you'll need to allow "install
+            `AzMusic.apk` below and install it directly (you'll need to allow "install
             unknown apps" for whichever app you use to open it).
           prerelease: true
           make_latest: true
-          files: app/build/outputs/apk/release/renamed/Azeems-Music.apk
+          files: app/build/outputs/apk/release/renamed/AzMusic.apk
