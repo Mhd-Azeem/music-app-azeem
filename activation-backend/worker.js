@@ -124,7 +124,7 @@ async function decideRequest(request, env, id, action) {
   if (action === 'approve') {
     const body = await readJson(request);
     const requestedDuration = body?.durationDays;
-    const isLifetime = requestedDuration == null;
+    const isLifetime = body?.lifetime === true;
     const durationDays = isLifetime ? null : Number(requestedDuration);
     if (!isLifetime && !ALLOWED_DURATIONS.has(durationDays)) {
       return json({ error: 'Invalid activation duration' }, 400);
