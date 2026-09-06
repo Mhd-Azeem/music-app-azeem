@@ -122,7 +122,7 @@ private fun AdminLoginForm(
     ) {
         Text("Admin sign in", style = MaterialTheme.typography.headlineSmall)
         Text(
-            "Use the admin credentials configured on the activation server. The password is never stored in the app source.",
+            "Use the admin email and the separate admin password configured on your activation backend. Do not enter your Gmail account password here.",
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         OutlinedTextField(
@@ -135,7 +135,7 @@ private fun AdminLoginForm(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password") },
+            label = { Text("Activation admin password") },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
