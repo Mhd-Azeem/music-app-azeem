@@ -8,6 +8,10 @@
 -keep class com.wavelength.music.data.backup.** { *; }
 -keep class com.wavelength.music.data.local.** { *; }
 
+# Activation status is read by Moshi's enum adapter at runtime. Keep enum constant names intact
+# so R8 cannot rename NOT_ACTIVATED/PENDING/ACTIVE/etc. in release builds.
+-keep enum com.wavelength.music.activation.ActivationStatus { *; }
+
 # --- Moshi (see https://github.com/square/moshi#proguard-r8) ---
 -keepclasseswithmembers class * {
     @com.squareup.moshi.FromJson <methods>;
