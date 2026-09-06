@@ -24,3 +24,9 @@ data class ActivationRecord(
 
 @JsonClass(generateAdapter = true)
 data class ActivationRequestBody(val email: String)
+
+@JsonClass(generateAdapter = true)
+data class ActivationResponse(
+    val activation: ActivationRecord,
+    val serverTimestamp: Long
+)
