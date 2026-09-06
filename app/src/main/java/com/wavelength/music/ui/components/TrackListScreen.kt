@@ -3,6 +3,7 @@ package com.wavelength.music.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,6 +51,7 @@ fun TrackListScreen(
     onTrackClick: (Int) -> Unit,
     emptyMessage: String? = null,
     onLoadMore: (() -> Unit)? = null,
+    isLoadingMore: Boolean = false,
     onRemoveFromPlaylist: ((Track) -> Unit)? = null,
     onReorder: ((from: Int, to: Int) -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
@@ -159,6 +162,16 @@ fun TrackListScreen(
                         onAddToPlaylistClick = { quickAddTrack = track },
                         onMoreClick = { menuTrackIndex = index }
                     )
+                }
+                if (isLoadingMore) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 18.dp),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
                 }
             }
         }
