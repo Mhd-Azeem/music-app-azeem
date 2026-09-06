@@ -92,12 +92,12 @@ class ActivationRepositoryImpl @Inject constructor(
     override fun isAccessActive(): Boolean {
         val record = effectiveCachedRecord()
         return record.status == ActivationStatus.ACTIVE &&
-            (record.expirationDate ?: 0L) > System.currentTimeMillis() &&
+            (record.expirationDate == null || record.expirationDate > System.currentTimeMillis()) &&
             canUseOfflineCache(record)
     }
 
     override fun getRemainingDays(): Long {
-        val expiration = effectiveCachedRecord().expirationDate ?: return 0L
+        val expiration = effectiveCachedRecord().expirationDate ?: return Long.MAX_VALUE
         val remaining = expiration - System.currentTimeMillis()
         return if (remaining <= 0L) 0L else remaining / DAY_MS
     }
@@ -139,7 +139,8 @@ class ActivationRepositoryImpl @Inject constructor(
 
         val now = System.currentTimeMillis()
         if (now + CLOCK_ROLLBACK_TOLERANCE_MS < lastDevice) return false
-        return now - lastDevice <= OFFLINE_GRACE_MS && (record.expirationDate ?: 0L) > now
+        return now - lastDevice <= OFFLINE_GRACE_MS &&
+            (record.expirationDate == null || record.expirationDate > now)
     }
 
     private companion object {
