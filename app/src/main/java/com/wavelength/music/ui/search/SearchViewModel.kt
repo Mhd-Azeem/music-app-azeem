@@ -30,6 +30,9 @@ class SearchViewModel @Inject constructor(
     private val _results = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Empty)
     val results: StateFlow<ScreenState<List<Track>>> = _results.asStateFlow()
 
+    private val _selectedLanguage = MutableStateFlow("All")
+    val selectedLanguage: StateFlow<String> = _selectedLanguage.asStateFlow()
+
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
 
@@ -79,7 +82,7 @@ class SearchViewModel @Inject constructor(
                 // distinctBy guards against the unofficial JioSaavn API occasionally returning
                 // overlapping/duplicate ids within one result set — the list below is keyed by
                 // track.id in Compose, which would crash on a duplicate.
-                val deduped = tracks.distinctBy { it.id }
+                val deduped = dedupeTracks(tracks)
                 canLoadMore = tracks.size >= SEARCH_PAGE_SIZE
                 _results.value = if (deduped.isEmpty()) ScreenState.Empty else ScreenState.Success(deduped)
             },
@@ -108,8 +111,7 @@ class SearchViewModel @Inject constructor(
                         currentPage = nextPage
                         canLoadMore = newTracks.size >= SEARCH_PAGE_SIZE
                         val latest = (_results.value as? ScreenState.Success)?.data ?: current.data
-                        val existingIds = latest.map { it.id }.toSet()
-                        _results.value = ScreenState.Success(latest + newTracks.filterNot { it.id in existingIds })
+                        _results.value = ScreenState.Success(dedupeTracks(latest + newTracks))
                     }
                 },
                 onFailure = {
@@ -119,6 +121,39 @@ class SearchViewModel @Inject constructor(
                 }
             )
             _isLoadingMore.value = false
+        }
+    }
+
+    fun selectLanguage(language: String) {
+        _selectedLanguage.value = language
+    }
+
+    fun availableLanguages(tracks: List<Track>): List<String> {
+        val detected = tracks.mapNotNull { track ->
+            track.language.takeIf { it.isNotBlank() }?.replaceFirstChar { it.uppercase() }
+        }.distinct().sorted()
+        return listOf("All") + detected
+    }
+
+    fun filteredTracks(tracks: List<Track>): List<Track> {
+        val selected = _selectedLanguage.value
+        if (selected == "All") return tracks
+        return tracks.filter { it.language.equals(selected, ignoreCase = true) }
+    }
+
+    private fun dedupeTracks(tracks: List<Track>): List<Track> {
+        return tracks.distinctBy { track ->
+            val normalizedTitle = track.name
+                .lowercase()
+                .replace(Regex("\\s*[-–—]\\s*(from|remix|version|song).*", RegexOption.IGNORE_CASE), "")
+                .replace(Regex("[^a-z0-9\\p{L}]+"), " ")
+                .trim()
+            val primaryArtist = track.artistName
+                .substringBefore(',')
+                .lowercase()
+                .replace(Regex("[^a-z0-9\\p{L}]+"), " ")
+                .trim()
+            Triple(normalizedTitle, primaryArtist, track.language.lowercase())
         }
     }
 
