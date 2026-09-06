@@ -53,5 +53,6 @@ data class AdminActivationListResponse(
 
 @JsonClass(generateAdapter = true)
 data class AdminDecisionRequest(
-    val durationDays: Int? = null
+    val durationDays: Int? = null,
+    val lifetime: Boolean = false
 )
