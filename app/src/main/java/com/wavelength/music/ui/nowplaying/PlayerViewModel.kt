@@ -78,7 +78,12 @@ class PlayerViewModel @Inject constructor(
         val track = state.value.currentTrack ?: return
         viewModelScope.launch {
             _lyrics.value = ScreenState.Loading
-            lyricsRepository.getSyncedLyrics(track.name, track.artistName, track.durationSeconds).fold(
+            lyricsRepository.getLyrics(
+                trackName = track.name,
+                artistName = track.artistName,
+                albumName = track.albumName,
+                durationSeconds = track.durationSeconds
+            ).fold(
                 onSuccess = { lines ->
                     _lyrics.value = if (lines.isEmpty()) ScreenState.Empty else ScreenState.Success(lines)
                 },
