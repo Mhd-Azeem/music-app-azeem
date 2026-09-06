@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -33,7 +34,7 @@ class ActivationViewModel @Inject constructor(
                     _message.value = "Activation request submitted. Your account is waiting for approval."
                 }
                 .onFailure { error ->
-                    _message.value = error.message ?: "Could not submit activation request. Please try again."
+                    _message.value = activationError(error)
                 }
             _isLoading.value = false
         }
@@ -43,8 +44,8 @@ class ActivationViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             repository.checkActivationStatus()
-                .onFailure {
-                    _message.value = "Could not verify activation right now. Cached access is used only within the offline grace period."
+                .onFailure { error ->
+                    _message.value = activationError(error)
                 }
             _isLoading.value = false
         }
@@ -56,4 +57,15 @@ class ActivationViewModel @Inject constructor(
 
     fun isAccessActive(): Boolean = repository.isAccessActive()
     fun getRemainingDays(): Long = repository.getRemainingDays()
+
+    private fun activationError(error: Throwable): String = when (error) {
+        is IllegalArgumentException -> error.message ?: "Enter a valid email address."
+        is HttpException -> when (error.code()) {
+            404 -> "Activation service was not found. The Cloudflare activation backend has not been deployed at this app's backend URL."
+            429 -> "Please wait a moment before submitting the same activation request again."
+            500, 502, 503, 504 -> "Activation server is unavailable or not configured yet."
+            else -> "Activation server returned HTTP ${error.code()}."
+        }
+        else -> "Could not reach the activation server. Check that the Cloudflare Worker is deployed and that you have an internet connection."
+    }
 }
