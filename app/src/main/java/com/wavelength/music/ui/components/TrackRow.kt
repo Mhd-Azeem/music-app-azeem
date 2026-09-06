@@ -48,7 +48,8 @@ fun TrackRow(
     onMoreClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     isSelected: Boolean = false,
-    showSelectionCheckbox: Boolean = false
+    showSelectionCheckbox: Boolean = false,
+    showLanguage: Boolean = false
 ) {
     val activationViewModel: ActivationViewModel = hiltViewModel()
     val activation by activationViewModel.activation.collectAsStateWithLifecycle()
@@ -101,6 +102,13 @@ fun TrackRow(
                 TrackSource.LOCAL -> "On device"
                 TrackSource.DOWNLOADED -> "Downloaded"
                 TrackSource.JIOSAAVN -> if (isLocked) "Activation required" else null
+            }
+            if (showLanguage && track.language.isNotBlank()) {
+                Text(
+                    text = track.language.replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
             }
             if (sourceTag != null) {
                 Text(
