@@ -40,10 +40,8 @@ fun YouTubeScreen() {
                 settings.useWideViewPort = true
                 settings.loadWithOverviewMode = true
 
-                CookieManager.getInstance().apply {
-                    setAcceptCookie(true)
-                    setAcceptThirdPartyCookies(this@apply, true)
-                }
+                CookieManager.getInstance().setAcceptCookie(true)
+                CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
 
                 loadUrl("https://m.youtube.com/")
                 webView = this
