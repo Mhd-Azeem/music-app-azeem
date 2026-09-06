@@ -126,7 +126,7 @@ fun HomeScreen(
                     featuredTracks = state.data,
                     suggestedTracks = (suggested as? ScreenState.Success)?.data.orEmpty(),
                     dailyMixTracks = (dailyMix as? ScreenState.Success)?.data.orEmpty(),
-                    topChartTracks = (topCharts as? ScreenState.Success)?.data.orEmpty(),
+                    topCharts = topCharts,
                     mostPlayed = mostPlayed,
                     recentlyAdded = recentlyAdded,
                     recentlyPlayed = recentlyPlayed,
@@ -154,7 +154,7 @@ private fun HomeContent(
     featuredTracks: List<Track>,
     suggestedTracks: List<Track>,
     dailyMixTracks: List<Track>,
-    topChartTracks: List<Track>,
+    topCharts: Map<String, List<Track>>,
     mostPlayed: List<Track>,
     recentlyAdded: List<Track>,
     recentlyPlayed: List<Track>,
@@ -269,20 +269,22 @@ private fun HomeContent(
             }
         }
 
-        if (topChartTracks.isNotEmpty()) {
-            item { SectionHeader("Top Charts") }
-            item {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    itemsIndexed(topChartTracks, key = { _, track -> track.id }) { index, track ->
-                        TrackCard(
-                            track = track,
-                            onClick = { onTrackClick(index, topChartTracks) },
-                            onAddToPlaylistClick = { trackForQuickAdd = track },
-                            onMoreClick = { trackForMenu = track }
-                        )
+        topCharts.forEach { (chartName, chartTracks) ->
+            if (chartTracks.isNotEmpty()) {
+                item { SectionHeader(chartName) }
+                item {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        itemsIndexed(chartTracks, key = { _, track -> chartName + ":" + track.id }) { index, track ->
+                            TrackCard(
+                                track = track,
+                                onClick = { onTrackClick(index, chartTracks) },
+                                onAddToPlaylistClick = { trackForQuickAdd = track },
+                                onMoreClick = { trackForMenu = track }
+                            )
+                        }
                     }
                 }
             }
