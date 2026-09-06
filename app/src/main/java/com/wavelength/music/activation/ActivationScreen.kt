@@ -13,6 +13,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -42,6 +43,7 @@ fun ActivationScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     var email by remember(activation.email) { mutableStateOf(activation.email) }
+    val hasSession = activation.email.isNotBlank()
 
     LaunchedEffect(Unit) { viewModel.refresh() }
 
@@ -72,8 +74,12 @@ fun ActivationScreen(
                 style = MaterialTheme.typography.headlineSmall
             )
 
-            if (activation.email.isNotBlank()) {
+            if (hasSession) {
                 Text(activation.email, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "This email stays signed in on this device until you tap Log out.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             Text(
@@ -88,7 +94,7 @@ fun ActivationScreen(
                 )
             }
 
-            if (activation.status != ActivationStatus.ACTIVE) {
+            if (!hasSession) {
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
@@ -107,8 +113,39 @@ fun ActivationScreen(
                     else Text("Request Activation")
                 }
             } else {
-                TextButton(onClick = viewModel::refresh, enabled = !isLoading) {
-                    Text("Refresh status")
+                when (activation.status) {
+                    ActivationStatus.PENDING, ActivationStatus.ACTIVE -> {
+                        Button(
+                            onClick = viewModel::refresh,
+                            enabled = !isLoading,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (isLoading) CircularProgressIndicator()
+                            else Text("Refresh status")
+                        }
+                    }
+
+                    ActivationStatus.NOT_ACTIVATED,
+                    ActivationStatus.EXPIRED,
+                    ActivationStatus.REJECTED,
+                    ActivationStatus.REVOKED -> {
+                        Button(
+                            onClick = { viewModel.requestActivation(activation.email) },
+                            enabled = !isLoading,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (isLoading) CircularProgressIndicator()
+                            else Text("Request Activation Again")
+                        }
+                    }
+                }
+
+                OutlinedButton(
+                    onClick = viewModel::logout,
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Log out")
                 }
             }
 
