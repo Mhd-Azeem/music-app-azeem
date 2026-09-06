@@ -158,7 +158,7 @@ private fun AdminLoginForm(
 private fun AdminRequestCard(
     record: ActivationRecord,
     enabled: Boolean,
-    onApprove: (Int) -> Unit,
+    onApprove: (Int?) -> Unit,
     onReject: () -> Unit,
     onRevoke: () -> Unit
 ) {
@@ -188,8 +188,14 @@ private fun AdminRequestCard(
                         }
                     }
                 }
-                Button(onClick = { onApprove(duration) }, enabled = enabled) {
-                    Text("Approve")
+                OutlinedButton(
+                    onClick = { duration = 0 },
+                    enabled = enabled
+                ) {
+                    Text(if (duration == 0) "✓ Lifetime" else "Lifetime")
+                }
+                Button(onClick = { onApprove(duration.takeIf { it != 0 }) }, enabled = enabled) {
+                    Text(if (duration == 0) "Approve Lifetime" else "Approve")
                 }
                 OutlinedButton(onClick = onReject, enabled = enabled) {
                     Text("Reject")
