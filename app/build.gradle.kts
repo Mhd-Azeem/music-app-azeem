@@ -28,12 +28,15 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Defaults to the project's own Cloudflare Workers deployment of
-        // https://github.com/sumitkolhe/jiosaavn-api. Override via local.properties'
-        // JIOSAAVN_BASE_URL if you deploy your own instance instead.
         val jioSaavnBaseUrl = localProperties.getProperty("JIOSAAVN_BASE_URL")
             ?: "https://jiosaavn-api.azeemzahira111.workers.dev/api/"
         buildConfigField("String", "JIOSAAVN_BASE_URL", "\"$jioSaavnBaseUrl\"")
+
+        // Point this at the HTTPS backend that owns activation state. The mobile app contains no
+        // admin secret; admin authentication/approval must remain server-side.
+        val activationBaseUrl = localProperties.getProperty("ACTIVATION_BASE_URL")
+            ?: "https://activation-api.azeemzahira111.workers.dev/"
+        buildConfigField("String", "ACTIVATION_BASE_URL", "\"$activationBaseUrl\"")
     }
 
     buildTypes {
@@ -44,13 +47,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Signed with the auto-provisioned debug key so it stays a straightforward sideload
-            // build (no keystore secret to manage) while still getting R8's code shrinking/
-            // optimization, which the debug build type intentionally skips for fast iteration.
-            // Note: CI runs on a fresh runner each time with no persisted ~/.android, so this key
-            // isn't guaranteed stable across builds — same pre-existing limitation the old
-            // debug-only pipeline had, unrelated to this change. If installing a "latest" update
-            // over an older one ever fails with a signature mismatch, uninstall first.
             signingConfig = signingConfigs.getByName("debug")
         }
         debug {
@@ -99,6 +95,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
 
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.security.crypto)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
