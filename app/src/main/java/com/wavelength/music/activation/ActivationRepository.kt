@@ -19,6 +19,7 @@ interface ActivationRepository {
     suspend fun requestActivation(email: String): Result<ActivationRecord>
     suspend fun checkActivationStatus(): Result<ActivationRecord>
     suspend fun refreshStatus(): Result<ActivationRecord>
+    fun logout()
     fun isAccessActive(): Boolean
     fun getRemainingDays(): Long
 }
@@ -42,6 +43,9 @@ class ActivationRepositoryImpl @Inject constructor(
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
     )
 
+    // The cached record is the user's local activation identity/session. It survives app process
+    // death and clearing the app from Recents. It is removed only by explicit logout (or app data
+    // removal/uninstall), while access itself still follows server status and expiry rules.
     private val _activation = MutableStateFlow(loadCachedRecord())
     override val activation: StateFlow<ActivationRecord> = _activation.asStateFlow()
 
@@ -78,6 +82,11 @@ class ActivationRepositoryImpl @Inject constructor(
             if (canUseOfflineCache(cached)) Result.success(cached)
             else Result.failure(IOException("Activation status could not be verified.", e))
         }
+    }
+
+    override fun logout() {
+        prefs.edit().clear().apply()
+        _activation.value = ActivationRecord()
     }
 
     override fun isAccessActive(): Boolean {
@@ -129,8 +138,6 @@ class ActivationRepositoryImpl @Inject constructor(
         if (lastServer <= 0L || lastDevice <= 0L) return false
 
         val now = System.currentTimeMillis()
-        // Detect a meaningful device clock rollback. A small tolerance avoids false failures from
-        // normal clock synchronization while preventing users from extending access indefinitely.
         if (now + CLOCK_ROLLBACK_TOLERANCE_MS < lastDevice) return false
         return now - lastDevice <= OFFLINE_GRACE_MS && (record.expirationDate ?: 0L) > now
     }
