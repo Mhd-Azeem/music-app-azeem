@@ -21,11 +21,15 @@ data class ActivationRecord(
     val approvedAt: Long? = null,
     val activationStartDate: Long? = null,
     val expirationDate: Long? = null,
-    val durationDays: Int? = null
+    val durationDays: Int? = null,
+    val deviceBound: Boolean = false
 )
 
 @JsonClass(generateAdapter = true)
-data class ActivationRequestBody(val email: String)
+data class ActivationRequestBody(
+    val email: String,
+    val deviceId: String
+)
 
 @JsonClass(generateAdapter = true)
 data class ActivationResponse(
