@@ -79,14 +79,18 @@ class AdminActivationViewModel @Inject constructor(
         }
     }
 
-    fun approve(id: Long, durationDays: Int) {
-        if (durationDays !in setOf(30, 60, 90)) return
+    fun approve(id: Long, durationDays: Int?) {
+        if (durationDays != null && durationDays !in setOf(30, 60, 90)) return
         val bearer = token?.let { "Bearer $it" } ?: return
         viewModelScope.launch {
             _isLoading.value = true
             runCatching { api.approveRequest(bearer, id, AdminDecisionRequest(durationDays)) }
                 .onSuccess {
-                    _message.value = "Activation approved for $durationDays days."
+                    _message.value = if (durationDays == null) {
+                        "Lifetime activation approved."
+                    } else {
+                        "Activation approved for $durationDays days."
+                    }
                     loadRequests()
                 }
                 .onFailure { error -> handleAdminFailure(error) }
