@@ -7,8 +7,8 @@ import retrofit2.http.Query
 
 interface ActivationApiService {
     @POST("activation/request")
-    suspend fun requestActivation(@Body request: ActivationRequestBody): ActivationRecord
+    suspend fun requestActivation(@Body request: ActivationRequestBody): ActivationResponse
 
     @GET("activation/status")
-    suspend fun getActivationStatus(@Query("email") email: String): ActivationRecord
+    suspend fun getActivationStatus(@Query("email") email: String): ActivationResponse
 }
