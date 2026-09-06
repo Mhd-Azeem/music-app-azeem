@@ -59,6 +59,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun playPause() = playerController.playPause()
+    fun pause() = playerController.pause()
     fun seekTo(positionMs: Long) = playerController.seekTo(positionMs)
     fun skipNext() = playerController.skipNext()
     fun skipPrevious() = playerController.skipPrevious()
