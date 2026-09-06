@@ -14,5 +14,6 @@ data class Track(
     val albumArtUrl: String,
     val audioUrl: String,
     val durationSeconds: Int,
-    val source: TrackSource = TrackSource.JIOSAAVN
+    val source: TrackSource = TrackSource.JIOSAAVN,
+    val language: String = ""
 )
