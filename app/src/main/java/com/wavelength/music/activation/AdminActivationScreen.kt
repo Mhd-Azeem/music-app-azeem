@@ -99,7 +99,8 @@ fun AdminActivationScreen(
                         onApprove = { days -> record.id?.let { viewModel.approve(it, days) } },
                         onReject = { record.id?.let(viewModel::reject) },
                         onRevoke = { record.id?.let(viewModel::revoke) },
-                        onResetDevice = { record.id?.let(viewModel::resetDevice) }
+                        onResetDevice = { record.id?.let(viewModel::resetDevice) },
+                        onDelete = { record.id?.let(viewModel::deleteRevoked) }
                     )
                 }
             }
@@ -162,7 +163,8 @@ private fun AdminRequestCard(
     onApprove: (Int?) -> Unit,
     onReject: () -> Unit,
     onRevoke: () -> Unit,
-    onResetDevice: () -> Unit
+    onResetDevice: () -> Unit,
+    onDelete: () -> Unit
 ) {
     var duration by remember(record.id) { mutableIntStateOf(record.durationDays ?: 30) }
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -214,6 +216,12 @@ private fun AdminRequestCard(
             if (record.status == ActivationStatus.ACTIVE) {
                 OutlinedButton(onClick = onRevoke, enabled = enabled) {
                     Text("Deactivate")
+                }
+            }
+
+            if (record.status == ActivationStatus.REVOKED) {
+                Button(onClick = onDelete, enabled = enabled) {
+                    Text("Delete from history")
                 }
             }
         }
