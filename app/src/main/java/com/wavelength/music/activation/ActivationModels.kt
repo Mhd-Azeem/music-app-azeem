@@ -2,6 +2,7 @@ package com.wavelength.music.activation
 
 import com.squareup.moshi.JsonClass
 
+@JsonClass(generateAdapter = false)
 enum class ActivationStatus {
     NOT_ACTIVATED,
     PENDING,
