@@ -54,7 +54,7 @@ async function requestActivation(request, env) {
     return json({ error: 'Please wait before submitting another request.' }, 429);
   }
 
-  if (existing?.status === 'ACTIVE' && existing.expiration_date > now) {
+  if (existing?.status === 'ACTIVE' && (existing.expiration_date == null || existing.expiration_date > now)) {
     return json({ activation: toRecord(existing), serverTimestamp: now });
   }
 
@@ -123,9 +123,13 @@ async function decideRequest(request, env, id, action) {
 
   if (action === 'approve') {
     const body = await readJson(request);
-    const durationDays = Number(body?.durationDays);
-    if (!ALLOWED_DURATIONS.has(durationDays)) return json({ error: 'Invalid activation duration' }, 400);
-    const expiration = now + durationDays * DAY_MS;
+    const requestedDuration = body?.durationDays;
+    const isLifetime = requestedDuration == null;
+    const durationDays = isLifetime ? null : Number(requestedDuration);
+    if (!isLifetime && !ALLOWED_DURATIONS.has(durationDays)) {
+      return json({ error: 'Invalid activation duration' }, 400);
+    }
+    const expiration = isLifetime ? null : now + durationDays * DAY_MS;
     await env.DB.prepare(`
       UPDATE activations SET status='ACTIVE', approved_at=?, activation_start_date=?, expiration_date=?, duration_days=?, updated_at=? WHERE id=?
     `).bind(now, now, expiration, durationDays, now, id).run();
