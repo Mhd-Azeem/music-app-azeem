@@ -88,6 +88,7 @@ class ActivationViewModel @Inject constructor(
         is IllegalArgumentException -> error.message ?: "Enter a valid email address."
         is HttpException -> when (error.code()) {
             404 -> "Activation service was not found. The Cloudflare activation backend has not been deployed at this app's backend URL."
+            409 -> "This email is already activated on another device. Ask the admin to reset the linked device before logging in here."
             429 -> "Please wait a moment before submitting the same activation request again."
             500, 502, 503, 504 -> "Activation server is unavailable or not configured yet."
             else -> "Activation server returned HTTP ${error.code()}."
