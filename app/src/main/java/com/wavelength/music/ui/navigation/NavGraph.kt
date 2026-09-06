@@ -6,6 +6,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -84,10 +85,8 @@ fun WavelengthNavHost() {
         currentRoute != Screen.Settings.route &&
         currentRoute != Screen.Activation.route &&
         currentRoute != Screen.AdminActivation.route
+    val showActivationBanner = showChrome && activation.status != ActivationStatus.ACTIVE
 
-    // PlayerController now enforces the lock before ExoPlayer starts an online stream and bumps
-    // this sequence for every denied attempt. This keeps the dialog as UI feedback rather than
-    // relying on the dialog itself to stop playback.
     LaunchedEffect(activationRequiredSequence) {
         if (activationRequiredSequence > 0L) {
             showActivationRequired = true
@@ -111,7 +110,10 @@ fun WavelengthNavHost() {
         )
     }
 
-    if (!dismissedActivationPrompt && activation.status == ActivationStatus.NOT_ACTIVATED) {
+    if (!dismissedActivationPrompt &&
+        activation.status == ActivationStatus.NOT_ACTIVATED &&
+        activation.email.isBlank()
+    ) {
         AlertDialog(
             onDismissRequest = { dismissedActivationPrompt = true },
             title = { Text("Activate your email to unlock your music") },
@@ -129,6 +131,23 @@ fun WavelengthNavHost() {
     }
 
     Scaffold(
+        topBar = {
+            if (showActivationBanner) {
+                Button(
+                    onClick = { navController.navigate(Screen.Activation.route) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    val label = if (activation.email.isBlank()) {
+                        "Email Activation"
+                    } else {
+                        "Email Activation • ${activation.status.name.replace('_', ' ')}"
+                    }
+                    Text(label)
+                }
+            }
+        },
         bottomBar = {
             if (showChrome) {
                 var navBarModifier: Modifier = Modifier
