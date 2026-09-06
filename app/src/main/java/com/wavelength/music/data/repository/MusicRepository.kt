@@ -56,8 +56,8 @@ class MusicRepository @Inject constructor(
 
     /** [tag] here is a language/mood term (e.g. "tamil", "hindi") rather than a fixed taxonomy —
      * JioSaavn search already returns language-relevant results for those terms. */
-    suspend fun getTracksByTag(tag: String, limit: Int = 20, forceRefresh: Boolean = false): Result<List<Track>> =
-        jioSaavnRepository.searchSongs(tag, limit = limit, forceRefresh = forceRefresh)
+    suspend fun getTracksByTag(tag: String, page: Int = 0, limit: Int = 30, forceRefresh: Boolean = false): Result<List<Track>> =
+        jioSaavnRepository.searchSongs(tag, page = page, limit = limit, forceRefresh = forceRefresh)
 
     suspend fun searchTracks(
         query: String,
