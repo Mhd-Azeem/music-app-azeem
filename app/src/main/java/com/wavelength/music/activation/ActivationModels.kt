@@ -60,10 +60,3 @@ data class AdminDecisionRequest(
     val durationDays: Int? = null,
     val lifetime: Boolean = false
 )
-
-
-@JsonClass(generateAdapter = true)
-data class AdminDeleteResponse(
-    val deleted: Boolean,
-    val id: Long
-)
