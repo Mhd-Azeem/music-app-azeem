@@ -28,7 +28,8 @@ class GenreViewModel @Inject constructor(
     val tracks: StateFlow<ScreenState<List<Track>>> = _tracks.asStateFlow()
 
     private var currentPage = 0
-    private var isLoadingMore = false
+    private val _isLoadingMore = MutableStateFlow(false)
+    val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
     private var hasMore = true
     private val pageSize = 30
 
@@ -39,7 +40,7 @@ class GenreViewModel @Inject constructor(
     fun load() {
         currentPage = 0
         hasMore = true
-        isLoadingMore = false
+        _isLoadingMore.value = false
         viewModelScope.launch {
             _tracks.value = ScreenState.Loading
             repository.getTracksByTag(tag, page = 0, limit = pageSize).fold(
@@ -54,9 +55,9 @@ class GenreViewModel @Inject constructor(
     }
 
     fun loadMore() {
-        if (isLoadingMore || !hasMore) return
+        if (_isLoadingMore.value || !hasMore) return
         val current = (_tracks.value as? ScreenState.Success)?.data ?: return
-        isLoadingMore = true
+        _isLoadingMore.value = true
         val nextPage = currentPage + 1
         viewModelScope.launch {
             repository.getTracksByTag(tag, page = nextPage, limit = pageSize).fold(
@@ -69,7 +70,7 @@ class GenreViewModel @Inject constructor(
                 },
                 onFailure = { /* Keep the already loaded songs visible; next scroll can retry. */ }
             )
-            isLoadingMore = false
+            _isLoadingMore.value = false
         }
     }
 
