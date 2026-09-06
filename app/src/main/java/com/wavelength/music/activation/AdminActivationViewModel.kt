@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -34,10 +35,11 @@ class AdminActivationViewModel @Inject constructor(
                 .onSuccess { response ->
                     token = response.token
                     _isAuthenticated.value = true
+                    _message.value = null
                     loadRequests()
                 }
-                .onFailure {
-                    _message.value = "Admin sign-in failed. Check your credentials."
+                .onFailure { error ->
+                    _message.value = adminLoginError(error)
                 }
             _isLoading.value = false
         }
@@ -49,7 +51,7 @@ class AdminActivationViewModel @Inject constructor(
             _isLoading.value = true
             runCatching { api.getAdminRequests(bearer) }
                 .onSuccess { _requests.value = it.requests }
-                .onFailure { handleAdminFailure() }
+                .onFailure { error -> handleAdminFailure(error) }
             _isLoading.value = false
         }
     }
@@ -64,7 +66,7 @@ class AdminActivationViewModel @Inject constructor(
                     _message.value = "Activation approved for $durationDays days."
                     loadRequests()
                 }
-                .onFailure { handleAdminFailure() }
+                .onFailure { error -> handleAdminFailure(error) }
             _isLoading.value = false
         }
     }
@@ -78,7 +80,7 @@ class AdminActivationViewModel @Inject constructor(
                     _message.value = "Activation request rejected."
                     loadRequests()
                 }
-                .onFailure { handleAdminFailure() }
+                .onFailure { error -> handleAdminFailure(error) }
             _isLoading.value = false
         }
     }
@@ -92,7 +94,7 @@ class AdminActivationViewModel @Inject constructor(
                     _message.value = "Activation revoked."
                     loadRequests()
                 }
-                .onFailure { handleAdminFailure() }
+                .onFailure { error -> handleAdminFailure(error) }
             _isLoading.value = false
         }
     }
@@ -107,7 +109,24 @@ class AdminActivationViewModel @Inject constructor(
         _message.value = null
     }
 
-    private fun handleAdminFailure() {
-        _message.value = "Admin request failed. Please sign in again if your session expired."
+    private fun adminLoginError(error: Throwable): String = when (error) {
+        is HttpException -> when (error.code()) {
+            401 -> "Admin email or activation-server password is incorrect. Do not use your Gmail password."
+            404 -> "Admin login endpoint was not found. The activation backend has not been deployed at this app's backend URL."
+            503 -> "Activation backend admin authentication is not configured. Set ADMIN_EMAIL, ADMIN_PASSWORD and SESSION_SECRET on Cloudflare."
+            else -> "Activation backend returned HTTP ${error.code()}."
+        }
+        else -> "Could not reach the activation backend. Check that the Cloudflare Worker is deployed and ACTIVATION_BASE_URL is correct."
+    }
+
+    private fun handleAdminFailure(error: Throwable) {
+        _message.value = when (error) {
+            is HttpException -> when (error.code()) {
+                401 -> "Admin session is not valid. Please sign in again."
+                404 -> "Activation backend endpoint was not found."
+                else -> "Admin request failed with HTTP ${error.code()}."
+            }
+            else -> "Could not reach the activation backend."
+        }
     }
 }
