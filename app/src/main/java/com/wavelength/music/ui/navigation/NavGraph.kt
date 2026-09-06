@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -21,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -52,6 +54,7 @@ import com.wavelength.music.ui.settings.AppSettingsViewModel
 import com.wavelength.music.ui.settings.SettingsScreen
 import com.wavelength.music.ui.statistics.StatisticsScreen
 import com.wavelength.music.ui.theme.glassStyleFor
+import com.wavelength.music.ui.youtube.YouTubeScreen
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
@@ -306,5 +309,15 @@ private fun iconFor(screen: Screen) = when (screen) {
     Screen.Home -> Icons.Filled.Home
     Screen.Search -> Icons.Filled.Search
     Screen.Library -> Icons.Filled.LibraryMusic
+    Screen.YouTube -> Icons.Filled.SmartDisplay
     else -> Icons.Filled.Home
+}
+
+
+private fun labelFor(screen: Screen) = when (screen) {
+    Screen.Home -> "Home"
+    Screen.Search -> "Search"
+    Screen.Library -> "Library"
+    Screen.YouTube -> "YouTube"
+    else -> ""
 }
