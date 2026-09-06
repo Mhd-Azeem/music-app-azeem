@@ -9,7 +9,8 @@ fun JioSaavnSongDto.toDomain(): JioSaavnSong = JioSaavnSong(
     artist = artists.resolveArtistName().decodeHtmlEntities(),
     durationSeconds = duration ?: 0,
     imageUrl = image.lastOrNull()?.resolvedUrl ?: image.firstOrNull()?.resolvedUrl.orEmpty(),
-    streamUrl = downloadUrl.lastOrNull()?.resolvedUrl ?: downloadUrl.firstOrNull()?.resolvedUrl.orEmpty()
+    streamUrl = downloadUrl.lastOrNull()?.resolvedUrl ?: downloadUrl.firstOrNull()?.resolvedUrl.orEmpty(),
+    language = language.orEmpty().trim().lowercase()
 )
 
 private fun JioSaavnArtistsDto?.resolveArtistName(): String {
