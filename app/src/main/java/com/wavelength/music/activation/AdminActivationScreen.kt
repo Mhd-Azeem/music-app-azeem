@@ -98,7 +98,8 @@ fun AdminActivationScreen(
                         enabled = !isLoading,
                         onApprove = { days -> record.id?.let { viewModel.approve(it, days) } },
                         onReject = { record.id?.let(viewModel::reject) },
-                        onRevoke = { record.id?.let(viewModel::revoke) }
+                        onRevoke = { record.id?.let(viewModel::revoke) },
+                        onResetDevice = { record.id?.let(viewModel::resetDevice) }
                     )
                 }
             }
@@ -160,7 +161,8 @@ private fun AdminRequestCard(
     enabled: Boolean,
     onApprove: (Int?) -> Unit,
     onReject: () -> Unit,
-    onRevoke: () -> Unit
+    onRevoke: () -> Unit,
+    onResetDevice: () -> Unit
 ) {
     var duration by remember(record.id) { mutableIntStateOf(record.durationDays ?: 30) }
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -170,6 +172,7 @@ private fun AdminRequestCard(
         ) {
             Text(record.email, style = MaterialTheme.typography.titleMedium)
             Text("Status: ${record.status.name.replace('_', ' ')}")
+            Text(if (record.deviceBound) "Device: Linked" else "Device: Not linked")
             record.requestedAt?.let {
                 Text("Requested: ${DateFormat.getDateTimeInstance().format(Date(it))}")
             }
@@ -199,6 +202,12 @@ private fun AdminRequestCard(
                 }
                 OutlinedButton(onClick = onReject, enabled = enabled) {
                     Text("Reject")
+                }
+            }
+
+            if (record.deviceBound) {
+                OutlinedButton(onClick = onResetDevice, enabled = enabled) {
+                    Text("Reset Device")
                 }
             }
 
