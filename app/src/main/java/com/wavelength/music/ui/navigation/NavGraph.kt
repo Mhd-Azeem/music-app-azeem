@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -22,11 +21,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -68,13 +63,10 @@ fun WavelengthNavHost() {
     val navController = rememberNavController()
     val playerViewModel: PlayerViewModel = hiltViewModel()
     val playbackState by playerViewModel.state.collectAsStateWithLifecycle()
-    val activationRequiredSequence by playerViewModel.activationRequiredSequence.collectAsStateWithLifecycle()
     val settingsViewModel: AppSettingsViewModel = hiltViewModel()
     val settings by settingsViewModel.state.collectAsStateWithLifecycle()
     val activationViewModel: ActivationViewModel = hiltViewModel()
     val activation by activationViewModel.activation.collectAsStateWithLifecycle()
-    var dismissedActivationPrompt by remember { mutableStateOf(false) }
-    var showActivationRequired by remember { mutableStateOf(false) }
     val isLiquid = settings.theme.isGlass
     val glassStyle = glassStyleFor(settings.theme)
     val hazeState = remember { HazeState() }
@@ -86,49 +78,6 @@ fun WavelengthNavHost() {
         currentRoute != Screen.Activation.route &&
         currentRoute != Screen.AdminActivation.route
     val showActivationBanner = showChrome && activation.status != ActivationStatus.ACTIVE
-
-    LaunchedEffect(activationRequiredSequence) {
-        if (activationRequiredSequence > 0L) {
-            showActivationRequired = true
-        }
-    }
-
-    if (showActivationRequired) {
-        AlertDialog(
-            onDismissRequest = { showActivationRequired = false },
-            title = { Text("Email activation required") },
-            text = { Text("Activate your email to access this online song. Local and downloaded songs remain available.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showActivationRequired = false
-                    navController.navigate(Screen.Activation.route)
-                }) { Text("Activate Email") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showActivationRequired = false }) { Text("Cancel") }
-            }
-        )
-    }
-
-    if (!dismissedActivationPrompt &&
-        activation.status == ActivationStatus.NOT_ACTIVATED &&
-        activation.email.isBlank()
-    ) {
-        AlertDialog(
-            onDismissRequest = { dismissedActivationPrompt = true },
-            title = { Text("Activate your email to unlock your music") },
-            text = { Text("Your account needs activation before online music can be unlocked. Local music stays available.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    dismissedActivationPrompt = true
-                    navController.navigate(Screen.Activation.route)
-                }) { Text("Activate Email") }
-            },
-            dismissButton = {
-                TextButton(onClick = { dismissedActivationPrompt = true }) { Text("Later") }
-            }
-        )
-    }
 
     Scaffold(
         topBar = {
