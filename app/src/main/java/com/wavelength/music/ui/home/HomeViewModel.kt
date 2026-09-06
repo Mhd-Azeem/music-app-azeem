@@ -74,6 +74,9 @@ class HomeViewModel @Inject constructor(
     private val _dailyMix = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Loading)
     val dailyMix: StateFlow<ScreenState<List<Track>>> = _dailyMix.asStateFlow()
 
+    private val _topCharts = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Loading)
+    val topCharts: StateFlow<ScreenState<List<Track>>> = _topCharts.asStateFlow()
+
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
@@ -84,6 +87,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadFeatured()
+        loadTopCharts()
         viewModelScope.launch {
             repository.observeRecentlyPlayed(30).collectLatest { tracks ->
                 latestRecentTracks = tracks
@@ -95,6 +99,21 @@ class HomeViewModel @Inject constructor(
                 latestTopArtists = artists
                 loadDailyMix(artists)
             }
+        }
+    }
+
+    fun loadTopCharts() {
+        viewModelScope.launch {
+            _topCharts.value = ScreenState.Loading
+            repository.searchTracks("top songs", limit = 20).fold(
+                onSuccess = { tracks ->
+                    val deduped = tracks.distinctBy { it.id }
+                    _topCharts.value = if (deduped.isEmpty()) ScreenState.Empty else ScreenState.Success(deduped)
+                },
+                onFailure = { e ->
+                    _topCharts.value = ScreenState.Error(e.message ?: "Something went wrong")
+                }
+            )
         }
     }
 
