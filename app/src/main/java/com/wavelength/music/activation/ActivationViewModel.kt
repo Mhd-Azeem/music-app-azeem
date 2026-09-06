@@ -51,6 +51,11 @@ class ActivationViewModel @Inject constructor(
         }
     }
 
+    fun logout() {
+        repository.logout()
+        _message.value = "Signed out."
+    }
+
     fun clearMessage() {
         _message.value = null
     }
