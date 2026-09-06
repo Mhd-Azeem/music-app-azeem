@@ -12,7 +12,10 @@ interface ActivationApiService {
     suspend fun requestActivation(@Body request: ActivationRequestBody): ActivationResponse
 
     @GET("activation/status")
-    suspend fun getActivationStatus(@Query("email") email: String): ActivationResponse
+    suspend fun getActivationStatus(
+        @Query("email") email: String,
+        @Query("deviceId") deviceId: String
+    ): ActivationResponse
 
     @POST("admin/login")
     suspend fun adminLogin(@Body request: AdminLoginRequest): AdminLoginResponse
@@ -38,6 +41,13 @@ interface ActivationApiService {
 
     @POST("admin/requests/{id}/revoke")
     suspend fun revokeRequest(
+        @Header("Authorization") authorization: String,
+        @Path("id") id: Long,
+        @Body request: AdminDecisionRequest = AdminDecisionRequest()
+    ): ActivationResponse
+
+    @POST("admin/requests/{id}/reset-device")
+    suspend fun resetDevice(
         @Header("Authorization") authorization: String,
         @Path("id") id: Long,
         @Body request: AdminDecisionRequest = AdminDecisionRequest()
