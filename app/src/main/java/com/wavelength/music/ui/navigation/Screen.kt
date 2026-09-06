@@ -8,11 +8,10 @@ sealed class Screen(val route: String) {
     data object Library : Screen("library")
     data object NowPlaying : Screen("now_playing")
     data object Settings : Screen("settings")
+    data object Activation : Screen("activation")
     data object Statistics : Screen("statistics")
 
     data object Genre : Screen("genre/{tag}/{label}") {
-        // Encoded since callers may now pass free-text values containing spaces (e.g. artist
-        // names) rather than just the single-word language tags this route originally carried.
         fun createRoute(tag: String, label: String) = "genre/${Uri.encode(tag)}/${Uri.encode(label)}"
     }
 
