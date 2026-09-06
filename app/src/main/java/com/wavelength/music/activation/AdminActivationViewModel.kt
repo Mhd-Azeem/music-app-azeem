@@ -1,8 +1,12 @@
 package com.wavelength.music.activation
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,11 +16,25 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AdminActivationViewModel @Inject constructor(
-    private val api: ActivationApiService
+    private val api: ActivationApiService,
+    @ApplicationContext context: Context
 ) : ViewModel() {
-    private var token: String? = null
 
-    private val _isAuthenticated = MutableStateFlow(false)
+    private val masterKey = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
+    private val prefs = EncryptedSharedPreferences.create(
+        context,
+        PREFS_NAME,
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
+
+    // Persist only the signed admin session token — never the admin password.
+    private var token: String? = prefs.getString(KEY_TOKEN, null)
+
+    private val _isAuthenticated = MutableStateFlow(!token.isNullOrBlank())
     val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
 
     private val _requests = MutableStateFlow<List<ActivationRecord>>(emptyList())
@@ -28,12 +46,17 @@ class AdminActivationViewModel @Inject constructor(
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
 
+    init {
+        if (_isAuthenticated.value) loadRequests()
+    }
+
     fun login(email: String, password: String) {
         viewModelScope.launch {
             _isLoading.value = true
             runCatching { api.adminLogin(AdminLoginRequest(email.trim(), password)) }
                 .onSuccess { response ->
                     token = response.token
+                    prefs.edit().putString(KEY_TOKEN, response.token).apply()
                     _isAuthenticated.value = true
                     _message.value = null
                     loadRequests()
@@ -101,8 +124,10 @@ class AdminActivationViewModel @Inject constructor(
 
     fun logout() {
         token = null
+        prefs.edit().remove(KEY_TOKEN).apply()
         _isAuthenticated.value = false
         _requests.value = emptyList()
+        _message.value = null
     }
 
     fun clearMessage() {
@@ -122,11 +147,16 @@ class AdminActivationViewModel @Inject constructor(
     private fun handleAdminFailure(error: Throwable) {
         _message.value = when (error) {
             is HttpException -> when (error.code()) {
-                401 -> "Admin session is not valid. Please sign in again."
+                401 -> "The saved admin session is no longer accepted by the server. Tap Sign out, then sign in again."
                 404 -> "Activation backend endpoint was not found."
                 else -> "Admin request failed with HTTP ${error.code()}."
             }
             else -> "Could not reach the activation backend."
         }
+    }
+
+    private companion object {
+        const val PREFS_NAME = "activation_admin_session"
+        const val KEY_TOKEN = "admin_session_token"
     }
 }
