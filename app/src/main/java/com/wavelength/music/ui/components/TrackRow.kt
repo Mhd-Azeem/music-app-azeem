@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.Icon
@@ -22,12 +23,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.wavelength.music.activation.ActivationViewModel
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.model.TrackSource
 
@@ -45,6 +50,10 @@ fun TrackRow(
     isSelected: Boolean = false,
     showSelectionCheckbox: Boolean = false
 ) {
+    val activationViewModel: ActivationViewModel = hiltViewModel()
+    val activation by activationViewModel.activation.collectAsStateWithLifecycle()
+    val isLocked = track.source == TrackSource.JIOSAAVN && !activationViewModel.isAccessActive()
+
     val selectionBackground = if (isSelected) {
         Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
     } else {
@@ -91,7 +100,7 @@ fun TrackRow(
             val sourceTag = when (track.source) {
                 TrackSource.LOCAL -> "On device"
                 TrackSource.DOWNLOADED -> "Downloaded"
-                else -> null
+                TrackSource.JIOSAAVN -> if (isLocked) "Activation required" else null
             }
             if (sourceTag != null) {
                 Text(
@@ -100,6 +109,13 @@ fun TrackRow(
                     color = MaterialTheme.colorScheme.primary
                 )
             }
+        }
+        if (isLocked) {
+            Icon(
+                imageVector = Icons.Filled.Lock,
+                contentDescription = "Activation required",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
         if (onFavoriteClick != null) {
             IconButton(onClick = onFavoriteClick) {
