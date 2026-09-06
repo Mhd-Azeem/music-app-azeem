@@ -36,6 +36,7 @@ class PlayerViewModel @Inject constructor(
 ) : ViewModel() {
 
     val state: StateFlow<PlaybackUiState> = playerController.state
+    val activationRequiredSequence: StateFlow<Long> = playerController.activationRequiredSequence
     val sleepTimerRemainingMs: StateFlow<Long?> = sleepTimerController.remainingMs
     val sleepTimerIsEndOfTrack: StateFlow<Boolean> = sleepTimerController.isEndOfTrack
     val visualizerWaveform: StateFlow<ByteArray?> = visualizerController.waveform
