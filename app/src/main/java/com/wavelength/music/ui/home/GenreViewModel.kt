@@ -27,19 +27,49 @@ class GenreViewModel @Inject constructor(
     private val _tracks = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Loading)
     val tracks: StateFlow<ScreenState<List<Track>>> = _tracks.asStateFlow()
 
+    private var currentPage = 0
+    private var isLoadingMore = false
+    private var hasMore = true
+    private val pageSize = 30
+
     init {
         load()
     }
 
     fun load() {
+        currentPage = 0
+        hasMore = true
+        isLoadingMore = false
         viewModelScope.launch {
             _tracks.value = ScreenState.Loading
-            repository.getTracksByTag(tag).fold(
+            repository.getTracksByTag(tag, page = 0, limit = pageSize).fold(
                 onSuccess = { list ->
-                    _tracks.value = if (list.isEmpty()) ScreenState.Empty else ScreenState.Success(list)
+                    val unique = list.distinctBy { it.id }
+                    _tracks.value = if (unique.isEmpty()) ScreenState.Empty else ScreenState.Success(unique)
+                    hasMore = list.size >= pageSize
                 },
                 onFailure = { e -> _tracks.value = ScreenState.Error(e.message ?: "Something went wrong") }
             )
+        }
+    }
+
+    fun loadMore() {
+        if (isLoadingMore || !hasMore) return
+        val current = (_tracks.value as? ScreenState.Success)?.data ?: return
+        isLoadingMore = true
+        val nextPage = currentPage + 1
+        viewModelScope.launch {
+            repository.getTracksByTag(tag, page = nextPage, limit = pageSize).fold(
+                onSuccess = { incoming ->
+                    val existingIds = current.map { it.id }.toHashSet()
+                    val newTracks = incoming.filterNot { it.id in existingIds }
+                    _tracks.value = ScreenState.Success(current + newTracks)
+                    currentPage = nextPage
+                    hasMore = incoming.size >= pageSize
+                },
+                onFailure = { /* Keep the already loaded songs visible; next scroll can retry. */ }
+            )
+            isLoadingMore = false
         }
     }
 
