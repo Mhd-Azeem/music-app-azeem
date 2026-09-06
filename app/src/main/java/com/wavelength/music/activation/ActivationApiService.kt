@@ -52,11 +52,4 @@ interface ActivationApiService {
         @Path("id") id: Long,
         @Body request: AdminDecisionRequest = AdminDecisionRequest()
     ): ActivationResponse
-
-    @POST("admin/requests/{id}/delete")
-    suspend fun deleteRevokedRequest(
-        @Header("Authorization") authorization: String,
-        @Path("id") id: Long,
-        @Body request: AdminDecisionRequest = AdminDecisionRequest()
-    ): AdminDeleteResponse
 }
