@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.IOException
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -47,6 +48,8 @@ class ActivationRepositoryImpl @Inject constructor(
     // The cached record is the user's local activation identity/session. It survives app process
     // death and clearing the app from Recents. It is removed only by explicit logout (or app data
     // removal/uninstall), while access itself still follows server status and expiry rules.
+    private val installationId: String = loadOrCreateInstallationId()
+
     private val _activation = MutableStateFlow(loadCachedRecord())
     override val activation: StateFlow<ActivationRecord> = _activation.asStateFlow()
 
@@ -57,7 +60,7 @@ class ActivationRepositoryImpl @Inject constructor(
         }
 
         return runCatching {
-            val response = api.requestActivation(ActivationRequestBody(normalized))
+            val response = api.requestActivation(ActivationRequestBody(normalized, installationId))
             persistVerified(response)
             response.activation
         }
@@ -70,7 +73,7 @@ class ActivationRepositoryImpl @Inject constructor(
         }
 
         return runCatching {
-            val response = api.getActivationStatus(normalized)
+            val response = api.getActivationStatus(normalized, installationId)
             if (response.activation.status == ActivationStatus.NOT_ACTIVATED) {
                 throw IllegalArgumentException("This email is not registered. Use Register to request access.")
             }
@@ -90,7 +93,7 @@ class ActivationRepositoryImpl @Inject constructor(
         if (email.isBlank()) return Result.success(_activation.value)
 
         return try {
-            val response = api.getActivationStatus(email)
+            val response = api.getActivationStatus(email, installationId)
             persistVerified(response)
             Result.success(response.activation)
         } catch (e: Exception) {
@@ -102,7 +105,13 @@ class ActivationRepositoryImpl @Inject constructor(
     }
 
     override fun logout() {
-        prefs.edit().clear().apply()
+        // Keep the installation ID. Logging out must not make this phone look like a new device,
+        // otherwise one user could bypass the one-device rule simply by signing out and back in.
+        prefs.edit()
+            .remove(KEY_RECORD)
+            .remove(KEY_LAST_VERIFIED_SERVER_TIME)
+            .remove(KEY_LAST_VERIFIED_DEVICE_TIME)
+            .apply()
         _activation.value = ActivationRecord()
     }
 
@@ -126,6 +135,14 @@ class ActivationRepositoryImpl @Inject constructor(
             .putLong(KEY_LAST_VERIFIED_SERVER_TIME, response.serverTimestamp)
             .putLong(KEY_LAST_VERIFIED_DEVICE_TIME, System.currentTimeMillis())
             .apply()
+    }
+
+    private fun loadOrCreateInstallationId(): String {
+        val existing = prefs.getString(KEY_INSTALLATION_ID, null)
+        if (!existing.isNullOrBlank()) return existing
+        val created = UUID.randomUUID().toString()
+        prefs.edit().putString(KEY_INSTALLATION_ID, created).commit()
+        return created
     }
 
     private fun loadCachedRecord(): ActivationRecord {
@@ -163,6 +180,7 @@ class ActivationRepositoryImpl @Inject constructor(
     private companion object {
         const val PREFS_NAME = "activation_secure_cache"
         const val KEY_RECORD = "activation_record"
+        const val KEY_INSTALLATION_ID = "installation_id"
         const val KEY_LAST_VERIFIED_SERVER_TIME = "last_verified_server_time"
         const val KEY_LAST_VERIFIED_DEVICE_TIME = "last_verified_device_time"
         const val DAY_MS = 24L * 60L * 60L * 1000L
