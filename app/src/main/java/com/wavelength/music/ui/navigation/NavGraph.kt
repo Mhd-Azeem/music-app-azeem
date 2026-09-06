@@ -142,7 +142,7 @@ fun WavelengthNavHost() {
                                     }
                                 },
                                 icon = { Icon(iconFor(screen), contentDescription = null) },
-                                label = { Text(labelFor(screen)) }
+                                label = { Text(navLabelFor(screen)) }
                             )
                         }
                     }
@@ -323,7 +323,7 @@ private fun iconFor(screen: Screen) = when (screen) {
 }
 
 
-private fun labelFor(screen: Screen) = when (screen) {
+private fun navLabelFor(screen: Screen) = when (screen) {
     Screen.Home -> "Home"
     Screen.Search -> "Search"
     Screen.Library -> "Library"
