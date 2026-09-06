@@ -31,6 +31,7 @@ fun GenreScreen(
             viewModel.playTrack(index)
             onTrackClick()
         },
-        emptyMessage = stringResource(R.string.search_empty_hint)
+        emptyMessage = stringResource(R.string.search_empty_hint),
+        onLoadMore = viewModel::loadMore
     )
 }
