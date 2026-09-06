@@ -3,11 +3,13 @@ const ALLOWED_DURATIONS = new Set([30, 60, 90]);
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PERSISTENT_SESSION_EXPIRES_AT = Number.MAX_SAFE_INTEGER;
 const REQUEST_COOLDOWN_MS = 60 * 1000;
+let deviceSchemaReadyPromise;
 
 export default {
   async fetch(request, env) {
     try {
       const url = new URL(request.url);
+      await ensureDeviceBindingSchema(env);
       if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
 
       if (request.method === 'POST' && url.pathname === '/activation/request') {
@@ -20,7 +22,7 @@ export default {
         return adminLogin(request, env);
       }
 
-      const adminMatch = url.pathname.match(/^\/admin\/requests\/(\d+)\/(approve|reject|revoke)$/);
+      const adminMatch = url.pathname.match(/^\/admin\/requests\/(\d+)\/(approve|reject|revoke|reset-device)$/);
       if (request.method === 'GET' && url.pathname === '/admin/requests') {
         const auth = await requireAdmin(request, env);
         if (!auth.ok) return auth.response;
@@ -43,12 +45,24 @@ export default {
 async function requestActivation(request, env) {
   const body = await readJson(request);
   const email = normalizeEmail(body?.email);
+  const deviceId = normalizeDeviceId(body?.deviceId);
   if (!isValidEmail(email)) return json({ error: 'Invalid email' }, 400);
+  if (!isValidDeviceId(deviceId)) return json({ error: 'Invalid device identifier' }, 400);
 
   const now = Date.now();
   const existing = await env.DB.prepare(
     'SELECT * FROM activations WHERE email = ? LIMIT 1'
   ).bind(email).first();
+
+  if (existing?.device_id && existing.device_id !== deviceId) {
+    return json({ error: 'This email is already linked to another device.', code: 'DEVICE_MISMATCH' }, 409);
+  }
+
+  if (existing && !existing.device_id) {
+    await env.DB.prepare('UPDATE activations SET device_id=?, updated_at=? WHERE id=? AND device_id IS NULL')
+      .bind(deviceId, now, existing.id).run();
+    existing.device_id = deviceId;
+  }
 
   if (existing?.requested_at && now - existing.requested_at < REQUEST_COOLDOWN_MS) {
     return json({ error: 'Please wait before submitting another request.' }, 429);
@@ -59,12 +73,12 @@ async function requestActivation(request, env) {
   }
 
   await env.DB.prepare(`
-    INSERT INTO activations(email, status, requested_at, approved_at, activation_start_date, expiration_date, duration_days, updated_at)
-    VALUES(?, 'PENDING', ?, NULL, NULL, NULL, NULL, ?)
+    INSERT INTO activations(email, status, requested_at, approved_at, activation_start_date, expiration_date, duration_days, device_id, updated_at)
+    VALUES(?, 'PENDING', ?, NULL, NULL, NULL, NULL, ?, ?)
     ON CONFLICT(email) DO UPDATE SET
       status='PENDING', requested_at=excluded.requested_at, approved_at=NULL,
       activation_start_date=NULL, expiration_date=NULL, duration_days=NULL, updated_at=excluded.updated_at
-  `).bind(email, now, now).run();
+  `).bind(email, now, deviceId, now).run();
 
   const row = await env.DB.prepare('SELECT * FROM activations WHERE email = ? LIMIT 1').bind(email).first();
   return json({ activation: toRecord(row), serverTimestamp: now }, 200);
@@ -72,12 +86,23 @@ async function requestActivation(request, env) {
 
 async function activationStatus(url, env) {
   const email = normalizeEmail(url.searchParams.get('email'));
+  const deviceId = normalizeDeviceId(url.searchParams.get('deviceId'));
   if (!isValidEmail(email)) return json({ error: 'Invalid email' }, 400);
+  if (!isValidDeviceId(deviceId)) return json({ error: 'Invalid device identifier' }, 400);
 
   const now = Date.now();
   let row = await env.DB.prepare('SELECT * FROM activations WHERE email = ? LIMIT 1').bind(email).first();
   if (!row) {
     return json({ activation: emptyRecord(email), serverTimestamp: now });
+  }
+
+  if (row.device_id && row.device_id !== deviceId) {
+    return json({ error: 'This email is already linked to another device.', code: 'DEVICE_MISMATCH' }, 409);
+  }
+  if (!row.device_id) {
+    await env.DB.prepare('UPDATE activations SET device_id=?, updated_at=? WHERE id=? AND device_id IS NULL')
+      .bind(deviceId, now, row.id).run();
+    row = { ...row, device_id: deviceId, updated_at: now };
   }
 
   if (row.status === 'ACTIVE' && row.expiration_date && row.expiration_date <= now) {
@@ -139,6 +164,9 @@ async function decideRequest(request, env, id, action) {
   } else if (action === 'revoke') {
     await env.DB.prepare("UPDATE activations SET status='REVOKED', updated_at=? WHERE id=?")
       .bind(now, id).run();
+  } else if (action === 'reset-device') {
+    await env.DB.prepare('UPDATE activations SET device_id=NULL, updated_at=? WHERE id=?')
+      .bind(now, id).run();
   }
 
   const updated = await env.DB.prepare('SELECT * FROM activations WHERE id=? LIMIT 1').bind(id).first();
@@ -185,17 +213,32 @@ function toRecord(row) {
     approvedAt: row.approved_at ?? null,
     activationStartDate: row.activation_start_date ?? null,
     expirationDate: row.expiration_date ?? null,
-    durationDays: row.duration_days ?? null
+    durationDays: row.duration_days ?? null,
+    deviceBound: Boolean(row.device_id)
   };
 }
 
 function emptyRecord(email) {
   return {
     id: null, email, status: 'NOT_ACTIVATED', requestedAt: null,
-    approvedAt: null, activationStartDate: null, expirationDate: null, durationDays: null
+    approvedAt: null, activationStartDate: null, expirationDate: null, durationDays: null,
+    deviceBound: false
   };
 }
 
+async function ensureDeviceBindingSchema(env) {
+  if (!deviceSchemaReadyPromise) {
+    deviceSchemaReadyPromise = env.DB.prepare('ALTER TABLE activations ADD COLUMN device_id TEXT').run()
+      .catch(error => {
+        const message = String(error?.message || error || '');
+        if (!message.toLowerCase().includes('duplicate column')) throw error;
+      });
+  }
+  return deviceSchemaReadyPromise;
+}
+
+function normalizeDeviceId(value) { return String(value || '').trim(); }
+function isValidDeviceId(value) { return /^[a-f0-9-]{20,64}$/i.test(value); }
 function normalizeEmail(value) { return String(value || '').trim().toLowerCase(); }
 function isValidEmail(value) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254; }
 function timingSafeEqual(a, b) {
