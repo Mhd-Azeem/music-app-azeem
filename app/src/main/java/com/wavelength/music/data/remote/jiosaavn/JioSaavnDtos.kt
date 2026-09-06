@@ -44,6 +44,7 @@ data class JioSaavnSongDto(
     @Json(name = "album") val album: JioSaavnAlbumRefDto? = null,
     @Json(name = "artists") val artists: JioSaavnArtistsDto? = null,
     @Json(name = "duration") val duration: Int? = null,
+    @Json(name = "language") val language: String? = null,
     @Json(name = "image") val image: List<JioSaavnImageDto> = emptyList(),
     @Json(name = "downloadUrl") val downloadUrl: List<JioSaavnImageDto> = emptyList()
 )
