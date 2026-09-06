@@ -40,6 +40,27 @@ class ActivationViewModel @Inject constructor(
         }
     }
 
+    fun loginExisting(email: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            repository.loginExisting(email)
+                .onSuccess { record ->
+                    _message.value = when (record.status) {
+                        ActivationStatus.ACTIVE -> "Login successful. Your activation is active."
+                        ActivationStatus.PENDING -> "Login successful. Your activation is still pending approval."
+                        ActivationStatus.EXPIRED -> "Login successful. Your activation has expired."
+                        ActivationStatus.REJECTED -> "Login successful. Your activation request was rejected."
+                        ActivationStatus.REVOKED -> "Login successful. Your activation was revoked."
+                        ActivationStatus.NOT_ACTIVATED -> null
+                    }
+                }
+                .onFailure { error ->
+                    _message.value = activationError(error)
+                }
+            _isLoading.value = false
+        }
+    }
+
     fun refresh() {
         viewModelScope.launch {
             _isLoading.value = true
