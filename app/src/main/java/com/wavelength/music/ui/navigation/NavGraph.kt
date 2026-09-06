@@ -167,6 +167,7 @@ fun WavelengthNavHost() {
                             navController.navigate(Screen.Genre.createRoute(tag, label))
                         },
                         onSettingsClick = { navController.navigate(Screen.Settings.route) },
+                        onStatisticsClick = { navController.navigate(Screen.Statistics.route) },
                         onPlaylistClick = { id ->
                             navController.navigate(Screen.PlaylistDetail.createRoute(id))
                         },
