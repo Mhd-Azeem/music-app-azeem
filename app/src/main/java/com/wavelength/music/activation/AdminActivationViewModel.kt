@@ -149,6 +149,20 @@ class AdminActivationViewModel @Inject constructor(
         }
     }
 
+    fun deleteRevoked(id: Long) {
+        val bearer = token?.let { "Bearer $it" } ?: return
+        viewModelScope.launch {
+            _isLoading.value = true
+            runCatching { api.deleteRevokedRequest(bearer, id) }
+                .onSuccess {
+                    _message.value = "Revoked email removed from activation history."
+                    _requests.value = _requests.value.filterNot { it.id == id }
+                }
+                .onFailure { error -> handleAdminFailure(error) }
+            _isLoading.value = false
+        }
+    }
+
     fun logout() {
         token = null
         prefs.edit().remove(KEY_TOKEN).apply()
