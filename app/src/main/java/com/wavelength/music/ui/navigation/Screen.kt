@@ -6,7 +6,6 @@ sealed class Screen(val route: String) {
     data object Home : Screen("home")
     data object Search : Screen("search")
     data object Library : Screen("library")
-    data object YouTube : Screen("youtube")
     data object NowPlaying : Screen("now_playing")
     data object Settings : Screen("settings")
     data object Activation : Screen("activation")
@@ -22,4 +21,4 @@ sealed class Screen(val route: String) {
     }
 }
 
-val bottomNavScreens = listOf(Screen.Home, Screen.Search, Screen.Library, Screen.YouTube)
+val bottomNavScreens = listOf(Screen.Home, Screen.Search, Screen.Library)
