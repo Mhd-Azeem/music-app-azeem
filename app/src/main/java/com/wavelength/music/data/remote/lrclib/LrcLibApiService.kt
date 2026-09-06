@@ -12,12 +12,25 @@ interface LrcLibApiService {
     suspend fun getLyrics(
         @Query("track_name") trackName: String,
         @Query("artist_name") artistName: String,
-        @Query("duration") durationSeconds: Int
+        @Query("album_name") albumName: String? = null,
+        @Query("duration") durationSeconds: Int? = null
     ): LrcLibResponseDto
+
+    @GET("api/search")
+    suspend fun searchLyrics(
+        @Query("track_name") trackName: String,
+        @Query("artist_name") artistName: String? = null
+    ): List<LrcLibResponseDto>
 }
 
 @JsonClass(generateAdapter = true)
 data class LrcLibResponseDto(
+    @Json(name = "id") val id: Long? = null,
+    @Json(name = "trackName") val trackName: String? = null,
+    @Json(name = "artistName") val artistName: String? = null,
+    @Json(name = "albumName") val albumName: String? = null,
+    @Json(name = "duration") val duration: Double? = null,
+    @Json(name = "instrumental") val instrumental: Boolean = false,
     @Json(name = "syncedLyrics") val syncedLyrics: String? = null,
     @Json(name = "plainLyrics") val plainLyrics: String? = null
 )
