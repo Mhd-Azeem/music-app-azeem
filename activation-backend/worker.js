@@ -238,7 +238,7 @@ async function ensureDeviceBindingSchema(env) {
 }
 
 function normalizeDeviceId(value) { return String(value || '').trim(); }
-function isValidDeviceId(value) { return /^[a-f0-9-]{20,64}$/i.test(value); }
+function isValidDeviceId(value) { return typeof value === 'string' && value.length >= 8 && value.length <= 128 && /^[A-Za-z0-9._:-]+$/.test(value); }
 function normalizeEmail(value) { return String(value || '').trim().toLowerCase(); }
 function isValidEmail(value) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254; }
 function timingSafeEqual(a, b) {
