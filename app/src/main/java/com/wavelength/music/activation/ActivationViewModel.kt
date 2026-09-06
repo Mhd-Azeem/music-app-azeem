@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
+import org.json.JSONObject
 import javax.inject.Inject
 
 @HiltViewModel
@@ -86,12 +87,18 @@ class ActivationViewModel @Inject constructor(
 
     private fun activationError(error: Throwable): String = when (error) {
         is IllegalArgumentException -> error.message ?: "Enter a valid email address."
-        is HttpException -> when (error.code()) {
-            404 -> "Activation service was not found. The Cloudflare activation backend has not been deployed at this app's backend URL."
-            409 -> "This email is already activated on another device. Ask the admin to reset the linked device before logging in here."
-            429 -> "Please wait a moment before submitting the same activation request again."
-            500, 502, 503, 504 -> "Activation server is unavailable or not configured yet."
-            else -> "Activation server returned HTTP ${error.code()}."
+        is HttpException -> {
+            val backendMessage = runCatching {
+                val raw = error.response()?.errorBody()?.string().orEmpty()
+                JSONObject(raw).optString("error").takeIf { it.isNotBlank() }
+            }.getOrNull()
+            when (error.code()) {
+                404 -> backendMessage ?: "Activation service was not found. The Cloudflare activation backend has not been deployed at this app's backend URL."
+                409 -> backendMessage ?: "This email is already activated on another device. Ask the admin to reset the linked device before logging in here."
+                429 -> backendMessage ?: "Please wait a moment before submitting the same activation request again."
+                500, 502, 503, 504 -> backendMessage ?: "Activation server is unavailable or not configured yet."
+                else -> backendMessage ?: "Activation server returned HTTP ${error.code()}."
+            }
         }
         else -> "Could not reach the activation server. Check that the Cloudflare Worker is deployed and that you have an internet connection."
     }
