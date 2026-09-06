@@ -110,17 +110,19 @@ fun WavelengthNavHost() {
                     }
                 }
                 Column {
-                    MiniPlayerBar(
-                        state = playbackState,
-                        onClick = { navController.navigate(Screen.NowPlaying.route) },
-                        onPlayPause = playerViewModel::playPause,
-                        onSkipNext = playerViewModel::skipNext,
-                        onSkipPrevious = playerViewModel::skipPrevious,
-                        hazeState = if (isLiquid) hazeState else null,
-                        glassStyle = glassStyle,
-                        trackTransitionEnabled = settings.trackTransitionEnabled,
-                        trackTransitionDurationMs = settings.trackTransitionDurationMs
-                    )
+                    if (currentRoute != Screen.YouTube.route) {
+                        MiniPlayerBar(
+                            state = playbackState,
+                            onClick = { navController.navigate(Screen.NowPlaying.route) },
+                            onPlayPause = playerViewModel::playPause,
+                            onSkipNext = playerViewModel::skipNext,
+                            onSkipPrevious = playerViewModel::skipPrevious,
+                            hazeState = if (isLiquid) hazeState else null,
+                            glassStyle = glassStyle,
+                            trackTransitionEnabled = settings.trackTransitionEnabled,
+                            trackTransitionDurationMs = settings.trackTransitionDurationMs
+                        )
+                    }
                     NavigationBar(
                         modifier = navBarModifier,
                         containerColor = if (isLiquid) Color.Transparent else NavigationBarDefaults.containerColor
@@ -224,6 +226,13 @@ fun WavelengthNavHost() {
                         }
                     )
                 }
+                composable(Screen.YouTube.route) {
+                    LaunchedEffect(Unit) {
+                        playerViewModel.pause()
+                    }
+                    YouTubeScreen()
+                }
+
                 composable(
                     route = Screen.NowPlaying.route,
                     enterTransition = {
