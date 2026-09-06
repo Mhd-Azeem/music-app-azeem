@@ -42,7 +42,6 @@ import com.wavelength.music.activation.ActivationScreen
 import com.wavelength.music.activation.ActivationStatus
 import com.wavelength.music.activation.ActivationViewModel
 import com.wavelength.music.activation.AdminActivationScreen
-import com.wavelength.music.data.model.TrackSource
 import com.wavelength.music.ui.components.AppBackground
 import com.wavelength.music.ui.components.MiniPlayerBar
 import com.wavelength.music.ui.home.GenreScreen
@@ -51,10 +50,10 @@ import com.wavelength.music.ui.library.LibraryScreen
 import com.wavelength.music.ui.nowplaying.NowPlayingScreen
 import com.wavelength.music.ui.nowplaying.PlayerViewModel
 import com.wavelength.music.ui.playlist.PlaylistDetailScreen
-import com.wavelength.music.ui.statistics.StatisticsScreen
 import com.wavelength.music.ui.search.SearchScreen
 import com.wavelength.music.ui.settings.AppSettingsViewModel
 import com.wavelength.music.ui.settings.SettingsScreen
+import com.wavelength.music.ui.statistics.StatisticsScreen
 import com.wavelength.music.ui.theme.glassStyleFor
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInputScale
@@ -68,6 +67,7 @@ fun WavelengthNavHost() {
     val navController = rememberNavController()
     val playerViewModel: PlayerViewModel = hiltViewModel()
     val playbackState by playerViewModel.state.collectAsStateWithLifecycle()
+    val activationRequiredSequence by playerViewModel.activationRequiredSequence.collectAsStateWithLifecycle()
     val settingsViewModel: AppSettingsViewModel = hiltViewModel()
     val settings by settingsViewModel.state.collectAsStateWithLifecycle()
     val activationViewModel: ActivationViewModel = hiltViewModel()
@@ -85,10 +85,11 @@ fun WavelengthNavHost() {
         currentRoute != Screen.Activation.route &&
         currentRoute != Screen.AdminActivation.route
 
-    LaunchedEffect(playbackState.currentTrack?.id, activation.status, activation.expirationDate) {
-        val track = playbackState.currentTrack
-        if (track?.source == TrackSource.JIOSAAVN && !activationViewModel.isAccessActive()) {
-            playerViewModel.pause()
+    // PlayerController now enforces the lock before ExoPlayer starts an online stream and bumps
+    // this sequence for every denied attempt. This keeps the dialog as UI feedback rather than
+    // relying on the dialog itself to stop playback.
+    LaunchedEffect(activationRequiredSequence) {
+        if (activationRequiredSequence > 0L) {
             showActivationRequired = true
         }
     }
