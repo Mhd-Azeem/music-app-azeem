@@ -22,7 +22,7 @@ export default {
         return adminLogin(request, env);
       }
 
-      const adminMatch = url.pathname.match(/^\/admin\/requests\/(\d+)\/(approve|reject|revoke|reset-device)$/);
+      const adminMatch = url.pathname.match(/^\/admin\/requests\/(\d+)\/(approve|reject|revoke|reset-device|delete)$/);
       if (request.method === 'GET' && url.pathname === '/admin/requests') {
         const auth = await requireAdmin(request, env);
         if (!auth.ok) return auth.response;
@@ -167,6 +167,12 @@ async function decideRequest(request, env, id, action) {
   } else if (action === 'reset-device') {
     await env.DB.prepare('UPDATE activations SET device_id=NULL, updated_at=? WHERE id=?')
       .bind(now, id).run();
+  } else if (action === 'delete') {
+    if (row.status !== 'REVOKED') {
+      return json({ error: 'Only revoked activation records can be deleted.' }, 409);
+    }
+    await env.DB.prepare('DELETE FROM activations WHERE id=?').bind(id).run();
+    return json({ deleted: true, id });
   }
 
   const updated = await env.DB.prepare('SELECT * FROM activations WHERE id=? LIMIT 1').bind(id).first();
