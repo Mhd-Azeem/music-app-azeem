@@ -84,7 +84,16 @@ class AdminActivationViewModel @Inject constructor(
         val bearer = token?.let { "Bearer $it" } ?: return
         viewModelScope.launch {
             _isLoading.value = true
-            runCatching { api.approveRequest(bearer, id, AdminDecisionRequest(durationDays)) }
+            runCatching {
+                    api.approveRequest(
+                        bearer,
+                        id,
+                        AdminDecisionRequest(
+                            durationDays = durationDays,
+                            lifetime = durationDays == null
+                        )
+                    )
+                }
                 .onSuccess {
                     _message.value = if (durationDays == null) {
                         "Lifetime activation approved."
