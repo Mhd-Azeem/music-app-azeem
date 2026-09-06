@@ -74,8 +74,8 @@ class HomeViewModel @Inject constructor(
     private val _dailyMix = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Loading)
     val dailyMix: StateFlow<ScreenState<List<Track>>> = _dailyMix.asStateFlow()
 
-    private val _topCharts = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Loading)
-    val topCharts: StateFlow<ScreenState<List<Track>>> = _topCharts.asStateFlow()
+    private val _topCharts = MutableStateFlow<Map<String, List<Track>>>(emptyMap())
+    val topCharts: StateFlow<Map<String, List<Track>>> = _topCharts.asStateFlow()
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
@@ -104,16 +104,31 @@ class HomeViewModel @Inject constructor(
 
     fun loadTopCharts() {
         viewModelScope.launch {
-            _topCharts.value = ScreenState.Loading
-            repository.searchTracks("top songs", limit = 20).fold(
-                onSuccess = { tracks ->
-                    val deduped = tracks.distinctBy { it.id }
-                    _topCharts.value = if (deduped.isEmpty()) ScreenState.Empty else ScreenState.Success(deduped)
-                },
-                onFailure = { e ->
-                    _topCharts.value = ScreenState.Error(e.message ?: "Something went wrong")
-                }
+            val chartQueries = linkedMapOf(
+                "Global Top 10" to "global top songs",
+                "India Top 10" to "india top songs",
+                "Tamil Top 10" to "top tamil songs",
+                "Hindi Top 10" to "top hindi songs",
+                "English Top 10" to "top english songs"
             )
+            val loaded = coroutineScope {
+                chartQueries.map { (label, query) ->
+                    async {
+                        val tracks = repository.searchTracks(query, limit = 15)
+                            .getOrDefault(emptyList())
+                            .distinctBy { track ->
+                                Triple(
+                                    track.name.lowercase().trim(),
+                                    track.artistName.substringBefore(',').lowercase().trim(),
+                                    track.language.lowercase()
+                                )
+                            }
+                            .take(10)
+                        label to tracks
+                    }
+                }.awaitAll().toMap()
+            }
+            _topCharts.value = loaded
         }
     }
 
@@ -150,6 +165,7 @@ class HomeViewModel @Inject constructor(
             fetchFeatured(forceRefresh = true)
             loadSuggested(latestRecentTracks, showLoading = false, forceRefresh = true)
             loadDailyMix(latestTopArtists, showLoading = false, forceRefresh = true)
+            loadTopCharts()
             _isRefreshing.value = false
         }
     }
