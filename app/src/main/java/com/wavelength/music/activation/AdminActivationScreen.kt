@@ -35,6 +35,27 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.text.DateFormat
 import java.util.Date
+import androidx.compose.animation.core.animate
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntOffset
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
 fun AdminActivationScreen(
@@ -167,6 +188,22 @@ private fun AdminRequestCard(
     onDelete: () -> Unit
 ) {
     var duration by remember(record.id) { mutableIntStateOf(record.durationDays ?: 30) }
+    var confirmationAction by remember(record.id) { mutableStateOf<AdminConfirmationAction?>(null) }
+
+    confirmationAction?.let { action ->
+        SwipeConfirmationDialog(
+            action = action,
+            onConfirm = {
+                when (action) {
+                    AdminConfirmationAction.DEACTIVATE -> onRevoke()
+                    AdminConfirmationAction.RESET_DEVICE -> onResetDevice()
+                    AdminConfirmationAction.DELETE_HISTORY -> onDelete()
+                }
+                confirmationAction = null
+            },
+            onDismiss = { confirmationAction = null }
+        )
+    }
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -208,21 +245,127 @@ private fun AdminRequestCard(
             }
 
             if (record.deviceBound) {
-                OutlinedButton(onClick = onResetDevice, enabled = enabled) {
+                OutlinedButton(onClick = { confirmationAction = AdminConfirmationAction.RESET_DEVICE }, enabled = enabled) {
                     Text("Reset Device")
                 }
             }
 
             if (record.status == ActivationStatus.ACTIVE) {
-                OutlinedButton(onClick = onRevoke, enabled = enabled) {
+                OutlinedButton(onClick = { confirmationAction = AdminConfirmationAction.DEACTIVATE }, enabled = enabled) {
                     Text("Deactivate")
                 }
             }
 
             if (record.status == ActivationStatus.REVOKED) {
-                Button(onClick = onDelete, enabled = enabled) {
+                Button(onClick = { confirmationAction = AdminConfirmationAction.DELETE_HISTORY }, enabled = enabled) {
                     Text("Delete from history")
                 }
+            }
+        }
+    }
+}
+
+
+private enum class AdminConfirmationAction(val phrase: String) {
+    DEACTIVATE("deactivate this activation"),
+    RESET_DEVICE("reset this device"),
+    DELETE_HISTORY("delete this revoked address from app history")
+}
+
+@Composable
+private fun SwipeConfirmationDialog(
+    action: AdminConfirmationAction,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Are you sure you want to ${action.phrase}?",
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
+        text = {
+            SwipeToConfirm(
+                onConfirmed = onConfirm
+            )
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("No")
+            }
+        }
+    )
+}
+
+@Composable
+private fun SwipeToConfirm(
+    onConfirmed: () -> Unit
+) {
+    var offsetPx by remember { mutableFloatStateOf(0f) }
+    var maxOffsetPx by remember { mutableFloatStateOf(0f) }
+    val scope = rememberCoroutineScope()
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(58.dp)
+            .clip(RoundedCornerShape(29.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .onSizeChanged { size ->
+                // 50.dp handle with 4.dp padding on each side.
+                val handleWithPaddingPx = size.height.toFloat()
+                maxOffsetPx = (size.width - handleWithPaddingPx).coerceAtLeast(0f)
+                offsetPx = offsetPx.coerceIn(0f, maxOffsetPx)
+            },
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Text(
+            text = "Swipe to confirm  →",
+            modifier = Modifier.align(Alignment.Center),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelLarge
+        )
+
+        Surface(
+            modifier = Modifier
+                .padding(4.dp)
+                .size(50.dp)
+                .offset { IntOffset(offsetPx.roundToInt(), 0) }
+                .draggable(
+                    orientation = Orientation.Horizontal,
+                    state = rememberDraggableState { delta ->
+                        offsetPx = (offsetPx + delta).coerceIn(0f, maxOffsetPx)
+                    },
+                    onDragStopped = {
+                        if (maxOffsetPx > 0f && offsetPx >= maxOffsetPx * 0.85f) {
+                            offsetPx = maxOffsetPx
+                            onConfirmed()
+                        } else {
+                            val start = offsetPx
+                            scope.launch {
+                                animate(
+                                    initialValue = start,
+                                    targetValue = 0f
+                                ) { value, _ ->
+                                    offsetPx = value
+                                }
+                            }
+                        }
+                    }
+                ),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primary,
+            tonalElevation = 4.dp
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = "✓",
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.titleLarge
+                )
             }
         }
     }
