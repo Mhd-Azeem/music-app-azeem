@@ -2,6 +2,7 @@ package com.wavelength.music.playback
 
 import android.content.ComponentName
 import android.content.Context
+import android.os.SystemClock
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackParameters
@@ -13,6 +14,7 @@ import com.wavelength.music.activation.ActivationRepository
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.model.TrackSource
 import com.wavelength.music.data.repository.MusicRepository
+import com.wavelength.music.data.repository.ListeningTimeRepository
 import com.wavelength.music.data.repository.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -34,7 +36,8 @@ class PlayerController @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: MusicRepository,
     private val settingsRepository: SettingsRepository,
-    private val activationRepository: ActivationRepository
+    private val activationRepository: ActivationRepository,
+    private val listeningTimeRepository: ListeningTimeRepository
 ) {
     private var controller: MediaController? = null
     private var controllerFuture: com.google.common.util.concurrent.ListenableFuture<MediaController>? = null
@@ -58,6 +61,8 @@ class PlayerController @Inject constructor(
 
     private val controllerScope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
     private var tickerJob: Job? = null
+    private var listeningAccumulatorMs = 0L
+    private var lastListeningTickMs = 0L
 
     private fun requiresActivation(track: Track?): Boolean =
         track?.source == TrackSource.JIOSAAVN && !activationRepository.isAccessActive()
@@ -191,14 +196,22 @@ class PlayerController @Inject constructor(
     private fun updateTicker(isPlaying: Boolean) {
         tickerJob?.cancel()
         if (!isPlaying) {
+            flushListeningTime()
             if (crossfadeJob?.isActive == true) {
                 crossfadeJob?.cancel()
                 controller?.volume = targetVolume
             }
             return
         }
+        lastListeningTickMs = SystemClock.elapsedRealtime()
         tickerJob = controllerScope.launch {
             while (isActive) {
+                val nowTick = SystemClock.elapsedRealtime()
+                val delta = (nowTick - lastListeningTickMs).coerceIn(0L, 2000L)
+                lastListeningTickMs = nowTick
+                listeningAccumulatorMs += delta
+                if (listeningAccumulatorMs >= 10_000L) flushListeningTime()
+
                 val c = controller
                 if (c != null) {
                     _state.update {
@@ -212,6 +225,13 @@ class PlayerController @Inject constructor(
                 delay(500)
             }
         }
+    }
+
+    private fun flushListeningTime() {
+        val pending = listeningAccumulatorMs
+        if (pending <= 0L) return
+        listeningAccumulatorMs = 0L
+        listeningTimeRepository.recordListening(pending)
     }
 
     private fun maybeStartCrossfadeOut(c: MediaController) {
@@ -398,6 +418,7 @@ class PlayerController @Inject constructor(
     }
 
     fun release() {
+        flushListeningTime()
         tickerJob?.cancel()
         crossfadeJob?.cancel()
         aiDjExtendJob?.cancel()
