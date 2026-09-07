@@ -22,6 +22,14 @@ class StatisticsViewModel @Inject constructor(
     val stats: StateFlow<ListeningStats> = repository.observeListeningStats()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ListeningStats(0, 0, 0))
 
+    private val now = System.currentTimeMillis()
+
+    val playsLast7Days: StateFlow<Int> = repository.observePlaysSince(now - 7L * 24 * 60 * 60 * 1000)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val playsLast30Days: StateFlow<Int> = repository.observePlaysSince(now - 30L * 24 * 60 * 60 * 1000)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
     val topArtists: StateFlow<List<ArtistStat>> = repository.observeTopArtists(5)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
