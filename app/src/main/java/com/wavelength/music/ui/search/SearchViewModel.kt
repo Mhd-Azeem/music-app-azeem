@@ -83,7 +83,7 @@ class SearchViewModel @Inject constructor(
                 // overlapping/duplicate ids within one result set — the list below is keyed by
                 // track.id in Compose, which would crash on a duplicate.
                 val deduped = rankTracks(dedupeTracks(tracks), q)
-                canLoadMore = tracks.size >= SEARCH_PAGE_SIZE
+                canLoadMore = tracks.isNotEmpty()
                 _results.value = if (deduped.isEmpty()) ScreenState.Empty else ScreenState.Success(deduped)
             },
             onFailure = { e ->
@@ -92,35 +92,47 @@ class SearchViewModel @Inject constructor(
         )
     }
 
-    /** Called as the user scrolls near the bottom of the results list. A no-op while already
-     * loading, once the last page came back short of a full page (nothing more to fetch), or
-     * before any search has actually completed successfully. */
+    /** Loads later result pages until the API actually returns an empty page. Artist searches
+     * can return short or overlapping pages, so page size is not a reliable end-of-results signal. */
     fun loadMore() {
-        val current = _results.value
-        if (current !is ScreenState.Success || _isLoadingMore.value || !canLoadMore) return
+        val first = _results.value
+        if (first !is ScreenState.Success || _isLoadingMore.value || !canLoadMore) return
         val q = pagedQuery
-        val nextPage = currentPage + 1
         viewModelScope.launch {
             _isLoadingMore.value = true
-            repository.searchTracks(q, page = nextPage, limit = SEARCH_PAGE_SIZE).fold(
-                onSuccess = { newTracks ->
-                    // A newer search may have started (and possibly already finished) while this
-                    // page request was in flight - drop this response rather than clobbering it
-                    // with stale results merged on top.
-                    if (pagedQuery == q) {
-                        currentPage = nextPage
-                        canLoadMore = newTracks.size >= SEARCH_PAGE_SIZE
-                        val latest = (_results.value as? ScreenState.Success)?.data ?: current.data
-                        _results.value = ScreenState.Success(rankTracks(dedupeTracks(latest + newTracks), q))
+            try {
+                var attempts = 0
+                while (attempts < 3 && canLoadMore && pagedQuery == q) {
+                    val nextPage = currentPage + 1
+                    val result = repository.searchTracks(q, page = nextPage, limit = SEARCH_PAGE_SIZE)
+                    val newTracks = result.getOrElse {
+                        // Keep current results and allow the next scroll to retry.
+                        return@launch
                     }
-                },
-                onFailure = {
-                    // Leave existing results on screen; just stop trying to page further until
-                    // the user retries by scrolling again next time results reload from scratch.
-                    if (pagedQuery == q) canLoadMore = false
+
+                    if (pagedQuery != q) return@launch
+                    currentPage = nextPage
+
+                    if (newTracks.isEmpty()) {
+                        canLoadMore = false
+                        break
+                    }
+
+                    canLoadMore = true
+                    val latest = (_results.value as? ScreenState.Success)?.data ?: first.data
+                    val merged = rankTracks(dedupeTracks(latest + newTracks), q)
+                    if (merged.size > latest.size) {
+                        _results.value = ScreenState.Success(merged)
+                        break
+                    }
+
+                    // Entire page overlapped with what we already have; try a few later pages
+                    // immediately so the user does not get stuck at the bottom of an artist list.
+                    attempts++
                 }
-            )
-            _isLoadingMore.value = false
+            } finally {
+                _isLoadingMore.value = false
+            }
         }
     }
 
