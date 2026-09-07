@@ -69,6 +69,31 @@ fun StatisticsScreen(
                     }
                 }
 
+                item {
+                    val average = if (stats.uniqueTracks > 0) {
+                        stats.totalPlays.toDouble() / stats.uniqueTracks.toDouble()
+                    } else 0.0
+                    val topArtist = topArtists.firstOrNull()
+                    val topArtistShare = if (topArtist != null && stats.totalPlays > 0) {
+                        (topArtist.playCount * 100 / stats.totalPlays)
+                    } else 0
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        StatCard(
+                            label = "Avg plays / track",
+                            value = String.format("%.1f", average),
+                            modifier = Modifier.weight(1f)
+                        )
+                        StatCard(
+                            label = "Top artist share",
+                            value = "$topArtistShare%",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
                 if (topArtists.isNotEmpty()) {
                     item { SectionHeader("Top artists") }
                     items(topArtists, key = { it.artistName }) { artist ->
