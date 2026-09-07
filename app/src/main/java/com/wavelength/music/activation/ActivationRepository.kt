@@ -21,6 +21,7 @@ interface ActivationRepository {
     suspend fun loginExisting(email: String): Result<ActivationRecord>
     suspend fun checkActivationStatus(): Result<ActivationRecord>
     suspend fun refreshStatus(): Result<ActivationRecord>
+    suspend fun reportUsage(playCountDelta: Int = 0, listenedMsDelta: Long = 0L)
     fun logout()
     fun isAccessActive(): Boolean
     fun getRemainingDays(): Long
@@ -101,6 +102,22 @@ class ActivationRepositoryImpl @Inject constructor(
             _activation.value = cached
             if (canUseOfflineCache(cached)) Result.success(cached)
             else Result.failure(IOException("Activation status could not be verified.", e))
+        }
+    }
+
+    override suspend fun reportUsage(playCountDelta: Int, listenedMsDelta: Long) {
+        if (playCountDelta <= 0 && listenedMsDelta <= 0L) return
+        val record = _activation.value
+        if (record.email.isBlank() || record.status != ActivationStatus.ACTIVE) return
+        runCatching {
+            api.reportUsage(
+                UsageReportRequest(
+                    email = record.email,
+                    deviceId = installationId,
+                    playCountDelta = playCountDelta.coerceAtLeast(0),
+                    listenedMsDelta = listenedMsDelta.coerceAtLeast(0L)
+                )
+            )
         }
     }
 
