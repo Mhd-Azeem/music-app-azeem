@@ -40,6 +40,9 @@ class AdminActivationViewModel @Inject constructor(
     private val _requests = MutableStateFlow<List<ActivationRecord>>(emptyList())
     val requests: StateFlow<List<ActivationRecord>> = _requests.asStateFlow()
 
+    private val _userStats = MutableStateFlow<List<UserListeningStat>>(emptyList())
+    val userStats: StateFlow<List<UserListeningStat>> = _userStats.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -80,6 +83,17 @@ class AdminActivationViewModel @Inject constructor(
                             record.id?.toString() in hidden
                     }
                 }
+                .onFailure { error -> handleAdminFailure(error) }
+            _isLoading.value = false
+        }
+    }
+
+    fun loadUserStats() {
+        val bearer = token?.let { "Bearer $it" } ?: return
+        viewModelScope.launch {
+            _isLoading.value = true
+            runCatching { api.getUserStats(bearer) }
+                .onSuccess { _userStats.value = it.users }
                 .onFailure { error -> handleAdminFailure(error) }
             _isLoading.value = false
         }
@@ -168,6 +182,7 @@ class AdminActivationViewModel @Inject constructor(
         prefs.edit().remove(KEY_TOKEN).apply()
         _isAuthenticated.value = false
         _requests.value = emptyList()
+        _userStats.value = emptyList()
         _message.value = null
     }
 
