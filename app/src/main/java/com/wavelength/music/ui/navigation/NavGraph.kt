@@ -16,6 +16,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -23,6 +24,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -79,16 +82,42 @@ fun WavelengthNavHost() {
         currentRoute != Screen.Activation.route &&
         currentRoute != Screen.AdminActivation.route
     val activationRequiredSequence by playerViewModel.activationRequiredSequence.collectAsStateWithLifecycle()
+    var showActivationPrompt by remember { mutableStateOf(false) }
 
     LaunchedEffect(activationRequiredSequence) {
         if (activationRequiredSequence > 0L && activation.status != ActivationStatus.ACTIVE) {
-            navController.navigate(Screen.Activation.route) {
-                launchSingleTop = true
-            }
+            showActivationPrompt = true
         }
     }
 
+    if (showActivationPrompt) {
+        AlertDialog(
+            onDismissRequest = { showActivationPrompt = false },
+            title = { Text("Email activation required") },
+            text = { Text("Your email has not been activated.") },
+            dismissButton = {
+                TextButton(onClick = { showActivationPrompt = false }) { Text("Later") }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    showActivationPrompt = false
+                    navController.navigate(Screen.Activation.route) { launchSingleTop = true }
+                }) { Text("Activate Email") }
+            }
+        )
+    }
+
     Scaffold(
+        topBar = {
+            if (showChrome && activation.status != ActivationStatus.ACTIVE) {
+                Button(
+                    onClick = { navController.navigate(Screen.Activation.route) },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text("Email Activation")
+                }
+            }
+        },
         bottomBar = {
             if (showChrome) {
                 var navBarModifier: Modifier = Modifier
