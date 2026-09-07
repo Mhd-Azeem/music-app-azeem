@@ -282,7 +282,10 @@ composable(
                     AdminActivationScreen(onBack = { navController.popBackStack() })
                 }
                 composable(Screen.Statistics.route) {
-                    StatisticsScreen(onBack = { navController.popBackStack() })
+                    StatisticsScreen(
+                        onBack = { navController.popBackStack() },
+                        onOpenAdmin = { navController.navigate(Screen.AdminActivation.route) }
+                    )
                 }
                 composable(
                     route = Screen.Genre.route,
