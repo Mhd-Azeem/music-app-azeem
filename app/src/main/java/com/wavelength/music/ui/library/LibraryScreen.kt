@@ -63,7 +63,7 @@ import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.ui.components.EmptyView
 import com.wavelength.music.ui.components.ErrorView
-import com.wavelength.music.ui.components.SwipeableTrackRow
+import com.wavelength.music.ui.components.TrackRow
 import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.components.swipeHorizontal
 import com.wavelength.music.ui.playlist.AddToPlaylistDialog
@@ -329,9 +329,7 @@ fun LibraryScreen(
                     selectionMode = selectionMode,
                     selectedIds = selectedIds,
                     onToggleSelect = ::onToggleSelect,
-                    onEnterSelection = ::onEnterSelection,
-                    onSwipeToFavorite = null,
-                    onSwipeToRemove = viewModel::removeFavorite
+                    onEnterSelection = ::onEnterSelection
                 )
                 1 -> TrackList(
                     tracks = recentlyPlayed,
@@ -346,9 +344,7 @@ fun LibraryScreen(
                     selectionMode = selectionMode,
                     selectedIds = selectedIds,
                     onToggleSelect = ::onToggleSelect,
-                    onEnterSelection = ::onEnterSelection,
-                    onSwipeToFavorite = viewModel::toggleFavoriteQuick,
-                    onSwipeToRemove = viewModel::removeFromHistory
+                    onEnterSelection = ::onEnterSelection
                 )
                 2 -> PlaylistList(
                     playlists = playlists,
@@ -380,9 +376,7 @@ fun LibraryScreen(
                         selectionMode = selectionMode,
                         selectedIds = selectedIds,
                         onToggleSelect = ::onToggleSelect,
-                        onEnterSelection = ::onEnterSelection,
-                        onSwipeToFavorite = viewModel::toggleFavoriteQuick,
-                        onSwipeToRemove = null
+                        onEnterSelection = ::onEnterSelection
                     )
                 }
                 else -> TrackList(
@@ -399,9 +393,7 @@ fun LibraryScreen(
                     selectionMode = selectionMode,
                     selectedIds = selectedIds,
                     onToggleSelect = ::onToggleSelect,
-                    onEnterSelection = ::onEnterSelection,
-                    onSwipeToFavorite = viewModel::toggleFavoriteQuick,
-                    onSwipeToRemove = viewModel::removeDownload
+                    onEnterSelection = ::onEnterSelection
                 )
             }
         }
@@ -421,8 +413,6 @@ private fun TrackList(
     selectedIds: Set<String>,
     onToggleSelect: (Track) -> Unit,
     onEnterSelection: (Track) -> Unit,
-    onSwipeToFavorite: ((Track) -> Unit)?,
-    onSwipeToRemove: ((Track) -> Unit)?,
     emptyMessage: String? = null
 ) {
     if (tracks.isEmpty()) {
@@ -434,7 +424,7 @@ private fun TrackList(
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             itemsIndexed(tracks, key = { _, track -> track.id }) { index, track ->
-                SwipeableTrackRow(
+                TrackRow(
                     track = track,
                     onClick = { if (selectionMode) onToggleSelect(track) else onTrackClick(index) },
                     onLongClick = { onEnterSelection(track) },
@@ -443,9 +433,7 @@ private fun TrackList(
                     onAddToPlaylistClick = if (selectionMode) null else { { onAddToPlaylistClick(track) } },
                     onMoreClick = if (selectionMode) null else { { onMoreClick(track) } },
                     isSelected = track.id in selectedIds,
-                    showSelectionCheckbox = selectionMode,
-                    onSwipeToFavorite = onSwipeToFavorite?.let { { it(track) } },
-                    onSwipeToRemove = onSwipeToRemove?.let { { it(track) } }
+                    showSelectionCheckbox = selectionMode
                 )
             }
         }
