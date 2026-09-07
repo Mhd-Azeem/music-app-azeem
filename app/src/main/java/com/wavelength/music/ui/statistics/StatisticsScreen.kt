@@ -37,6 +37,8 @@ fun StatisticsScreen(
 ) {
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val topArtists by viewModel.topArtists.collectAsStateWithLifecycle()
+    val playsLast7Days by viewModel.playsLast7Days.collectAsStateWithLifecycle()
+    val playsLast30Days by viewModel.playsLast30Days.collectAsStateWithLifecycle()
     val topTracks by viewModel.topTracks.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -91,6 +93,16 @@ fun StatisticsScreen(
                             value = "$topArtistShare%",
                             modifier = Modifier.weight(1f)
                         )
+                    }
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        StatCard(label = "Last 7 days", value = playsLast7Days.toString(), modifier = Modifier.weight(1f))
+                        StatCard(label = "Last 30 days", value = playsLast30Days.toString(), modifier = Modifier.weight(1f))
                     }
                 }
 
