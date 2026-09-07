@@ -300,7 +300,7 @@ private fun HomeContent(
         }
 
         if (suggestedTracks.isNotEmpty()) {
-            item { SectionHeader("Suggested for you") }
+            item { SectionHeader("Because you listened recently") }
             item {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
