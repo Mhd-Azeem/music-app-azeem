@@ -240,6 +240,12 @@ composable(
                 ) {
                     NowPlayingScreen(
                         onCollapse = { navController.popBackStack() },
+                        onBrowseArtist = { artist ->
+                            navController.navigate(Screen.Genre.createRoute(artist, artist))
+                        },
+                        onBrowseAlbum = { album ->
+                            navController.navigate(Screen.Genre.createRoute(album, album))
+                        },
                         viewModel = playerViewModel,
                         isLiquid = isLiquid,
                         glassStyle = glassStyle,
