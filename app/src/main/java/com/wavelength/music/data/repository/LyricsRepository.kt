@@ -10,6 +10,12 @@ import javax.inject.Singleton
 import java.util.concurrent.TimeUnit
 
 @Singleton
+data class LyricsSongCandidate(
+    val trackName: String,
+    val artistName: String,
+    val albumName: String
+)
+
 class LyricsRepository @Inject constructor(
     private val api: LrcLibApiService
 ) {
@@ -32,6 +38,35 @@ class LyricsRepository @Inject constructor(
         ) {
             fetchLyrics(cleanTitle, primaryArtist, albumName, durationSeconds)
         }
+    }
+
+    suspend fun searchSongCandidatesByLyrics(query: String, limit: Int = 5): List<LyricsSongCandidate> {
+        val rawQuery = query.trim()
+        if (rawQuery.length < 6) return emptyList()
+        val normalizedQuery = normalizeLyricsText(rawQuery)
+        if (normalizedQuery.isBlank()) return emptyList()
+
+        val matches = runCatching { api.searchLyricsByQuery(rawQuery) }.getOrDefault(emptyList())
+
+        return matches
+            .mapNotNull { item ->
+                val title = item.trackName?.trim().orEmpty()
+                val artist = item.artistName?.trim().orEmpty()
+                if (title.isBlank() || artist.isBlank()) return@mapNotNull null
+
+                val searchableLyrics = normalizeLyricsText(
+                    listOfNotNull(item.plainLyrics, item.syncedLyrics).joinToString(" ")
+                )
+                if (!searchableLyrics.contains(normalizedQuery)) return@mapNotNull null
+
+                LyricsSongCandidate(
+                    trackName = title,
+                    artistName = artist,
+                    albumName = item.albumName?.trim().orEmpty()
+                )
+            }
+            .distinctBy { normalize(it.trackName) + "|" + normalize(it.artistName) }
+            .take(limit)
     }
 
     private suspend fun fetchLyrics(
@@ -118,6 +153,14 @@ class LyricsRepository @Inject constructor(
         .replace(Regex("\\([^)]*(from|soundtrack|version|remix|mix|edit|single|ost)[^)]*\\)", RegexOption.IGNORE_CASE), " ")
         .replace(Regex("\\[[^]]*(from|soundtrack|version|remix|mix|edit|single|ost)[^]]*]", RegexOption.IGNORE_CASE), " ")
         .replace(Regex("\\s*[-–—:]\\s*(from|soundtrack|ost|single|version|remix|mix|edit).*", RegexOption.IGNORE_CASE), " ")
+        .replace(Regex("\\s+"), " ")
+        .trim()
+
+    private fun normalizeLyricsText(value: String): String = value
+        .lowercase()
+        .replace(Regex("\\[[^]]*]"), " ")
+        .replace("&", " and ")
+        .replace(Regex("[^a-z0-9\\p{L}]+"), " ")
         .replace(Regex("\\s+"), " ")
         .trim()
 
