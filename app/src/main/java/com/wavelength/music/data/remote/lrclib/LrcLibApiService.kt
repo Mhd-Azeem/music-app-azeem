@@ -21,6 +21,11 @@ interface LrcLibApiService {
         @Query("track_name") trackName: String,
         @Query("artist_name") artistName: String? = null
     ): List<LrcLibResponseDto>
+
+    @GET("api/search")
+    suspend fun searchLyricsByQuery(
+        @Query("q") query: String
+    ): List<LrcLibResponseDto>
 }
 
 @JsonClass(generateAdapter = true)
