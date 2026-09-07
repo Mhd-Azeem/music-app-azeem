@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Azeem\'s Music</string>
+    <string name="app_name">AZ Music</string>
     <string name="nav_home">Home</string>
     <string name="nav_search">Search</string>
     <string name="nav_library">Library</string>
@@ -23,7 +23,7 @@
     <string name="no_recent_searches">Search for a song, artist, or language to get started</string>
     <string name="widget_description">Playback controls for the current song</string>
     <string name="widget_nothing_playing">Nothing playing</string>
-    <string name="widget_open_app_hint">Open Azeem\'s Music</string>
+    <string name="widget_open_app_hint">Open AZ Music</string>
     <string name="widget_album_art_description">Album art</string>
     <string name="widget_previous_description">Previous track</string>
     <string name="widget_play_pause_description">Play or pause</string>
