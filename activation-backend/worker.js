@@ -4,12 +4,14 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const PERSISTENT_SESSION_EXPIRES_AT = Number.MAX_SAFE_INTEGER;
 const REQUEST_COOLDOWN_MS = 60 * 1000;
 let deviceSchemaReadyPromise;
+let usageSchemaReadyPromise;
 
 export default {
   async fetch(request, env) {
     try {
       const url = new URL(request.url);
       await ensureDeviceBindingSchema(env);
+      await ensureUsageStatsSchema(env);
       if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
 
       if (request.method === 'POST' && url.pathname === '/activation/request') {
@@ -21,12 +23,20 @@ export default {
       if (request.method === 'POST' && url.pathname === '/admin/login') {
         return adminLogin(request, env);
       }
+      if (request.method === 'POST' && url.pathname === '/usage/report') {
+        return reportUsage(request, env);
+      }
 
       const adminMatch = url.pathname.match(/^\/admin\/requests\/(\d+)\/(approve|reject|revoke|reset-device)$/);
       if (request.method === 'GET' && url.pathname === '/admin/requests') {
         const auth = await requireAdmin(request, env);
         if (!auth.ok) return auth.response;
         return listRequests(env);
+      }
+      if (request.method === 'GET' && url.pathname === '/admin/user-stats') {
+        const auth = await requireAdmin(request, env);
+        if (!auth.ok) return auth.response;
+        return listUserStats(env);
       }
       if (request.method === 'POST' && adminMatch) {
         const auth = await requireAdmin(request, env);
@@ -111,6 +121,61 @@ async function activationStatus(url, env) {
     row = { ...row, status: 'EXPIRED', updated_at: now };
   }
   return json({ activation: toRecord(row), serverTimestamp: now });
+}
+
+async function reportUsage(request, env) {
+  const body = await readJson(request);
+  const email = normalizeEmail(body?.email);
+  const deviceId = normalizeDeviceId(body?.deviceId);
+  const playCountDelta = Math.max(0, Math.min(100, Number(body?.playCountDelta || 0)));
+  const listenedMsDelta = Math.max(0, Math.min(60 * 60 * 1000, Number(body?.listenedMsDelta || 0)));
+
+  if (!isValidEmail(email)) return json({ error: 'Invalid email' }, 400);
+  if (!isValidDeviceId(deviceId)) return json({ error: 'Invalid device identifier' }, 400);
+  if (!Number.isFinite(playCountDelta) || !Number.isFinite(listenedMsDelta)) {
+    return json({ error: 'Invalid usage values' }, 400);
+  }
+
+  const now = Date.now();
+  const activation = await env.DB.prepare(
+    'SELECT status, expiration_date, device_id FROM activations WHERE email=? LIMIT 1'
+  ).bind(email).first();
+
+  if (!activation) return json({ error: 'Activation not found' }, 404);
+  if (activation.device_id && activation.device_id !== deviceId) {
+    return json({ error: 'Device mismatch' }, 409);
+  }
+  if (activation.status !== 'ACTIVE' ||
+      (activation.expiration_date != null && activation.expiration_date <= now)) {
+    return json({ error: 'Activation is not active' }, 403);
+  }
+
+  await env.DB.prepare(`
+    INSERT INTO user_stats(email, total_plays, total_listened_ms, updated_at)
+    VALUES(?, ?, ?, ?)
+    ON CONFLICT(email) DO UPDATE SET
+      total_plays = total_plays + excluded.total_plays,
+      total_listened_ms = total_listened_ms + excluded.total_listened_ms,
+      updated_at = excluded.updated_at
+  `).bind(email, Math.trunc(playCountDelta), Math.trunc(listenedMsDelta), now).run();
+
+  return json({ ok: true, serverTimestamp: now });
+}
+
+async function listUserStats(env) {
+  const now = Date.now();
+  const result = await env.DB.prepare(
+    'SELECT email, total_plays, total_listened_ms, updated_at FROM user_stats ORDER BY total_listened_ms DESC, total_plays DESC'
+  ).all();
+  return json({
+    users: (result.results || []).map(row => ({
+      email: row.email,
+      totalPlays: Number(row.total_plays || 0),
+      totalListenedMs: Number(row.total_listened_ms || 0),
+      updatedAt: Number(row.updated_at || 0)
+    })),
+    serverTimestamp: now
+  });
 }
 
 async function adminLogin(request, env) {
@@ -235,6 +300,20 @@ async function ensureDeviceBindingSchema(env) {
       });
   }
   return deviceSchemaReadyPromise;
+}
+
+async function ensureUsageStatsSchema(env) {
+  if (!usageSchemaReadyPromise) {
+    usageSchemaReadyPromise = env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS user_stats (
+        email TEXT PRIMARY KEY,
+        total_plays INTEGER NOT NULL DEFAULT 0,
+        total_listened_ms INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL
+      )
+    `).run();
+  }
+  return usageSchemaReadyPromise;
 }
 
 function normalizeDeviceId(value) { return String(value || '').trim(); }
