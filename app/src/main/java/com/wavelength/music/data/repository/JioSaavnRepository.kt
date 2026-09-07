@@ -34,9 +34,11 @@ class JioSaavnRepository @Inject constructor(
         limit: Int = 20,
         forceRefresh: Boolean = false
     ): Result<List<Track>> = runCatching {
-        if (query.isBlank()) return@runCatching emptyList()
-        searchCache.getOrPut("search:$query:$page:$limit", SEARCH_FRESH_MS, SEARCH_STALE_MS, forceRefresh) {
-            api.searchSongs(query, page, limit).data?.results.orEmpty()
+        val normalizedQuery = query.trim().replace(Regex("\\s+"), " ")
+        if (normalizedQuery.isBlank()) return@runCatching emptyList()
+        val cacheKey = normalizedQuery.lowercase()
+        searchCache.getOrPut("search:$cacheKey:$page:$limit", SEARCH_FRESH_MS, SEARCH_STALE_MS, forceRefresh) {
+            api.searchSongs(normalizedQuery, page, limit).data?.results.orEmpty()
                 .take(limit)
                 .map { it.toDomain().toTrack() }
         }
