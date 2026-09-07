@@ -64,8 +64,38 @@ class MusicRepository @Inject constructor(
         page: Int = 0,
         limit: Int = 30,
         forceRefresh: Boolean = false
-    ): Result<List<Track>> =
-        jioSaavnRepository.searchSongs(query, page = page, limit = limit, forceRefresh = forceRefresh)
+    ): Result<List<Track>> {
+        val normalized = query.trim().lowercase()
+        val offlineMatches = if (page == 0 && normalized.isNotBlank()) {
+            val local = runCatching { observeLocalSongs().first() }.getOrDefault(emptyList())
+            val downloads = runCatching { observeDownloadedTracks().first() }.getOrDefault(emptyList())
+            (downloads + local)
+                .filter { track ->
+                    track.name.lowercase().contains(normalized) ||
+                        track.artistName.lowercase().contains(normalized) ||
+                        track.albumName.lowercase().contains(normalized)
+                }
+                .distinctBy { it.id }
+                .take(limit)
+        } else {
+            emptyList()
+        }
+
+        val online = jioSaavnRepository.searchSongs(
+            query,
+            page = page,
+            limit = limit,
+            forceRefresh = forceRefresh
+        )
+        return online.fold(
+            onSuccess = { remote ->
+                Result.success((offlineMatches + remote).distinctBy { it.id }.take(limit))
+            },
+            onFailure = { error ->
+                if (offlineMatches.isNotEmpty()) Result.success(offlineMatches) else Result.failure(error)
+            }
+        )
+    }
 
     suspend fun getApiUsage() = jioSaavnRepository.getUsage()
 
