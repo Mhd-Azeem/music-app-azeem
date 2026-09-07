@@ -180,6 +180,8 @@ class MusicRepository @Inject constructor(
         playEventDao.observeUniqueArtistCount()
     ) { total, tracks, artists -> ListeningStats(total, tracks, artists) }
 
+    fun observePlaysSince(since: Long): Flow<Int> = playEventDao.observePlaysSince(since)
+
     fun observeTopTracks(limit: Int = 20): Flow<List<Track>> =
         playEventDao.observeTopTracks(limit).map { list -> list.map { it.toTrack() } }
 
