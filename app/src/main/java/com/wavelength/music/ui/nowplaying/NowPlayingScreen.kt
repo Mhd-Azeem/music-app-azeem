@@ -132,6 +132,8 @@ import java.util.concurrent.TimeUnit
 @Composable
 fun NowPlayingScreen(
     onCollapse: () -> Unit,
+    onBrowseArtist: (String) -> Unit = {},
+    onBrowseAlbum: (String) -> Unit = {},
     viewModel: PlayerViewModel = hiltViewModel(),
     isLiquid: Boolean = false,
     glassStyle: HazeStyle = HazeStyle.Unspecified,
@@ -252,7 +254,9 @@ fun NowPlayingScreen(
     if (showCurrentTrackMenu && track != null) {
         TrackOptionsSheet(
             track = track,
-            onDismiss = { showCurrentTrackMenu = false }
+            onDismiss = { showCurrentTrackMenu = false },
+            onBrowseArtist = { onBrowseArtist(track.artistName) },
+            onBrowseAlbum = { onBrowseAlbum(track.albumName) }
         )
     }
 
