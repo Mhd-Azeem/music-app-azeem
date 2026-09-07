@@ -38,6 +38,7 @@ import javax.inject.Singleton
 @Singleton
 class MusicRepository @Inject constructor(
     private val jioSaavnRepository: JioSaavnRepository,
+    private val lyricsRepository: LyricsRepository,
     private val localSongRepository: LocalSongRepository,
     private val favoriteDao: FavoriteDao,
     private val recentlyPlayedDao: RecentlyPlayedDao,
@@ -95,6 +96,33 @@ class MusicRepository @Inject constructor(
                 if (offlineMatches.isNotEmpty()) Result.success(offlineMatches) else Result.failure(error)
             }
         )
+    }
+
+    suspend fun searchTracksByLyrics(
+        lyricsQuery: String,
+        language: String? = null,
+        limit: Int = 12
+    ): List<Track> {
+        val candidates = lyricsRepository.searchSongCandidatesByLyrics(lyricsQuery, limit = 4)
+        if (candidates.isEmpty()) return emptyList()
+
+        val results = mutableListOf<Track>()
+        for (candidate in candidates) {
+            val catalogQuery = buildString {
+                append(candidate.trackName)
+                append(' ')
+                append(candidate.artistName)
+                if (!language.isNullOrBlank()) {
+                    append(' ')
+                    append(language)
+                }
+            }
+            val found = jioSaavnRepository.searchSongs(catalogQuery, limit = 5)
+                .getOrDefault(emptyList())
+            results += found
+            if (results.size >= limit) break
+        }
+        return results.distinctBy { it.id }.take(limit)
     }
 
     suspend fun getApiUsage() = jioSaavnRepository.getUsage()
