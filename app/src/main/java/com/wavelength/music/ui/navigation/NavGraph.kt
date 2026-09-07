@@ -6,13 +6,11 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarDefaults
@@ -79,26 +77,17 @@ fun WavelengthNavHost() {
         currentRoute != Screen.Settings.route &&
         currentRoute != Screen.Activation.route &&
         currentRoute != Screen.AdminActivation.route
-    val showActivationBanner = showChrome && activation.status != ActivationStatus.ACTIVE
+    val activationRequiredSequence by playerViewModel.activationRequiredSequence.collectAsStateWithLifecycle()
+
+    LaunchedEffect(activationRequiredSequence) {
+        if (activationRequiredSequence > 0L && activation.status != ActivationStatus.ACTIVE) {
+            navController.navigate(Screen.Activation.route) {
+                launchSingleTop = true
+            }
+        }
+    }
 
     Scaffold(
-        topBar = {
-            if (showActivationBanner) {
-                Button(
-                    onClick = { navController.navigate(Screen.Activation.route) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    val label = if (activation.email.isBlank()) {
-                        "Email Activation"
-                    } else {
-                        "Email Activation • ${activation.status.name.replace('_', ' ')}"
-                    }
-                    Text(label)
-                }
-            }
-        },
         bottomBar = {
             if (showChrome) {
                 var navBarModifier: Modifier = Modifier
