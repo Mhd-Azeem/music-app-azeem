@@ -117,7 +117,10 @@ class PlayerController @Inject constructor(
             }
 
             if (track != null) {
-                controllerScope.launch { repository.recordPlayed(track) }
+                controllerScope.launch {
+                    repository.recordPlayed(track)
+                    activationRepository.reportUsage(playCountDelta = 1)
+                }
                 if (settingsRepository.state.value.aiDjEnabled && index >= currentQueue.size - 2) {
                     extendQueueWithAiDj(track)
                 }
@@ -232,6 +235,9 @@ class PlayerController @Inject constructor(
         if (pending <= 0L) return
         listeningAccumulatorMs = 0L
         listeningTimeRepository.recordListening(pending)
+        controllerScope.launch {
+            activationRepository.reportUsage(listenedMsDelta = pending)
+        }
     }
 
     private fun maybeStartCrossfadeOut(c: MediaController) {
