@@ -47,7 +47,7 @@ class GenreViewModel @Inject constructor(
                 onSuccess = { list ->
                     val unique = list.distinctBy { it.id }
                     _tracks.value = if (unique.isEmpty()) ScreenState.Empty else ScreenState.Success(unique)
-                    hasMore = list.size >= pageSize
+                    hasMore = list.isNotEmpty()
                 },
                 onFailure = { e -> _tracks.value = ScreenState.Error(e.message ?: "Something went wrong") }
             )
@@ -56,21 +56,40 @@ class GenreViewModel @Inject constructor(
 
     fun loadMore() {
         if (_isLoadingMore.value || !hasMore) return
-        val current = (_tracks.value as? ScreenState.Success)?.data ?: return
         _isLoadingMore.value = true
-        val nextPage = currentPage + 1
         viewModelScope.launch {
-            repository.getTracksByTag(tag, page = nextPage, limit = pageSize).fold(
-                onSuccess = { incoming ->
+            try {
+                var attempts = 0
+                while (attempts < 3 && hasMore) {
+                    val current = (_tracks.value as? ScreenState.Success)?.data ?: break
+                    val nextPage = currentPage + 1
+                    val result = repository.getTracksByTag(tag, page = nextPage, limit = pageSize)
+                    val incoming = result.getOrElse {
+                        // Keep what is already visible and allow a later scroll to retry.
+                        return@launch
+                    }
+
+                    currentPage = nextPage
+                    if (incoming.isEmpty()) {
+                        hasMore = false
+                        break
+                    }
+
+                    // Some artist searches return short/overlapping pages even though later pages
+                    // still exist. Keep paging until the API itself returns an empty page.
+                    hasMore = true
                     val existingIds = current.map { it.id }.toHashSet()
                     val newTracks = incoming.filterNot { it.id in existingIds }
-                    _tracks.value = ScreenState.Success(current + newTracks)
-                    currentPage = nextPage
-                    hasMore = incoming.size >= pageSize
-                },
-                onFailure = { /* Keep the already loaded songs visible; next scroll can retry. */ }
-            )
-            _isLoadingMore.value = false
+                    if (newTracks.isNotEmpty()) {
+                        _tracks.value = ScreenState.Success(current + newTracks)
+                        break
+                    }
+
+                    attempts++
+                }
+            } finally {
+                _isLoadingMore.value = false
+            }
         }
     }
 
