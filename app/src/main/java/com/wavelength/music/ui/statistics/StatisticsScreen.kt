@@ -36,6 +36,7 @@ fun StatisticsScreen(
     viewModel: StatisticsViewModel = hiltViewModel()
 ) {
     val stats by viewModel.stats.collectAsStateWithLifecycle()
+    val listeningTime by viewModel.listeningTime.collectAsStateWithLifecycle()
     val topArtists by viewModel.topArtists.collectAsStateWithLifecycle()
     val playsLast7Days by viewModel.playsLast7Days.collectAsStateWithLifecycle()
     val playsLast30Days by viewModel.playsLast30Days.collectAsStateWithLifecycle()
@@ -106,6 +107,26 @@ fun StatisticsScreen(
                     }
                 }
 
+                item { SectionHeader("Listening time") }
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        StatCard(label = "This week", value = formatDuration(listeningTime.last7DaysMs), modifier = Modifier.weight(1f))
+                        StatCard(label = "Last 30 days", value = formatDuration(listeningTime.last30DaysMs), modifier = Modifier.weight(1f))
+                    }
+                }
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        StatCard(label = "Today", value = formatDuration(listeningTime.todayMs), modifier = Modifier.weight(1f))
+                        StatCard(label = "All time", value = formatDuration(listeningTime.allTimeMs), modifier = Modifier.weight(1f))
+                    }
+                }
+
                 if (topArtists.isNotEmpty()) {
                     item { SectionHeader("Top artists") }
                     items(topArtists, key = { it.artistName }) { artist ->
@@ -145,4 +166,12 @@ private fun StatCard(label: String, value: String, modifier: Modifier = Modifier
             Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+}
+
+
+private fun formatDuration(ms: Long): String {
+    val totalMinutes = (ms / 60_000L).coerceAtLeast(0L)
+    val hours = totalMinutes / 60L
+    val minutes = totalMinutes % 60L
+    return if (hours > 0L) "${hours}h ${minutes}m" else "${minutes}m"
 }
