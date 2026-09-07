@@ -60,3 +60,26 @@ data class AdminDecisionRequest(
     val durationDays: Int? = null,
     val lifetime: Boolean = false
 )
+
+
+@JsonClass(generateAdapter = true)
+data class UsageReportRequest(
+    val email: String,
+    val deviceId: String,
+    val playCountDelta: Int = 0,
+    val listenedMsDelta: Long = 0L
+)
+
+@JsonClass(generateAdapter = true)
+data class UserListeningStat(
+    val email: String,
+    val totalPlays: Long,
+    val totalListenedMs: Long,
+    val updatedAt: Long
+)
+
+@JsonClass(generateAdapter = true)
+data class UserListeningStatsResponse(
+    val users: List<UserListeningStat>,
+    val serverTimestamp: Long
+)
