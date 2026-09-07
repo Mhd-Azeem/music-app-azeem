@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
@@ -52,6 +54,8 @@ fun TrackOptionsSheet(
     onRemoveFromPlaylist: (() -> Unit)? = null,
     onMoveUp: (() -> Unit)? = null,
     onMoveDown: (() -> Unit)? = null,
+    onBrowseArtist: (() -> Unit)? = null,
+    onBrowseAlbum: (() -> Unit)? = null,
     viewModel: TrackActionsViewModel = hiltViewModel()
 ) {
     val isFavorite by remember(track.id) { viewModel.isFavorite(track.id) }
@@ -143,6 +147,18 @@ fun TrackOptionsSheet(
             }
             TrackOptionRow(Icons.Filled.PlaylistAdd, "Add to playlist") {
                 showAddToPlaylist = true
+            }
+            if (onBrowseArtist != null && track.artistName.isNotBlank()) {
+                TrackOptionRow(Icons.Filled.Person, "More from this artist") {
+                    onBrowseArtist()
+                    onDismiss()
+                }
+            }
+            if (onBrowseAlbum != null && track.albumName.isNotBlank()) {
+                TrackOptionRow(Icons.Filled.Album, "More from this album") {
+                    onBrowseAlbum()
+                    onDismiss()
+                }
             }
             when {
                 isDownloading -> Row(
