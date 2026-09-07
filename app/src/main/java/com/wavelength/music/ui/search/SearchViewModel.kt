@@ -74,10 +74,12 @@ class SearchViewModel @Inject constructor(
     }
 
     private suspend fun runSearch(q: String) {
-        pagedQuery = q
+        val selected = _selectedLanguage.value
+        val effectiveQuery = if (selected == "All") q else "$q $selected"
+        pagedQuery = effectiveQuery
         currentPage = 0
         canLoadMore = true
-        repository.searchTracks(q, page = 0, limit = SEARCH_PAGE_SIZE).fold(
+        repository.searchTracks(effectiveQuery, page = 0, limit = SEARCH_PAGE_SIZE).fold(
             onSuccess = { tracks ->
                 // distinctBy guards against the unofficial JioSaavn API occasionally returning
                 // overlapping/duplicate ids within one result set — the list below is keyed by
@@ -98,6 +100,7 @@ class SearchViewModel @Inject constructor(
         val first = _results.value
         if (first !is ScreenState.Success || _isLoadingMore.value || !canLoadMore) return
         val q = pagedQuery
+        val rankingQuery = _query.value.trim()
         viewModelScope.launch {
             _isLoadingMore.value = true
             try {
@@ -120,7 +123,7 @@ class SearchViewModel @Inject constructor(
 
                     canLoadMore = true
                     val latest = (_results.value as? ScreenState.Success)?.data ?: first.data
-                    val merged = rankTracks(dedupeTracks(latest + newTracks), q)
+                    val merged = rankTracks(dedupeTracks(latest + newTracks), rankingQuery)
                     if (merged.size > latest.size) {
                         _results.value = ScreenState.Success(merged)
                         break
@@ -137,21 +140,27 @@ class SearchViewModel @Inject constructor(
     }
 
     fun selectLanguage(language: String) {
+        if (_selectedLanguage.value == language) return
         _selectedLanguage.value = language
+        val baseQuery = _query.value.trim()
+        if (baseQuery.isBlank()) return
+
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            _results.value = ScreenState.Loading
+            runSearch(baseQuery)
+        }
     }
 
     fun availableLanguages(tracks: List<Track>): List<String> {
+        val common = listOf("Tamil", "Hindi", "English", "Telugu", "Malayalam", "Kannada", "Punjabi", "Bengali")
         val detected = tracks.mapNotNull { track ->
             track.language.takeIf { it.isNotBlank() }?.replaceFirstChar { it.uppercase() }
         }.distinct().sorted()
-        return listOf("All") + detected
+        return listOf("All") + (common + detected).distinct()
     }
 
-    fun filteredTracks(tracks: List<Track>): List<Track> {
-        val selected = _selectedLanguage.value
-        if (selected == "All") return tracks
-        return tracks.filter { it.language.equals(selected, ignoreCase = true) }
-    }
+    fun filteredTracks(tracks: List<Track>): List<Track> = tracks
 
     private fun dedupeTracks(tracks: List<Track>): List<Track> {
         val seen = linkedSetOf<String>()
