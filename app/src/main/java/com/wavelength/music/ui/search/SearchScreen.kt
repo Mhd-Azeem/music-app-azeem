@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -167,68 +169,79 @@ fun SearchScreen(
             return@Scaffold
         }
 
-        when (val state = results) {
-            is ScreenState.Loading -> LoadingView(modifier = Modifier.padding(padding))
-            is ScreenState.Error -> ErrorView(
-                onRetry = viewModel::retry,
-                modifier = Modifier.padding(padding),
-                message = state.message
-            )
-            is ScreenState.Empty -> EmptyView(
-                modifier = Modifier.padding(padding),
-                message = stringResource(R.string.search_empty_hint)
-            )
-            is ScreenState.Success -> {
-                val allTracks = state.data
-                val languages = viewModel.availableLanguages(allTracks)
-                val tracks = viewModel.filteredTracks(allTracks)
-                val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
-                val listState = rememberLazyListState()
-                val shouldLoadMore by remember {
-                    derivedStateOf {
-                        val layoutInfo = listState.layoutInfo
-                        val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-                        layoutInfo.totalItemsCount > 0 && lastVisible >= layoutInfo.totalItemsCount - 3
+        val visibleTracks = (results as? ScreenState.Success)?.data.orEmpty()
+        val languages = viewModel.availableLanguages(visibleTracks)
+        val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
+
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(languages, key = { it }) { language ->
+                    AssistChip(
+                        onClick = { viewModel.selectLanguage(language) },
+                        label = { Text(language) },
+                        leadingIcon = if (selectedLanguage == language) {
+                            { Text("✓") }
+                        } else null
+                    )
+                }
+            }
+
+            when (val state = results) {
+                is ScreenState.Loading -> LoadingView(modifier = Modifier.weight(1f))
+                is ScreenState.Error -> ErrorView(
+                    onRetry = viewModel::retry,
+                    modifier = Modifier.weight(1f),
+                    message = state.message
+                )
+                is ScreenState.Empty -> EmptyView(
+                    modifier = Modifier.weight(1f),
+                    message = if (selectedLanguage == "All") {
+                        "No songs found for this search."
+                    } else {
+                        "No $selectedLanguage songs found. Choose another language or All."
                     }
-                }
-                LaunchedEffect(shouldLoadMore) {
-                    if (shouldLoadMore) viewModel.loadMore()
-                }
-                LazyColumn(modifier = Modifier.fillMaxSize().padding(padding), state = listState) {
-                if (languages.size > 1) {
-                    item {
-                        androidx.compose.foundation.lazy.LazyRow(
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(languages, key = { it }) { language ->
-                                AssistChip(
-                                    onClick = { viewModel.selectLanguage(language) },
-                                    label = { Text(language) },
-                                    leadingIcon = if (selectedLanguage == language) {
-                                        { Text("✓") }
-                                    } else null
-                                )
-                            }
+                )
+                is ScreenState.Success -> {
+                    val tracks = viewModel.filteredTracks(state.data)
+                    val listState = rememberLazyListState()
+                    val shouldLoadMore by remember {
+                        derivedStateOf {
+                            val layoutInfo = listState.layoutInfo
+                            val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                            layoutInfo.totalItemsCount > 0 && lastVisible >= layoutInfo.totalItemsCount - 3
                         }
                     }
-                }
-                    itemsIndexed(tracks, key = { _, track -> track.id }) { index, track ->
-                        TrackRow(
-                            track = track,
-                            onClick = {
-                                viewModel.playTrack(tracks, index)
-                                onTrackClick()
-                            },
-                            onAddToPlaylistClick = { trackForQuickAdd = track },
-                            onMoreClick = { trackForMenu = track },
-                            showLanguage = true
-                        )
+                    LaunchedEffect(shouldLoadMore) {
+                        if (shouldLoadMore) viewModel.loadMore()
                     }
-                    if (isLoadingMore) {
-                        item {
-                            Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(modifier = Modifier.size(28.dp))
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        state = listState
+                    ) {
+                        itemsIndexed(tracks, key = { _, track -> track.id }) { index, track ->
+                            TrackRow(
+                                track = track,
+                                onClick = {
+                                    viewModel.playTrack(tracks, index)
+                                    onTrackClick()
+                                },
+                                onAddToPlaylistClick = { trackForQuickAdd = track },
+                                onMoreClick = { trackForMenu = track },
+                                showLanguage = true
+                            )
+                        }
+                        if (isLoadingMore) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(modifier = Modifier.size(28.dp))
+                                }
                             }
                         }
                     }
