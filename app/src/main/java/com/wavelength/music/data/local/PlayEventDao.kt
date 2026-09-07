@@ -55,6 +55,9 @@ interface PlayEventDao {
     @Query("SELECT COUNT(DISTINCT artist) FROM play_events")
     fun observeUniqueArtistCount(): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM play_events WHERE playedAt >= :since")
+    fun observePlaysSince(since: Long): Flow<Int>
+
     @Query(
         "SELECT trackId, name, artist, albumArtUrl, audioUrl, source, COUNT(*) AS playCount " +
             "FROM play_events GROUP BY trackId ORDER BY playCount DESC, MAX(playedAt) DESC LIMIT :limit"
