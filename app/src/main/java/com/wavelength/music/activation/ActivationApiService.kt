@@ -25,6 +25,16 @@ interface ActivationApiService {
         @Header("Authorization") authorization: String
     ): AdminActivationListResponse
 
+    @POST("usage/report")
+    suspend fun reportUsage(
+        @Body request: UsageReportRequest
+    )
+
+    @GET("admin/user-stats")
+    suspend fun getUserStats(
+        @Header("Authorization") authorization: String
+    ): UserListeningStatsResponse
+
     @POST("admin/requests/{id}/approve")
     suspend fun approveRequest(
         @Header("Authorization") authorization: String,
