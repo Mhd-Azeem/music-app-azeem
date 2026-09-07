@@ -82,7 +82,7 @@ class SearchViewModel @Inject constructor(
                 // distinctBy guards against the unofficial JioSaavn API occasionally returning
                 // overlapping/duplicate ids within one result set — the list below is keyed by
                 // track.id in Compose, which would crash on a duplicate.
-                val deduped = dedupeTracks(tracks)
+                val deduped = rankTracks(dedupeTracks(tracks), q)
                 canLoadMore = tracks.size >= SEARCH_PAGE_SIZE
                 _results.value = if (deduped.isEmpty()) ScreenState.Empty else ScreenState.Success(deduped)
             },
@@ -111,7 +111,7 @@ class SearchViewModel @Inject constructor(
                         currentPage = nextPage
                         canLoadMore = newTracks.size >= SEARCH_PAGE_SIZE
                         val latest = (_results.value as? ScreenState.Success)?.data ?: current.data
-                        _results.value = ScreenState.Success(dedupeTracks(latest + newTracks))
+                        _results.value = ScreenState.Success(rankTracks(dedupeTracks(latest + newTracks), q))
                     }
                 },
                 onFailure = {
@@ -155,6 +155,41 @@ class SearchViewModel @Inject constructor(
             key.isNotBlank() && seen.add(key)
         }
     }
+
+    private fun rankTracks(tracks: List<Track>, query: String): List<Track> {
+        val q = normalizeForMatch(query)
+        if (q.isBlank()) return tracks
+        val words = q.split(' ').filter { it.isNotBlank() }
+
+        fun score(track: Track): Int {
+            val title = normalizeForMatch(track.name)
+            val artist = normalizeForMatch(track.artistName)
+            val album = normalizeForMatch(track.albumName)
+            var score = 0
+            if (title == q) score += 1000
+            if (artist == q) score += 700
+            if (title.startsWith(q)) score += 450
+            if (artist.startsWith(q)) score += 350
+            if (title.contains(q)) score += 250
+            if (artist.contains(q)) score += 200
+            if (album.contains(q)) score += 100
+            score += words.count { it in title } * 60
+            score += words.count { it in artist } * 40
+            if (track.source != com.wavelength.music.data.model.TrackSource.JIOSAAVN) score += 80
+            return score
+        }
+
+        return tracks.withIndex()
+            .sortedWith(compareByDescending<IndexedValue<Track>> { score(it.value) }.thenBy { it.index })
+            .map { it.value }
+    }
+
+    private fun normalizeForMatch(value: String): String = value
+        .lowercase()
+        .replace("&", " and ")
+        .replace(Regex("[^a-z0-9\\p{L}]+"), " ")
+        .replace(Regex("\\s+"), " ")
+        .trim()
 
     private fun canonicalSongTitle(raw: String): String {
         return raw
