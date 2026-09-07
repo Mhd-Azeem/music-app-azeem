@@ -177,25 +177,32 @@ class HomeViewModel @Inject constructor(
         showLoading: Boolean = true,
         forceRefresh: Boolean = false
     ) {
-        val topArtist = recentTracks.groupingBy { it.artistName }.eachCount().maxByOrNull { it.value }?.key
-        if (topArtist.isNullOrBlank()) {
+        val topArtists = recentTracks
+            .groupingBy { it.artistName }
+            .eachCount()
+            .entries
+            .sortedByDescending { it.value }
+            .map { it.key }
+            .filter { it.isNotBlank() }
+            .take(3)
+        if (topArtists.isEmpty()) {
             _suggested.value = ScreenState.Empty
             return
         }
         if (showLoading) _suggested.value = ScreenState.Loading
-        repository.searchTracks(topArtist, limit = 20, forceRefresh = forceRefresh).fold(
-            onSuccess = { tracks ->
-                val excludeIds = recentTracks.map { it.id }.toSet()
-                // distinctBy guards against the unofficial JioSaavn API occasionally returning
-                // overlapping/duplicate ids within one result set — the list below is keyed by
-                // track.id in Compose, which would crash on a duplicate.
-                val filtered = tracks.distinctBy { it.id }.filterNot { it.id in excludeIds }
-                _suggested.value = if (filtered.isEmpty()) ScreenState.Empty else ScreenState.Success(filtered)
-            },
-            onFailure = { e ->
-                _suggested.value = ScreenState.Error(e.message ?: "Something went wrong")
-            }
-        )
+        coroutineScope {
+            val results = topArtists.map { artist ->
+                async { repository.searchTracks(artist, limit = 12, forceRefresh = forceRefresh) }
+            }.awaitAll()
+            val excludeIds = recentTracks.map { it.id }.toSet()
+            val filtered = results
+                .flatMap { it.getOrDefault(emptyList()) }
+                .distinctBy { it.id }
+                .filterNot { it.id in excludeIds }
+                .shuffled()
+                .take(24)
+            _suggested.value = if (filtered.isEmpty()) ScreenState.Empty else ScreenState.Success(filtered)
+        }
     }
 
     /** Mixes tracks from whichever 2 artists have the most plays across your whole listening
