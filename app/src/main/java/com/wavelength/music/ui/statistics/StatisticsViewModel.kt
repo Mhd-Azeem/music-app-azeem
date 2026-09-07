@@ -6,6 +6,8 @@ import com.wavelength.music.data.model.ArtistStat
 import com.wavelength.music.data.model.ListeningStats
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.repository.MusicRepository
+import com.wavelength.music.data.repository.ListeningTimeRepository
+import com.wavelength.music.data.repository.ListeningTimeSummary
 import com.wavelength.music.playback.PlayerController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,8 +18,11 @@ import javax.inject.Inject
 @HiltViewModel
 class StatisticsViewModel @Inject constructor(
     repository: MusicRepository,
+    listeningTimeRepository: ListeningTimeRepository,
     private val playerController: PlayerController
 ) : ViewModel() {
+
+    val listeningTime: StateFlow<ListeningTimeSummary> = listeningTimeRepository.summary
 
     val stats: StateFlow<ListeningStats> = repository.observeListeningStats()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ListeningStats(0, 0, 0))
