@@ -81,15 +81,36 @@ class SearchViewModel @Inject constructor(
         canLoadMore = true
         repository.searchTracks(effectiveQuery, page = 0, limit = SEARCH_PAGE_SIZE).fold(
             onSuccess = { tracks ->
-                // distinctBy guards against the unofficial JioSaavn API occasionally returning
-                // overlapping/duplicate ids within one result set — the list below is keyed by
-                // track.id in Compose, which would crash on a duplicate.
-                val deduped = rankTracks(dedupeTracks(tracks), q)
+                // Show normal metadata results immediately.
+                val ranked = rankTracks(dedupeTracks(tracks), q)
                 canLoadMore = tracks.isNotEmpty()
-                _results.value = if (deduped.isEmpty()) ScreenState.Empty else ScreenState.Success(deduped)
+                _results.value = if (ranked.isEmpty()) ScreenState.Empty else ScreenState.Success(ranked)
+
+                // Phrase-like searches are also checked against lyrics. These matches are merged
+                // in after the normal list so title/artist search stays fast while lyric discovery
+                // can enrich it a moment later.
+                if (shouldTryLyricsSearch(q)) {
+                    val language = selected.takeUnless { it == "All" }
+                    val lyricMatches = repository.searchTracksByLyrics(q, language = language)
+                    if (pagedQuery == effectiveQuery && lyricMatches.isNotEmpty()) {
+                        val latest = (_results.value as? ScreenState.Success)?.data.orEmpty()
+                        val merged = dedupeTracks(lyricMatches + latest)
+                        _results.value = ScreenState.Success(merged)
+                    }
+                }
             },
             onFailure = { e ->
-                _results.value = ScreenState.Error(e.message ?: "Something went wrong")
+                if (shouldTryLyricsSearch(q)) {
+                    val language = selected.takeUnless { it == "All" }
+                    val lyricMatches = repository.searchTracksByLyrics(q, language = language)
+                    if (lyricMatches.isNotEmpty()) {
+                        _results.value = ScreenState.Success(dedupeTracks(lyricMatches))
+                    } else {
+                        _results.value = ScreenState.Error(e.message ?: "Something went wrong")
+                    }
+                } else {
+                    _results.value = ScreenState.Error(e.message ?: "Something went wrong")
+                }
             }
         )
     }
@@ -175,6 +196,11 @@ class SearchViewModel @Inject constructor(
             val key = "$canonicalLanguage|$canonicalTitle"
             key.isNotBlank() && seen.add(key)
         }
+    }
+
+    private fun shouldTryLyricsSearch(query: String): Boolean {
+        val words = normalizeForMatch(query).split(' ').filter { it.isNotBlank() }
+        return words.size >= 3 && query.trim().length >= 10
     }
 
     private fun rankTracks(tracks: List<Track>, query: String): List<Track> {
