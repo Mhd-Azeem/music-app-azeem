@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlaylistAdd
@@ -161,6 +162,7 @@ fun NowPlayingScreen(
     var showSpeedMenu by remember { mutableStateOf(false) }
     var showLyrics by remember { mutableStateOf(false) }
     var menuQueueIndex by remember { mutableStateOf<Int?>(null) }
+    var showCurrentTrackMenu by remember { mutableStateOf(false) }
     var quickAddQueueIndex by remember { mutableStateOf<Int?>(null) }
 
     val context = LocalContext.current
@@ -244,6 +246,13 @@ fun NowPlayingScreen(
                 viewModel.cancelSleepTimer()
                 showSleepTimerDialog = false
             }
+        )
+    }
+
+    if (showCurrentTrackMenu && track != null) {
+        TrackOptionsSheet(
+            track = track,
+            onDismiss = { showCurrentTrackMenu = false }
         )
     }
 
@@ -412,8 +421,20 @@ fun NowPlayingScreen(
                         onSwipeRight = { viewModel.skipPrevious() }
                     )
             ) {
-                IconButton(onClick = onCollapse) {
-                    Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onCollapse) {
+                        Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")
+                    }
+                    IconButton(
+                        onClick = { showCurrentTrackMenu = true },
+                        enabled = track != null
+                    ) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "Song options")
+                    }
                 }
 
                 AnimatedVisibility(visible = !isUpNextExpanded) {
