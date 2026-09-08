@@ -38,18 +38,21 @@ jobs:
         run: chmod +x gradlew
 
       - name: Prepare permanent signing key
-        if: ${{ secrets.AZMUSIC_KEYSTORE_BASE64 != '' }}
         env:
           AZMUSIC_KEYSTORE_BASE64: ${{ secrets.AZMUSIC_KEYSTORE_BASE64 }}
           AZMUSIC_KEYSTORE_PASSWORD: ${{ secrets.AZMUSIC_KEYSTORE_PASSWORD }}
           AZMUSIC_KEY_ALIAS: ${{ secrets.AZMUSIC_KEY_ALIAS }}
           AZMUSIC_KEY_PASSWORD: ${{ secrets.AZMUSIC_KEY_PASSWORD }}
         run: |
-          echo "$AZMUSIC_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/azmusic-release.jks"
-          echo "AZMUSIC_KEYSTORE_PATH=$RUNNER_TEMP/azmusic-release.jks" >> "$GITHUB_ENV"
-          echo "AZMUSIC_KEYSTORE_PASSWORD=$AZMUSIC_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
-          echo "AZMUSIC_KEY_ALIAS=$AZMUSIC_KEY_ALIAS" >> "$GITHUB_ENV"
-          echo "AZMUSIC_KEY_PASSWORD=$AZMUSIC_KEY_PASSWORD" >> "$GITHUB_ENV"
+          if [ -n "$AZMUSIC_KEYSTORE_BASE64" ]; then
+            echo "$AZMUSIC_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/azmusic-release.jks"
+            echo "AZMUSIC_KEYSTORE_PATH=$RUNNER_TEMP/azmusic-release.jks" >> "$GITHUB_ENV"
+            echo "AZMUSIC_KEYSTORE_PASSWORD=$AZMUSIC_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "AZMUSIC_KEY_ALIAS=$AZMUSIC_KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "AZMUSIC_KEY_PASSWORD=$AZMUSIC_KEY_PASSWORD" >> "$GITHUB_ENV"
+          else
+            echo "Permanent signing secrets not configured; using debug signing fallback."
+          fi
 
       - name: Build release APK
         run: ./gradlew assembleRelease --stacktrace
