@@ -372,7 +372,10 @@ fun NowPlayingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+                .background(
+                    if (isLiquid) Color.Transparent
+                    else MaterialTheme.colorScheme.background
+                )
                 .padding(24.dp)
         ) {
             Column(
