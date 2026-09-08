@@ -75,6 +75,15 @@ import com.wavelength.music.ui.theme.AppTheme
 import com.wavelength.music.ui.theme.swatchColor
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import android.graphics.Color as AndroidColor
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.input.pointer.pointerInput
+import com.wavelength.music.data.repository.BuiltInWallpaper
+import com.wavelength.music.ui.components.wallpaperBrush
 
 @Composable
 fun SettingsScreen(
@@ -349,6 +358,120 @@ fun SettingsScreen(
                             onValueChange = { viewModel.setBackgroundOpacity(it) },
                             valueRange = 0f..1f
                         )
+                    }
+                }
+            }
+
+            item {
+                SettingsSection(title = "Built-in Wallpapers") {
+                    Text(
+                        text = "Gradient and shining backgrounds included with AZ Music.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(BuiltInWallpaper.entries, key = { it.name }) { wallpaper ->
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .clickable { viewModel.setBuiltInWallpaper(wallpaper) }
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(width = 92.dp, height = 132.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .then(
+                                            if (wallpaper == BuiltInWallpaper.DEFAULT) {
+                                                Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
+                                            } else {
+                                                Modifier.background(wallpaperBrush(wallpaper))
+                                            }
+                                        )
+                                        .border(
+                                            width = if (!settings.hasCustomBackground && settings.builtInWallpaper == wallpaper) 2.dp else 1.dp,
+                                            color = if (!settings.hasCustomBackground && settings.builtInWallpaper == wallpaper) {
+                                                MaterialTheme.colorScheme.primary
+                                            } else {
+                                                MaterialTheme.colorScheme.outline
+                                            },
+                                            shape = RoundedCornerShape(12.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (wallpaper == BuiltInWallpaper.DEFAULT) {
+                                        Image(
+                                            painter = painterResource(R.drawable.bg_default),
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
+                                    if (!settings.hasCustomBackground && settings.builtInWallpaper == wallpaper) {
+                                        Icon(
+                                            Icons.Filled.Check,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .padding(6.dp)
+                                                .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                                                .padding(3.dp)
+                                        )
+                                    }
+                                }
+                                Text(
+                                    wallpaper.label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(top = 6.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
+                SettingsSection(title = "Liquid Theme Color") {
+                    Text(
+                        text = "Tap or drag anywhere in the color box to choose from millions of shades.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    LiquidColorPicker(
+                        selectedArgb = settings.customAccentArgb,
+                        onColorSelected = viewModel::setCustomAccentArgb,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .height(190.dp)
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(settings.customAccentArgb))
+                                    .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
+                            )
+                            Text(
+                                text = "#%08X".format(settings.customAccentArgb),
+                                modifier = Modifier.padding(start = 10.dp)
+                            )
+                        }
+                        TextButton(onClick = { viewModel.setCustomAccentArgb(0xFF22D3EE.toInt()) }) {
+                            Text("Reset")
+                        }
                     }
                 }
             }
@@ -1054,5 +1177,77 @@ private fun ThemeOption(theme: AppTheme, selected: Boolean, onClick: () -> Unit)
             }
         }
         Text(theme.label, style = MaterialTheme.typography.labelSmall)
+    }
+}
+
+
+@Composable
+private fun LiquidColorPicker(
+    selectedArgb: Int,
+    onColorSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val hsv = remember(selectedArgb) {
+        FloatArray(3).also { AndroidColor.colorToHSV(selectedArgb, it) }
+    }
+    var marker by remember(selectedArgb) {
+        mutableStateOf(
+            Offset(
+                x = (hsv[0] / 360f).coerceIn(0f, 1f),
+                y = (1f - hsv[2]).coerceIn(0f, 1f)
+            )
+        )
+    }
+
+    fun updateFromFraction(x: Float, y: Float) {
+        val fx = x.coerceIn(0f, 1f)
+        val fy = y.coerceIn(0f, 1f)
+        marker = Offset(fx, fy)
+        val hue = fx * 360f
+        val saturation = (0.35f + fy * 0.65f).coerceIn(0f, 1f)
+        val value = (1f - fy * 0.78f).coerceIn(0.22f, 1f)
+        onColorSelected(AndroidColor.HSVToColor(floatArrayOf(hue, saturation, value)))
+    }
+
+    Canvas(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { pos ->
+                        updateFromFraction(pos.x / size.width, pos.y / size.height)
+                    },
+                    onDrag = { change, _ ->
+                        updateFromFraction(change.position.x / size.width, change.position.y / size.height)
+                    }
+                )
+            }
+    ) {
+        drawRect(
+            brush = Brush.horizontalGradient(
+                listOf(
+                    Color.Red,
+                    Color.Yellow,
+                    Color.Green,
+                    Color.Cyan,
+                    Color.Blue,
+                    Color.Magenta,
+                    Color.Red
+                )
+            )
+        )
+        drawRect(
+            brush = Brush.verticalGradient(
+                listOf(
+                    Color.White.copy(alpha = 0.18f),
+                    Color.Transparent,
+                    Color.Black.copy(alpha = 0.78f)
+                )
+            )
+        )
+        val center = Offset(marker.x * size.width, marker.y * size.height)
+        drawCircle(Color.White, radius = 11.dp.toPx(), center = center)
+        drawCircle(Color.Black.copy(alpha = 0.75f), radius = 7.dp.toPx(), center = center)
+        drawCircle(Color(selectedArgb), radius = 5.dp.toPx(), center = center)
     }
 }
