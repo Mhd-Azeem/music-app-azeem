@@ -47,7 +47,10 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel: AppSettingsViewModel = hiltViewModel()
             val settings by settingsViewModel.state.collectAsStateWithLifecycle()
 
-            WavelengthTheme(theme = settings.theme) {
+            WavelengthTheme(
+                theme = settings.theme,
+                customLiquidAccent = Color(settings.customAccentArgb)
+            ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     OfflineBanner()
                     Box(modifier = Modifier.fillMaxWidth().weight(1f).background(Color.Black)) {
