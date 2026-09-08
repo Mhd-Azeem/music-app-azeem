@@ -275,7 +275,8 @@ composable(
                         audioVisualizerEnabled = settings.audioVisualizerEnabled,
                         trackTransitionEnabled = settings.trackTransitionEnabled,
                         trackTransitionDurationMs = settings.trackTransitionDurationMs,
-                        syncVolumeWithSystem = settings.syncVolumeWithSystem
+                        syncVolumeWithSystem = settings.syncVolumeWithSystem,
+                        liquidAlbumArtBackground = settings.liquidAlbumArtBackground
                     )
                 }
                 composable(Screen.Settings.route) {
