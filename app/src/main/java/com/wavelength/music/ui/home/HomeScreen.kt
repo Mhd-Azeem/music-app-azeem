@@ -57,6 +57,13 @@ import com.wavelength.music.ui.components.QuickAddToPlaylistDialog
 import com.wavelength.music.ui.components.TrackCard
 import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.components.swipeHorizontal
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import com.wavelength.music.ui.components.TrackRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -189,6 +196,102 @@ private fun HomeContent(
             .fillMaxSize()
             .padding(padding)
     ) {
+        item {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    AssistChip(
+                        onClick = { },
+                        label = { Text("All") },
+                        leadingIcon = { Text("✓") }
+                    )
+                }
+                items(listOf("Tamil", "Hindi", "English", "Malayalam", "Telugu"), key = { it }) { language ->
+                    AssistChip(
+                        onClick = { onGenreClick(language.lowercase(), language) },
+                        label = { Text(language) }
+                    )
+                }
+            }
+        }
+
+        item { SectionHeader("Quick picks") }
+        featuredTracks.take(6).chunked(2).forEach { pair ->
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 5.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    pair.forEach { track ->
+                        QuickTrackTile(
+                            track = track,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                val index = featuredTracks.indexOfFirst { it.id == track.id }.coerceAtLeast(0)
+                                onTrackClick(index, featuredTracks)
+                            }
+                        )
+                    }
+                    if (pair.size == 1) Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+
+        val starterTracks = if (dailyMixTracks.isNotEmpty()) dailyMixTracks else featuredTracks
+        if (starterTracks.isNotEmpty()) {
+            item { SectionHeader("To get you started") }
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    itemsIndexed(starterTracks.take(10), key = { _, track -> "starter:" + track.id }) { index, track ->
+                        TrackCard(
+                            track = track,
+                            onClick = { onTrackClick(index, starterTracks) },
+                            onAddToPlaylistClick = { trackForQuickAdd = track },
+                            onMoreClick = { trackForMenu = track }
+                        )
+                    }
+                }
+            }
+        }
+
+        val startListening = if (recentlyPlayed.isNotEmpty()) recentlyPlayed else featuredTracks
+        if (startListening.isNotEmpty()) {
+            item { SectionHeader("Start listening") }
+            itemsIndexed(startListening.take(5), key = { _, track -> "start:" + track.id }) { index, track ->
+                TrackRow(
+                    track = track,
+                    onClick = { onTrackClick(index, startListening) },
+                    onAddToPlaylistClick = { trackForQuickAdd = track },
+                    onMoreClick = { trackForMenu = track }
+                )
+            }
+        }
+
+        val todayTracks = if (suggestedTracks.isNotEmpty()) suggestedTracks else featuredTracks
+        if (todayTracks.isNotEmpty()) {
+            item { SectionHeader("Recommended for today") }
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    itemsIndexed(todayTracks.take(12), key = { _, track -> "today:" + track.id }) { index, track ->
+                        TrackCard(
+                            track = track,
+                            onClick = { onTrackClick(index, todayTracks) },
+                            onAddToPlaylistClick = { trackForQuickAdd = track },
+                            onMoreClick = { trackForMenu = track }
+                        )
+                    }
+                }
+            }
+        }
+
         if (searchHistory.isNotEmpty()) {
             item { SectionHeader("Recent searches") }
             item {
@@ -300,7 +403,7 @@ private fun HomeContent(
         }
 
         if (suggestedTracks.isNotEmpty()) {
-            item { SectionHeader("Because you listened recently") }
+            item { SectionHeader("Based on your recent listening") }
             item {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
@@ -402,6 +505,54 @@ private fun PlaylistCard(playlist: PlaylistSummary, onClick: () -> Unit) {
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+
+@Composable
+private fun QuickTrackTile(
+    track: Track,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier
+            .height(58.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(6.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.88f)
+        )
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = track.albumArtUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(58.dp)
+            )
+            Column(
+                modifier = Modifier.weight(1f).padding(horizontal = 9.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    track.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    track.artistName,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
