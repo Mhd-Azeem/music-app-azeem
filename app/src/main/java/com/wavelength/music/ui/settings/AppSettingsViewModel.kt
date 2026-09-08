@@ -8,6 +8,7 @@ import com.wavelength.music.data.backup.ImportSummary
 import com.wavelength.music.data.model.DownloadsSummary
 import com.wavelength.music.data.repository.AppSettingsState
 import com.wavelength.music.data.repository.BackupRepository
+import com.wavelength.music.data.repository.BuiltInWallpaper
 import com.wavelength.music.data.repository.MusicRepository
 import com.wavelength.music.data.repository.SettingsRepository
 import com.wavelength.music.ui.theme.AppTheme
@@ -92,6 +93,10 @@ class AppSettingsViewModel @Inject constructor(
     fun applyFavoriteWallpaper(file: File) {
         viewModelScope.launch { settingsRepository.applyFavoriteWallpaper(file) }
     }
+
+    fun setBuiltInWallpaper(wallpaper: BuiltInWallpaper) = settingsRepository.setBuiltInWallpaper(wallpaper)
+
+    fun setCustomAccentArgb(argb: Int) = settingsRepository.setCustomAccentArgb(argb)
 
     fun setBackgroundOpacity(opacity: Float) = settingsRepository.setBackgroundOpacity(opacity)
 
