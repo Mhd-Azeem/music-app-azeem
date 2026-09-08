@@ -55,7 +55,9 @@ data class AppSettingsState(
     val trackTransitionDurationMs: Int = DEFAULT_TRACK_TRANSITION_DURATION_MS,
     /** Whether the Now Playing volume slider controls the device's actual media volume (the same
      * one the hardware rocker controls) instead of an app-only software gain. */
-    val syncVolumeWithSystem: Boolean = true
+    val syncVolumeWithSystem: Boolean = true,
+    /** When enabled in Liquid themes, the current track artwork fills the Now Playing backdrop. */
+    val liquidAlbumArtBackground: Boolean = true
 )
 
 const val DEFAULT_BACKGROUND_OPACITY = 0.25f
@@ -103,7 +105,8 @@ class SettingsRepository @Inject constructor(
         audioVisualizerEnabled = prefs.getBoolean(KEY_VISUALIZER, false),
         trackTransitionEnabled = prefs.getBoolean(KEY_TRACK_TRANSITION_ENABLED, true),
         trackTransitionDurationMs = prefs.getInt(KEY_TRACK_TRANSITION_DURATION, DEFAULT_TRACK_TRANSITION_DURATION_MS),
-        syncVolumeWithSystem = prefs.getBoolean(KEY_SYNC_VOLUME_WITH_SYSTEM, true)
+        syncVolumeWithSystem = prefs.getBoolean(KEY_SYNC_VOLUME_WITH_SYSTEM, true),
+        liquidAlbumArtBackground = prefs.getBoolean(KEY_LIQUID_ALBUM_ART_BACKGROUND, true)
     )
 
     fun setIconPreset(preset: IconPreset) {
@@ -278,6 +281,11 @@ class SettingsRepository @Inject constructor(
         _state.update { it.copy(syncVolumeWithSystem = enabled) }
     }
 
+    fun setLiquidAlbumArtBackground(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_LIQUID_ALBUM_ART_BACKGROUND, enabled) }
+        _state.update { it.copy(liquidAlbumArtBackground = enabled) }
+    }
+
     /** Enables the alias matching [preset] and disables the others, so exactly one launcher
      * icon is ever active at a time. */
     private fun applyIconPreset(preset: IconPreset) {
@@ -311,5 +319,6 @@ class SettingsRepository @Inject constructor(
         const val KEY_TRACK_TRANSITION_ENABLED = "track_transition_enabled"
         const val KEY_TRACK_TRANSITION_DURATION = "track_transition_duration_ms"
         const val KEY_SYNC_VOLUME_WITH_SYSTEM = "sync_volume_with_system"
+        const val KEY_LIQUID_ALBUM_ART_BACKGROUND = "liquid_album_art_background"
     }
 }
