@@ -143,7 +143,8 @@ fun NowPlayingScreen(
     audioVisualizerEnabled: Boolean = false,
     trackTransitionEnabled: Boolean = true,
     trackTransitionDurationMs: Int = 300,
-    syncVolumeWithSystem: Boolean = true
+    syncVolumeWithSystem: Boolean = true,
+    liquidAlbumArtBackground: Boolean = true
 ) {
     val trackTransitionSpec: FiniteAnimationSpec<Float> = if (trackTransitionEnabled) {
         tween(trackTransitionDurationMs)
@@ -361,11 +362,14 @@ fun NowPlayingScreen(
                 translationY = dragOffset
             }
     ) {
-        if (isLiquid) {
+        if (isLiquid && liquidAlbumArtBackground && !track?.albumArtUrl.isNullOrBlank()) {
             AsyncImage(
                 model = track?.albumArtUrl,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize().alpha(0.4f).haze(state = hazeState),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(1f)
+                    .haze(state = hazeState),
                 contentScale = ContentScale.Crop
             )
         }
