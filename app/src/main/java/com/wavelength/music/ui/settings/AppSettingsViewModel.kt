@@ -118,6 +118,9 @@ class AppSettingsViewModel @Inject constructor(
 
     fun setSyncVolumeWithSystem(enabled: Boolean) = settingsRepository.setSyncVolumeWithSystem(enabled)
 
+    fun setLiquidAlbumArtBackground(enabled: Boolean) =
+        settingsRepository.setLiquidAlbumArtBackground(enabled)
+
     fun clearAllDownloads() {
         viewModelScope.launch { repository.clearAllDownloads() }
     }
