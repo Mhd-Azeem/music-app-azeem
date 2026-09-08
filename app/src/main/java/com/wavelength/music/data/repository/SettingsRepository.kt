@@ -19,6 +19,15 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
+enum class BuiltInWallpaper(val label: String) {
+    DEFAULT("AZ Music"),
+    AURORA("Aurora"),
+    NEON("Neon Glow"),
+    SUNSET_GLOW("Sunset Glow"),
+    OCEAN_SHINE("Ocean Shine"),
+    PURPLE_SHINE("Purple Shine")
+}
+
 data class AppSettingsState(
     val iconPreset: IconPreset = IconPreset.CLASSIC,
     val theme: AppTheme = AppTheme.CLASSIC,
@@ -31,6 +40,8 @@ data class AppSettingsState(
      * boolean to `false`). */
     val backgroundVersion: Long = 0L,
     val backgroundOpacity: Float = DEFAULT_BACKGROUND_OPACITY,
+    val builtInWallpaper: BuiltInWallpaper = BuiltInWallpaper.DEFAULT,
+    val customAccentArgb: Int = DEFAULT_CUSTOM_ACCENT_ARGB,
     val expandUpNextOnScroll: Boolean = false,
     val dynamicThemeFromAlbumArt: Boolean = false,
     val vinylStyleAlbumArt: Boolean = false,
@@ -49,6 +60,7 @@ data class AppSettingsState(
 
 const val DEFAULT_BACKGROUND_OPACITY = 0.25f
 const val DEFAULT_TRACK_TRANSITION_DURATION_MS = 300
+const val DEFAULT_CUSTOM_ACCENT_ARGB: Int = 0xFF22D3EE.toInt()
 
 @Singleton
 class SettingsRepository @Inject constructor(
@@ -79,6 +91,10 @@ class SettingsRepository @Inject constructor(
         }.getOrDefault(AppTheme.CLASSIC),
         hasCustomBackground = customBackgroundFile.exists(),
         backgroundOpacity = prefs.getFloat(KEY_BACKGROUND_OPACITY, DEFAULT_BACKGROUND_OPACITY),
+        builtInWallpaper = runCatching {
+            BuiltInWallpaper.valueOf(prefs.getString(KEY_BUILT_IN_WALLPAPER, null) ?: BuiltInWallpaper.DEFAULT.name)
+        }.getOrDefault(BuiltInWallpaper.DEFAULT),
+        customAccentArgb = prefs.getInt(KEY_CUSTOM_ACCENT_ARGB, DEFAULT_CUSTOM_ACCENT_ARGB),
         expandUpNextOnScroll = prefs.getBoolean(KEY_EXPAND_UP_NEXT, false),
         dynamicThemeFromAlbumArt = prefs.getBoolean(KEY_DYNAMIC_THEME, false),
         vinylStyleAlbumArt = prefs.getBoolean(KEY_VINYL_STYLE, false),
@@ -192,6 +208,23 @@ class SettingsRepository @Inject constructor(
         }
     }
 
+    fun setBuiltInWallpaper(wallpaper: BuiltInWallpaper) {
+        prefs.edit { putString(KEY_BUILT_IN_WALLPAPER, wallpaper.name) }
+        if (customBackgroundFile.exists()) customBackgroundFile.delete()
+        _state.update {
+            it.copy(
+                builtInWallpaper = wallpaper,
+                hasCustomBackground = false,
+                backgroundVersion = System.nanoTime()
+            )
+        }
+    }
+
+    fun setCustomAccentArgb(argb: Int) {
+        prefs.edit { putInt(KEY_CUSTOM_ACCENT_ARGB, argb) }
+        _state.update { it.copy(customAccentArgb = argb) }
+    }
+
     fun setBackgroundOpacity(opacity: Float) {
         val clamped = opacity.coerceIn(0f, 1f)
         prefs.edit { putFloat(KEY_BACKGROUND_OPACITY, clamped) }
@@ -267,6 +300,8 @@ class SettingsRepository @Inject constructor(
         const val KEY_ICON = "icon_preset"
         const val KEY_THEME = "theme"
         const val KEY_BACKGROUND_OPACITY = "background_opacity"
+        const val KEY_BUILT_IN_WALLPAPER = "built_in_wallpaper"
+        const val KEY_CUSTOM_ACCENT_ARGB = "custom_accent_argb"
         const val KEY_EXPAND_UP_NEXT = "expand_up_next_on_scroll"
         const val KEY_DYNAMIC_THEME = "dynamic_theme_from_album_art"
         const val KEY_VINYL_STYLE = "vinyl_style_album_art"
