@@ -591,6 +591,29 @@ fun SettingsScreen(
                             )
                         }
                     }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Song cover as Liquid background")
+                            Text(
+                                text = if (settings.liquidAlbumArtBackground) {
+                                    "On • cover artwork shown at 100% opacity"
+                                } else {
+                                    "Off • use the normal app wallpaper instead"
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = settings.liquidAlbumArtBackground,
+                            onCheckedChange = viewModel::setLiquidAlbumArtBackground
+                        )
+                    }
                 }
             }
 
