@@ -6,7 +6,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private fun schemeFor(theme: AppTheme): ColorScheme = when (theme) {
+private fun schemeFor(theme: AppTheme, customAccent: Color? = null): ColorScheme = when (theme) {
     AppTheme.CLASSIC -> darkColorScheme(
         primary = WavelengthGreen,
         secondary = WavelengthGreenLight,
@@ -78,8 +78,8 @@ private fun schemeFor(theme: AppTheme): ColorScheme = when (theme) {
         error = WavelengthError
     )
     AppTheme.LIQUID -> darkColorScheme(
-        primary = Color(0xFF7DD3FC),
-        secondary = Color(0xFFC4B5FD),
+        primary = customAccent ?: Color(0xFF7DD3FC),
+        secondary = customAccent?.copy(alpha = 0.75f) ?: Color(0xFFC4B5FD),
         background = Color.Transparent,
         surface = Color(0xFF1C1C1E),
         surfaceVariant = Color(0xFF2A2A2C),
@@ -88,8 +88,8 @@ private fun schemeFor(theme: AppTheme): ColorScheme = when (theme) {
         error = WavelengthError
     )
     AppTheme.LIQUID_PURPLE -> darkColorScheme(
-        primary = Color(0xFFC084FC),
-        secondary = Color(0xFFF0ABFC),
+        primary = customAccent ?: Color(0xFFC084FC),
+        secondary = customAccent?.copy(alpha = 0.75f) ?: Color(0xFFF0ABFC),
         background = Color.Transparent,
         surface = Color(0xFF1C1C1E),
         surfaceVariant = Color(0xFF2A2A2C),
@@ -98,8 +98,8 @@ private fun schemeFor(theme: AppTheme): ColorScheme = when (theme) {
         error = WavelengthError
     )
     AppTheme.LIQUID_ROSE -> darkColorScheme(
-        primary = Color(0xFFFB7185),
-        secondary = Color(0xFFFDA4AF),
+        primary = customAccent ?: Color(0xFFFB7185),
+        secondary = customAccent?.copy(alpha = 0.75f) ?: Color(0xFFFDA4AF),
         background = Color.Transparent,
         surface = Color(0xFF1C1C1E),
         surfaceVariant = Color(0xFF2A2A2C),
@@ -127,9 +127,13 @@ fun AppTheme.swatchColor(): Color = when (this) {
 // Every scheme's background is transparent so the app-wide background photo (drawn once, behind
 // WavelengthNavHost in MainActivity) shows through every screen's Scaffold.
 @Composable
-fun WavelengthTheme(theme: AppTheme = AppTheme.CLASSIC, content: @Composable () -> Unit) {
+fun WavelengthTheme(
+    theme: AppTheme = AppTheme.CLASSIC,
+    customLiquidAccent: Color? = null,
+    content: @Composable () -> Unit
+) {
     MaterialTheme(
-        colorScheme = schemeFor(theme),
+        colorScheme = schemeFor(theme, if (theme.isGlass) customLiquidAccent else null),
         typography = WavelengthTypography,
         content = content
     )
