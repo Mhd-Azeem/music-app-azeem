@@ -173,7 +173,8 @@ fun WavelengthNavHost() {
             AppBackground(
                 hasCustomBackground = settings.hasCustomBackground,
                 customBackgroundFile = settingsViewModel.customBackgroundFile,
-                opacity = settings.backgroundOpacity
+                opacity = settings.backgroundOpacity,
+                builtInWallpaper = settings.builtInWallpaper
             )
             NavHost(
                 navController = navController,
