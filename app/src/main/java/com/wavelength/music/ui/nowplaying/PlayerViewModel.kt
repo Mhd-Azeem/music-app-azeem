@@ -6,6 +6,7 @@ import com.wavelength.music.data.model.LyricLine
 import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.repository.LyricsRepository
 import com.wavelength.music.data.repository.MusicRepository
+import com.wavelength.music.playback.PcmBeatAnalyzer
 import com.wavelength.music.playback.PlaybackUiState
 import com.wavelength.music.playback.PlayerController
 import com.wavelength.music.playback.SleepTimerController
@@ -31,6 +32,7 @@ class PlayerViewModel @Inject constructor(
     private val repository: MusicRepository,
     private val sleepTimerController: SleepTimerController,
     private val visualizerController: VisualizerController,
+    private val pcmBeatAnalyzer: PcmBeatAnalyzer,
     private val systemVolumeController: SystemVolumeController,
     private val lyricsRepository: LyricsRepository
 ) : ViewModel() {
@@ -42,6 +44,7 @@ class PlayerViewModel @Inject constructor(
     val visualizerWaveform: StateFlow<ByteArray?> = visualizerController.waveform
     val visualizerFft: StateFlow<ByteArray?> = visualizerController.fft
     val visualizerSamplingRateHz: StateFlow<Int> = visualizerController.samplingRateHz
+    val pcmBeatPulse: StateFlow<PcmBeatAnalyzer.BeatPulse> = pcmBeatAnalyzer.beatPulse
     val systemVolume: StateFlow<Float> = systemVolumeController.volume
 
     private val _lyrics = MutableStateFlow<ScreenState<List<LyricLine>>>(ScreenState.Empty)
