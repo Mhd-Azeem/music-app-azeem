@@ -1,1 +1,0 @@
-Build trigger for updater + Parallax/Beat Bounce fix commit fcaadb08fa9f256dfc3bc89f9b1481606e11081d.
