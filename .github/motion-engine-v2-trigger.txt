@@ -1,0 +1,1 @@
+Apply rotation-vector parallax and FFT beat-onset detection.
