@@ -205,10 +205,13 @@ fun NowPlayingScreen(
         }
     }
 
-    // Physical parallax only: use the phone's orientation sensor and calibrate the current
-    // holding angle as neutral when the effect is enabled. There is no timer-driven fallback.
+    // Spatial parallax: calibrated physical orientation plus gyroscope angular velocity.
+    // The album art is deliberately rendered smaller while active so the extra movement has
+    // breathing room, similar to the spatial/depth motion used by iPhone artwork effects.
     var sensorTiltX by remember { mutableFloatStateOf(0f) }
     var sensorTiltY by remember { mutableFloatStateOf(0f) }
+    var sensorGyroX by remember { mutableFloatStateOf(0f) }
+    var sensorGyroY by remember { mutableFloatStateOf(0f) }
     DisposableEffect(parallaxAlbumArt, context) {
         val sensorManager = context.getSystemService(android.content.Context.SENSOR_SERVICE) as SensorManager
         val rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)
@@ -216,6 +219,7 @@ fun NowPlayingScreen(
         val gravityFallback = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY)
             ?: sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         val motionSensor = rotationSensor ?: gravityFallback
+        val gyroSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
 
         val listener = object : SensorEventListener {
             private var baselinePitch: Float? = null
@@ -224,6 +228,8 @@ fun NowPlayingScreen(
             private var baselineGravityY: Float? = null
             private var filteredX = 0f
             private var filteredY = 0f
+            private var filteredGyroX = 0f
+            private var filteredGyroY = 0f
             private val rotationMatrix = FloatArray(9)
             private val orientation = FloatArray(3)
 
@@ -239,6 +245,19 @@ fun NowPlayingScreen(
             override fun onSensorChanged(event: SensorEvent) {
                 if (!parallaxAlbumArt) return
 
+                if (event.sensor.type == Sensor.TYPE_GYROSCOPE && event.values.size >= 2) {
+                    // Angular velocity gives the artwork a responsive inertial nudge while the
+                    // phone is being moved. When motion stops the sensor itself reports ~0, so
+                    // this is still entirely physical input rather than an artificial animation.
+                    val gx = (event.values[1] / 2.2f).coerceIn(-1.35f, 1.35f)
+                    val gy = (-event.values[0] / 2.2f).coerceIn(-1.35f, 1.35f)
+                    filteredGyroX += (gx - filteredGyroX) * 0.46f
+                    filteredGyroY += (gy - filteredGyroY) * 0.46f
+                    sensorGyroX = filteredGyroX
+                    sensorGyroY = filteredGyroY
+                    return
+                }
+
                 val targetX: Float
                 val targetY: Float
                 if (event.sensor.type == Sensor.TYPE_GAME_ROTATION_VECTOR ||
@@ -253,9 +272,11 @@ fun NowPlayingScreen(
                         baselineRoll = roll
                         return
                     }
-                    val maxTiltRad = Math.toRadians(14.0).toFloat()
-                    targetX = (angularDelta(roll, baselineRoll!!) / maxTiltRad).coerceIn(-1f, 1f)
-                    targetY = (angularDelta(pitch, baselinePitch!!) / maxTiltRad).coerceIn(-1f, 1f)
+                    // Reach full depth movement with about 8 degrees of phone tilt. This is
+                    // intentionally much more sensitive than the previous gentle 14-degree range.
+                    val maxTiltRad = Math.toRadians(8.0).toFloat()
+                    targetX = (angularDelta(roll, baselineRoll!!) / maxTiltRad).coerceIn(-1.2f, 1.2f)
+                    targetY = (angularDelta(pitch, baselinePitch!!) / maxTiltRad).coerceIn(-1.2f, 1.2f)
                 } else {
                     if (event.values.size < 2) return
                     val gx = (event.values[0] / 9.81f).coerceIn(-1f, 1f)
@@ -265,13 +286,12 @@ fun NowPlayingScreen(
                         baselineGravityY = gy
                         return
                     }
-                    targetX = ((gx - baselineGravityX!!) * 2.4f).coerceIn(-1f, 1f)
-                    targetY = ((gy - baselineGravityY!!) * 2.4f).coerceIn(-1f, 1f)
+                    targetX = ((gx - baselineGravityX!!) * 3.8f).coerceIn(-1.2f, 1.2f)
+                    targetY = ((gy - baselineGravityY!!) * 3.8f).coerceIn(-1.2f, 1.2f)
                 }
 
-                // Smooth sensor noise while still following hand movement immediately.
-                filteredX += (targetX - filteredX) * 0.28f
-                filteredY += (targetY - filteredY) * 0.28f
+                filteredX += (targetX - filteredX) * 0.40f
+                filteredY += (targetY - filteredY) * 0.40f
                 sensorTiltX = filteredX
                 sensorTiltY = filteredY
             }
@@ -282,10 +302,15 @@ fun NowPlayingScreen(
         if (parallaxAlbumArt && motionSensor != null) {
             sensorManager.registerListener(listener, motionSensor, SensorManager.SENSOR_DELAY_GAME)
         }
+        if (parallaxAlbumArt && gyroSensor != null) {
+            sensorManager.registerListener(listener, gyroSensor, SensorManager.SENSOR_DELAY_GAME)
+        }
         onDispose {
             sensorManager.unregisterListener(listener)
             sensorTiltX = 0f
             sensorTiltY = 0f
+            sensorGyroX = 0f
+            sensorGyroY = 0f
         }
     }
 
@@ -335,11 +360,13 @@ fun NowPlayingScreen(
         onDispose { viewModel.setVisualizerCaptureEnabled(false) }
     }
 
-    // FFT-based bass/onset detector. It measures real spectral energy around kick/bass
-    // frequencies and compares each frame with an adaptive baseline plus positive spectral flux.
-    // No BPM clock, delay loop or synthetic pulse is used.
-    val beatDetectorState = remember { floatArrayOf(0f, 0f, 0f) } // avgBass, avgFlux, previousBass
+    // Hybrid real-audio beat detector. FFT detects kick/bass onsets when available; waveform
+    // energy provides a device-compatible fallback if a vendor does not deliver FFT callbacks.
+    // Both paths share one refractory timer so a single beat cannot double-trigger the bounce.
+    val beatDetectorState = remember { floatArrayOf(0f, 0f, 0f, 0f, 0f) }
+    // 0 avgBass, 1 avgFlux, 2 previousBass, 3 avgRms, 4 previousRms
     val lastBeatAtMs = remember { longArrayOf(0L) }
+
     LaunchedEffect(visualizerFft, visualizerSamplingRateHz, beatBounceAlbumArt, state.isPlaying) {
         val fft = visualizerFft
         if (!beatBounceAlbumArt || !state.isPlaying || fft == null || fft.size < 64) {
@@ -353,10 +380,9 @@ fun NowPlayingScreen(
         var lowMidMagnitudeSum = 0.0
         var lowMidBins = 0
 
-        // Android Visualizer packs FFT bins as real/imaginary byte pairs at 2*k, 2*k+1.
         for (bin in 1 until captureSize / 2) {
             val frequencyHz = bin.toFloat() * sampleRate.toFloat() / captureSize.toFloat()
-            if (frequencyHz > 420f) break
+            if (frequencyHz > 520f) break
             val reIndex = bin * 2
             val imIndex = reIndex + 1
             if (imIndex >= fft.size) break
@@ -364,11 +390,11 @@ fun NowPlayingScreen(
             val im = fft[imIndex].toInt().toFloat()
             val magnitude = kotlin.math.sqrt(re * re + im * im)
             when {
-                frequencyHz in 42f..190f -> {
+                frequencyHz in 35f..220f -> {
                     bassMagnitudeSum += magnitude
                     bassBins++
                 }
-                frequencyHz in 190f..420f -> {
+                frequencyHz in 220f..520f -> {
                     lowMidMagnitudeSum += magnitude
                     lowMidBins++
                 }
@@ -383,33 +409,68 @@ fun NowPlayingScreen(
         var avgFlux = beatDetectorState[1]
         val previousBass = beatDetectorState[2]
         if (avgBass <= 0f) avgBass = bass.coerceAtLeast(1f)
-
         val flux = (bass - previousBass).coerceAtLeast(0f)
-        if (avgFlux <= 0f) avgFlux = flux.coerceAtLeast(0.5f)
+        if (avgFlux <= 0f) avgFlux = flux.coerceAtLeast(0.35f)
 
         val bassRatio = bass / avgBass.coerceAtLeast(1f)
-        val fluxRatio = flux / avgFlux.coerceAtLeast(0.5f)
+        val fluxRatio = flux / avgFlux.coerceAtLeast(0.35f)
         val tonalContrast = bass / (lowMid + 1f)
         val now = SystemClock.elapsedRealtime()
+        val isBeat = bassRatio >= 1.10f &&
+            fluxRatio >= 1.16f &&
+            bass >= 2.0f &&
+            tonalContrast >= 0.52f &&
+            now - lastBeatAtMs[0] >= 125L
 
-        val isBeat = bassRatio >= 1.20f &&
-            fluxRatio >= 1.32f &&
-            bass >= 3.5f &&
-            tonalContrast >= 0.72f &&
-            now - lastBeatAtMs[0] >= 155L
-
-        // Slow adaptation keeps the threshold tied to the current song rather than volume level.
-        val clippedBass = minOf(bass, avgBass * 1.35f)
-        val clippedFlux = minOf(flux, avgFlux * 1.8f)
-        beatDetectorState[0] = avgBass * 0.94f + clippedBass * 0.06f
-        beatDetectorState[1] = avgFlux * 0.90f + clippedFlux * 0.10f
+        val clippedBass = minOf(bass, avgBass * 1.45f)
+        val clippedFlux = minOf(flux, avgFlux * 2.1f)
+        beatDetectorState[0] = avgBass * 0.95f + clippedBass * 0.05f
+        beatDetectorState[1] = avgFlux * 0.91f + clippedFlux * 0.09f
         beatDetectorState[2] = bass
 
         if (isBeat) {
             lastBeatAtMs[0] = now
-            // Stronger detected bass onsets create a slightly stronger physical-looking pulse.
-            beatPulseAmount = (0.055f + (bassRatio - 1.20f) * 0.08f)
-                .coerceIn(0.055f, 0.13f)
+            beatPulseAmount = (0.060f + (bassRatio - 1.10f) * 0.10f)
+                .coerceIn(0.060f, 0.145f)
+            beatPulseSequence++
+        }
+    }
+
+    LaunchedEffect(visualizerWaveform, beatBounceAlbumArt, state.isPlaying) {
+        val waveform = visualizerWaveform
+        if (!beatBounceAlbumArt || !state.isPlaying || waveform == null || waveform.size < 32) {
+            return@LaunchedEffect
+        }
+
+        var squareSum = 0.0
+        var peak = 0f
+        waveform.forEach { sample ->
+            val centered = (((sample.toInt() and 0xFF) - 128) / 128f)
+            val a = kotlin.math.abs(centered)
+            squareSum += (centered * centered).toDouble()
+            if (a > peak) peak = a
+        }
+        val rms = kotlin.math.sqrt(squareSum / waveform.size).toFloat()
+        var avgRms = beatDetectorState[3]
+        val previousRms = beatDetectorState[4]
+        if (avgRms <= 0f) avgRms = rms.coerceAtLeast(0.008f)
+        val rise = (rms - previousRms).coerceAtLeast(0f)
+        val ratio = rms / avgRms.coerceAtLeast(0.008f)
+        val now = SystemClock.elapsedRealtime()
+
+        val waveformBeat = ratio >= 1.13f &&
+            rise >= maxOf(0.006f, avgRms * 0.08f) &&
+            peak >= 0.20f &&
+            now - lastBeatAtMs[0] >= 125L
+
+        val clippedRms = minOf(rms, avgRms * 1.35f)
+        beatDetectorState[3] = avgRms * 0.94f + clippedRms * 0.06f
+        beatDetectorState[4] = rms
+
+        if (waveformBeat) {
+            lastBeatAtMs[0] = now
+            beatPulseAmount = (0.058f + (ratio - 1.13f) * 0.12f)
+                .coerceIn(0.058f, 0.135f)
             beatPulseSequence++
         }
     }
@@ -657,13 +718,15 @@ fun NowPlayingScreen(
                                             .fillMaxSize()
                                             .graphicsLayer {
                                                 rotationZ = if (vinylStyleAlbumArt) vinylAngle.value else 0f
-                                                rotationX = if (parallaxAlbumArt) sensorTiltY * 5.5f else 0f
-                                                rotationY = if (parallaxAlbumArt) -sensorTiltX * 7.5f else 0f
-                                                translationX = if (parallaxAlbumArt) sensorTiltX * 12f else 0f
-                                                translationY = if (parallaxAlbumArt) sensorTiltY * 8f else 0f
+                                                val spatialX = (sensorTiltX + sensorGyroX * 0.45f).coerceIn(-1.35f, 1.35f)
+                                                val spatialY = (sensorTiltY + sensorGyroY * 0.45f).coerceIn(-1.35f, 1.35f)
+                                                rotationX = if (parallaxAlbumArt) spatialY * 11f else 0f
+                                                rotationY = if (parallaxAlbumArt) -spatialX * 14f else 0f
+                                                translationX = if (parallaxAlbumArt) spatialX * 28f else 0f
+                                                translationY = if (parallaxAlbumArt) spatialY * 22f else 0f
                                                 val motionScale = when {
                                                     beatBounceAlbumArt -> beatBounceScale.value
-                                                    parallaxAlbumArt -> 1.025f
+                                                    parallaxAlbumArt -> 0.90f
                                                     else -> 1f
                                                 }
                                                 scaleX = motionScale
@@ -692,13 +755,15 @@ fun NowPlayingScreen(
                                         .fillMaxWidth()
                                         .aspectRatio(1f)
                                         .graphicsLayer {
-                                            rotationX = if (parallaxAlbumArt) sensorTiltY * 5.5f else 0f
-                                            rotationY = if (parallaxAlbumArt) -sensorTiltX * 7.5f else 0f
-                                            translationX = if (parallaxAlbumArt) sensorTiltX * 12f else 0f
-                                            translationY = if (parallaxAlbumArt) sensorTiltY * 8f else 0f
+                                            val spatialX = (sensorTiltX + sensorGyroX * 0.45f).coerceIn(-1.35f, 1.35f)
+                                            val spatialY = (sensorTiltY + sensorGyroY * 0.45f).coerceIn(-1.35f, 1.35f)
+                                            rotationX = if (parallaxAlbumArt) spatialY * 11f else 0f
+                                            rotationY = if (parallaxAlbumArt) -spatialX * 14f else 0f
+                                            translationX = if (parallaxAlbumArt) spatialX * 28f else 0f
+                                            translationY = if (parallaxAlbumArt) spatialY * 22f else 0f
                                             val motionScale = when {
                                                 beatBounceAlbumArt -> beatBounceScale.value
-                                                parallaxAlbumArt -> 1.03f
+                                                parallaxAlbumArt -> 0.90f
                                                 else -> 1f
                                             }
                                             scaleX = motionScale

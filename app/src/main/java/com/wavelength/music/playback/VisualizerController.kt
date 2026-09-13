@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Wraps [Visualizer] for live waveform and FFT capture from the active playback session. */
+/** Wraps [Visualizer] for live waveform and FFT capture from playback. */
 @Singleton
 class VisualizerController @Inject constructor() {
     private var visualizer: Visualizer? = null
@@ -28,65 +28,78 @@ class VisualizerController @Inject constructor() {
 
     fun onAudioSessionIdChanged(sessionId: Int) {
         if (sessionId == currentSessionId && visualizer != null) return
-        release()
+        releaseVisualizerOnly()
         currentSessionId = sessionId
         attachIfReady()
     }
 
-    /** Enable capture only while a UI feature needs live playback analysis. */
     fun setCaptureEnabled(enabled: Boolean) {
         captureEnabled = enabled
-        if (enabled) {
-            attachIfReady()
-        } else {
-            release()
-        }
+        if (enabled) attachIfReady() else release()
     }
 
     private fun attachIfReady() {
-        if (!captureEnabled || currentSessionId == 0 || visualizer != null) return
+        if (!captureEnabled || visualizer != null) return
 
-        runCatching {
-            val v = Visualizer(currentSessionId)
-            v.captureSize = Visualizer.getCaptureSizeRange()[1]
-            v.setDataCaptureListener(
-                object : Visualizer.OnDataCaptureListener {
-                    override fun onWaveFormDataCapture(
-                        visualizer: Visualizer?,
-                        waveform: ByteArray?,
-                        samplingRate: Int
-                    ) {
-                        // Android reports this sampling rate in milliHertz.
-                        _samplingRateHz.value = (samplingRate / 1000).coerceAtLeast(1)
-                        _waveform.value = waveform?.copyOf()
-                    }
+        // Prefer ExoPlayer's own audio session. Some vendor audio stacks reject Visualizer on
+        // that session; in that case retry session 0 (the device output mix) so Beat Bounce still
+        // receives real audio. Session 0 is why MODIFY_AUDIO_SETTINGS is declared in the manifest.
+        val candidates = buildList {
+            if (currentSessionId > 0) add(currentSessionId)
+            add(0)
+        }.distinct()
 
-                    override fun onFftDataCapture(
-                        visualizer: Visualizer?,
-                        fft: ByteArray?,
-                        samplingRate: Int
-                    ) {
-                        _samplingRateHz.value = (samplingRate / 1000).coerceAtLeast(1)
-                        _fft.value = fft?.copyOf()
-                    }
-                },
-                Visualizer.getMaxCaptureRate() / 2,
-                true,
+        for (sessionId in candidates) {
+            val attached = runCatching {
+                val v = Visualizer(sessionId)
+                v.enabled = false
+                v.captureSize = Visualizer.getCaptureSizeRange()[1]
+                v.scalingMode = Visualizer.SCALING_MODE_NORMALIZED
+                val result = v.setDataCaptureListener(
+                    object : Visualizer.OnDataCaptureListener {
+                        override fun onWaveFormDataCapture(
+                            visualizer: Visualizer?, waveform: ByteArray?, samplingRate: Int
+                        ) {
+                            _samplingRateHz.value = (samplingRate / 1000).coerceAtLeast(1)
+                            _waveform.value = waveform?.copyOf()
+                        }
+
+                        override fun onFftDataCapture(
+                            visualizer: Visualizer?, fft: ByteArray?, samplingRate: Int
+                        ) {
+                            _samplingRateHz.value = (samplingRate / 1000).coerceAtLeast(1)
+                            _fft.value = fft?.copyOf()
+                        }
+                    },
+                    Visualizer.getMaxCaptureRate(),
+                    true,
+                    true
+                )
+                check(result == Visualizer.SUCCESS) { "Visualizer listener error: $result" }
+                v.enabled = true
+                visualizer = v
                 true
-            )
-            v.enabled = true
-            visualizer = v
-            _isSupported.value = true
-        }.onFailure {
-            _isSupported.value = false
-            _waveform.value = null
-            _fft.value = null
+            }.getOrElse { false }
+
+            if (attached) {
+                _isSupported.value = true
+                return
+            }
         }
+
+        _isSupported.value = false
+        _waveform.value = null
+        _fft.value = null
+    }
+
+    private fun releaseVisualizerOnly() {
+        runCatching { visualizer?.enabled = false }
+        runCatching { visualizer?.release() }
+        visualizer = null
     }
 
     private fun release() {
-        runCatching { visualizer?.release() }
-        visualizer = null
+        releaseVisualizerOnly()
         _waveform.value = null
         _fft.value = null
     }
