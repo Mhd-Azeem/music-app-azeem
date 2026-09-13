@@ -1,0 +1,80 @@
+name: Fix Updater And Album Motion
+
+on:
+  push:
+    branches:
+      - feature/email-activation-access
+    paths:
+      - .github/workflows/fix-updater-motion.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feature/email-activation-access
+      - name: Patch updater and album motion
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f"Pattern not found in {path}: {old[:100]!r}")
+              p.write_text(text.replace(old, new, 1))
+
+          main = 'app/src/main/java/com/wavelength/music/MainActivity.kt'
+
+          replace_once(main,
+          '''    private val updaterClient by lazy { OkHttpClient() }\n\n    override fun onCreate''',
+          '''    private val updaterClient by lazy { OkHttpClient() }\n    private val updaterPrefs by lazy {\n        getSharedPreferences("azmusic_updater", Context.MODE_PRIVATE)\n    }\n\n    override fun onCreate''')
+
+          replace_once(main,
+          '''                                if (canInstallPackages()) {\n                                    downloadAndInstall(available)\n                                    updateDismissed = true\n                                } else {\n                                    openUnknownAppsSettings()\n                                }''',
+          '''                                if (canInstallPackages()) {\n                                    downloadAndInstall(available)\n                                } else {\n                                    updaterPrefs.edit()\n                                        .putString(KEY_PENDING_APK_URL, available.apkUrl)\n                                        .putLong(KEY_PENDING_BUILD_NUMBER, available.buildNumber)\n                                        .apply()\n                                    openUnknownAppsSettings()\n                                }\n                                updateDismissed = true''')
+
+          replace_once(main,
+          '''    }\n\n    private suspend fun checkForUpdate(): UpdateInfo?''',
+          '''    }\n\n    override fun onResume() {\n        super.onResume()\n        if (!canInstallPackages()) return\n\n        val pendingDownloadId = updaterPrefs.getLong(KEY_PENDING_DOWNLOAD_ID, -1L)\n        if (pendingDownloadId != -1L) {\n            tryLaunchDownloadedUpdate(pendingDownloadId)\n            return\n        }\n\n        val pendingUrl = updaterPrefs.getString(KEY_PENDING_APK_URL, null)\n        val pendingBuild = updaterPrefs.getLong(KEY_PENDING_BUILD_NUMBER, -1L)\n        if (!pendingUrl.isNullOrBlank() && pendingBuild > 0L) {\n            updaterPrefs.edit()\n                .remove(KEY_PENDING_APK_URL)\n                .remove(KEY_PENDING_BUILD_NUMBER)\n                .apply()\n            downloadAndInstall(UpdateInfo(pendingBuild, pendingUrl))\n        }\n    }\n\n    private suspend fun checkForUpdate(): UpdateInfo?''')
+
+          replace_once(main,
+          '''        val downloadId = downloadManager.enqueue(request)\n        Toast.makeText(this, "AzMusic update downloading…", Toast.LENGTH_SHORT).show()''',
+          '''        val downloadId = downloadManager.enqueue(request)\n        updaterPrefs.edit().putLong(KEY_PENDING_DOWNLOAD_ID, downloadId).apply()\n        Toast.makeText(this, "AzMusic update downloading…", Toast.LENGTH_SHORT).show()''')
+
+          replace_once(main,
+          '''                val uri = downloadManager.getUriForDownloadedFile(downloadId)\n                if (uri == null) {\n                    Toast.makeText(\n                        this@MainActivity,\n                        "Update download failed. Please try again.",\n                        Toast.LENGTH_LONG\n                    ).show()\n                    return\n                }\n\n                val installIntent = Intent(Intent.ACTION_VIEW).apply {\n                    setDataAndType(uri, "application/vnd.android.package-archive")\n                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)\n                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)\n                }\n                startActivity(installIntent)''',
+          '''                tryLaunchDownloadedUpdate(downloadId)''')
+
+          replace_once(main,
+          '''    private data class UpdateInfo(\n        val buildNumber: Long,\n        val apkUrl: String\n    )''',
+          '''    private fun tryLaunchDownloadedUpdate(downloadId: Long): Boolean {\n        val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager\n        val cursor = downloadManager.query(DownloadManager.Query().setFilterById(downloadId))\n            ?: return false\n\n        cursor.use {\n            if (!it.moveToFirst()) return false\n            val statusColumn = it.getColumnIndex(DownloadManager.COLUMN_STATUS)\n            if (statusColumn < 0) return false\n\n            when (it.getInt(statusColumn)) {\n                DownloadManager.STATUS_SUCCESSFUL -> {\n                    val uri = downloadManager.getUriForDownloadedFile(downloadId) ?: return false\n                    updaterPrefs.edit().remove(KEY_PENDING_DOWNLOAD_ID).apply()\n                    launchPackageInstaller(uri)\n                    return true\n                }\n                DownloadManager.STATUS_FAILED -> {\n                    updaterPrefs.edit().remove(KEY_PENDING_DOWNLOAD_ID).apply()\n                    Toast.makeText(\n                        this,\n                        "Update download failed. Please try again.",\n                        Toast.LENGTH_LONG\n                    ).show()\n                }\n            }\n        }\n        return false\n    }\n\n    private fun launchPackageInstaller(uri: Uri) {\n        val installIntent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {\n            data = uri\n            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)\n            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)\n        }\n        runCatching {\n            startActivity(installIntent)\n        }.recoverCatching {\n            startActivity(\n                Intent(Intent.ACTION_VIEW).apply {\n                    setDataAndType(uri, "application/vnd.android.package-archive")\n                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)\n                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)\n                }\n            )\n        }.onFailure {\n            Toast.makeText(\n                this,\n                "Download finished. Tap the completed AzMusic download to install it.",\n                Toast.LENGTH_LONG\n            ).show()\n        }\n    }\n\n    private data class UpdateInfo(\n        val buildNumber: Long,\n        val apkUrl: String\n    )\n\n    private companion object {\n        const val KEY_PENDING_DOWNLOAD_ID = "pending_update_download_id"\n        const val KEY_PENDING_APK_URL = "pending_update_apk_url"\n        const val KEY_PENDING_BUILD_NUMBER = "pending_update_build_number"\n    }''')
+
+          now = 'app/src/main/java/com/wavelength/music/ui/nowplaying/NowPlayingScreen.kt'
+          replace_once(now,
+          '''                                    modifier = Modifier\n                                        .fillMaxWidth()\n                                        .aspectRatio(1f)\n                                        .clip(RoundedCornerShape(12.dp))\n                                        .background(MaterialTheme.colorScheme.surfaceVariant)''',
+          '''                                    modifier = Modifier\n                                        .fillMaxWidth()\n                                        .aspectRatio(1f)\n                                        .graphicsLayer {\n                                            rotationX = if (parallaxAlbumArt) parallaxPhase.value * 4.5f else 0f\n                                            rotationY = if (parallaxAlbumArt) -parallaxPhase.value * 7f else 0f\n                                            val motionScale = when {\n                                                beatBounceAlbumArt -> beatBounceScale.value\n                                                parallaxAlbumArt -> 1.03f\n                                                else -> 1f\n                                            }\n                                            scaleX = motionScale\n                                            scaleY = motionScale\n                                            cameraDistance = 24f\n                                        }\n                                        .clip(RoundedCornerShape(12.dp))\n                                        .background(MaterialTheme.colorScheme.surfaceVariant)''')
+
+          replace_once(now,
+          '''                    1.045f,\n                    animationSpec = tween(durationMillis = 105, easing = LinearEasing)''',
+          '''                    1.065f,\n                    animationSpec = tween(durationMillis = 115, easing = LinearEasing)''')
+
+          print('Updater and album-motion fixes applied.')
+          PY
+
+      - name: Commit fixes and remove temporary patch files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -f .github/workflows/fix-updater-motion.yml || true
+          git rm -f .github/workflows/apply-album-motion.yml || true
+          git rm -f .github/scripts/apply_album_motion.py || true
+          git add app/src/main/java/com/wavelength/music/MainActivity.kt app/src/main/java/com/wavelength/music/ui/nowplaying/NowPlayingScreen.kt
+          git commit -m "fix: reliably launch updater and album motion styles"
+          git push origin HEAD:feature/email-activation-access
