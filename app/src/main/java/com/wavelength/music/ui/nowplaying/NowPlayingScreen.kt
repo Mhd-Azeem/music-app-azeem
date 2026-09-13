@@ -3,6 +3,11 @@ package com.wavelength.music.ui.nowplaying
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.drawable.BitmapDrawable
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.os.SystemClock
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -200,45 +205,62 @@ fun NowPlayingScreen(
         }
     }
 
-    // Subtle 3D parallax: a slow, premium floating tilt rather than a distracting wobble.
-    val parallaxPhase = remember { Animatable(0f) }
-    LaunchedEffect(parallaxAlbumArt, state.isPlaying) {
-        if (parallaxAlbumArt && state.isPlaying) {
-            while (true) {
-                parallaxPhase.animateTo(
-                    1f,
-                    animationSpec = tween(durationMillis = 1700, easing = LinearEasing)
-                )
-                parallaxPhase.animateTo(
-                    -1f,
-                    animationSpec = tween(durationMillis = 1700, easing = LinearEasing)
-                )
+    // Real sensor-driven parallax. Prefer the gravity sensor (stable, already filtered by
+    // Android), then fall back to the accelerometer on devices without TYPE_GRAVITY.
+    var sensorTiltX by remember { mutableFloatStateOf(0f) }
+    var sensorTiltY by remember { mutableFloatStateOf(0f) }
+    DisposableEffect(parallaxAlbumArt, context) {
+        val sensorManager = context.getSystemService(android.content.Context.SENSOR_SERVICE) as SensorManager
+        val motionSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY)
+            ?: sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        val listener = object : SensorEventListener {
+            private var filteredX = 0f
+            private var filteredY = 0f
+
+            override fun onSensorChanged(event: SensorEvent) {
+                if (!parallaxAlbumArt || event.values.size < 2) return
+                // Normalize gravity to roughly -1..1 and low-pass it so the art follows the
+                // phone naturally without jittering from tiny hand movements.
+                val nx = (event.values[0] / 9.81f).coerceIn(-1f, 1f)
+                val ny = (event.values[1] / 9.81f).coerceIn(-1f, 1f)
+                filteredX += (nx - filteredX) * 0.16f
+                filteredY += (ny - filteredY) * 0.16f
+                sensorTiltX = filteredX
+                sensorTiltY = filteredY
             }
-        } else {
-            parallaxPhase.animateTo(0f, animationSpec = tween(220))
+
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+        }
+
+        if (parallaxAlbumArt && motionSensor != null) {
+            sensorManager.registerListener(listener, motionSensor, SensorManager.SENSOR_DELAY_GAME)
+        }
+        onDispose {
+            sensorManager.unregisterListener(listener)
+            sensorTiltX = 0f
+            sensorTiltY = 0f
         }
     }
 
-    // Neat beat-bounce style: compact pulse with a soft spring return while music is playing.
+    // Scale is animated only when the live audio detector below reports a real transient.
     val beatBounceScale = remember { Animatable(1f) }
-    LaunchedEffect(beatBounceAlbumArt, state.isPlaying) {
-        if (beatBounceAlbumArt && state.isPlaying) {
-            while (true) {
-                beatBounceScale.animateTo(
-                    1.065f,
-                    animationSpec = tween(durationMillis = 115, easing = LinearEasing)
+    var beatPulseSequence by remember { mutableStateOf(0L) }
+    LaunchedEffect(beatPulseSequence, beatBounceAlbumArt, state.isPlaying) {
+        if (beatBounceAlbumArt && state.isPlaying && beatPulseSequence > 0L) {
+            beatBounceScale.snapTo(1f)
+            beatBounceScale.animateTo(
+                1.085f,
+                animationSpec = tween(durationMillis = 70, easing = LinearEasing)
+            )
+            beatBounceScale.animateTo(
+                1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessHigh
                 )
-                beatBounceScale.animateTo(
-                    1f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMedium
-                    )
-                )
-                kotlinx.coroutines.delay(300)
-            }
-        } else {
-            beatBounceScale.animateTo(1f, animationSpec = tween(180))
+            )
+        } else if (!beatBounceAlbumArt || !state.isPlaying) {
+            beatBounceScale.animateTo(1f, animationSpec = tween(140))
         }
     }
 
@@ -251,15 +273,52 @@ fun NowPlayingScreen(
     val recordAudioPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted -> hasRecordAudioPermission = granted }
-    LaunchedEffect(audioVisualizerEnabled, hasRecordAudioPermission) {
-        if (audioVisualizerEnabled && !hasRecordAudioPermission) {
+    val needsAudioCapture = audioVisualizerEnabled || beatBounceAlbumArt
+    LaunchedEffect(needsAudioCapture, hasRecordAudioPermission) {
+        if (needsAudioCapture && !hasRecordAudioPermission) {
             recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
     val visualizerWaveform by viewModel.visualizerWaveform.collectAsStateWithLifecycle()
-    DisposableEffect(audioVisualizerEnabled, hasRecordAudioPermission) {
-        viewModel.setVisualizerCaptureEnabled(audioVisualizerEnabled && hasRecordAudioPermission)
+    DisposableEffect(needsAudioCapture, hasRecordAudioPermission) {
+        viewModel.setVisualizerCaptureEnabled(needsAudioCapture && hasRecordAudioPermission)
         onDispose { viewModel.setVisualizerCaptureEnabled(false) }
+    }
+
+    // Real beat detection from the currently playing audio. Visualizer waveform samples are
+    // unsigned 8-bit PCM centered at 128. RMS gives short-term energy; an adaptive baseline
+    // follows song loudness, so a bounce fires on transients instead of a fixed timer.
+    val beatDetectorState = remember { floatArrayOf(0.035f) }
+    val lastBeatAtMs = remember { longArrayOf(0L) }
+    LaunchedEffect(visualizerWaveform, beatBounceAlbumArt, state.isPlaying) {
+        val waveform = visualizerWaveform
+        if (!beatBounceAlbumArt || !state.isPlaying || waveform == null || waveform.size < 32) {
+            return@LaunchedEffect
+        }
+
+        var squareSum = 0.0
+        var peak = 0f
+        waveform.forEach { sample ->
+            val centered = (((sample.toInt() and 0xFF) - 128) / 128f)
+            val absolute = kotlin.math.abs(centered)
+            squareSum += (centered * centered).toDouble()
+            if (absolute > peak) peak = absolute
+        }
+        val rms = kotlin.math.sqrt(squareSum / waveform.size).toFloat()
+        val baseline = beatDetectorState[0].coerceAtLeast(0.015f)
+        val threshold = maxOf(0.055f, baseline * 1.38f)
+        val now = SystemClock.elapsedRealtime()
+        val isTransientBeat = rms > threshold && peak > 0.25f && now - lastBeatAtMs[0] >= 170L
+
+        // Do not let a loud beat immediately drag the baseline up to itself. This keeps the
+        // detector sensitive to the next rhythmic transient while still adapting across songs.
+        val baselineSample = minOf(rms, baseline * 1.22f)
+        beatDetectorState[0] = baseline * 0.92f + baselineSample * 0.08f
+
+        if (isTransientBeat) {
+            lastBeatAtMs[0] = now
+            beatPulseSequence++
+        }
     }
 
     val lyricsState by viewModel.lyrics.collectAsStateWithLifecycle()
@@ -505,8 +564,10 @@ fun NowPlayingScreen(
                                             .fillMaxSize()
                                             .graphicsLayer {
                                                 rotationZ = if (vinylStyleAlbumArt) vinylAngle.value else 0f
-                                                rotationX = if (parallaxAlbumArt) parallaxPhase.value * 3.2f else 0f
-                                                rotationY = if (parallaxAlbumArt) -parallaxPhase.value * 5.2f else 0f
+                                                rotationX = if (parallaxAlbumArt) sensorTiltY * 5.5f else 0f
+                                                rotationY = if (parallaxAlbumArt) -sensorTiltX * 7.5f else 0f
+                                                translationX = if (parallaxAlbumArt) sensorTiltX * 12f else 0f
+                                                translationY = if (parallaxAlbumArt) sensorTiltY * 8f else 0f
                                                 val motionScale = when {
                                                     beatBounceAlbumArt -> beatBounceScale.value
                                                     parallaxAlbumArt -> 1.025f
@@ -538,8 +599,10 @@ fun NowPlayingScreen(
                                         .fillMaxWidth()
                                         .aspectRatio(1f)
                                         .graphicsLayer {
-                                            rotationX = if (parallaxAlbumArt) parallaxPhase.value * 4.5f else 0f
-                                            rotationY = if (parallaxAlbumArt) -parallaxPhase.value * 7f else 0f
+                                            rotationX = if (parallaxAlbumArt) sensorTiltY * 5.5f else 0f
+                                            rotationY = if (parallaxAlbumArt) -sensorTiltX * 7.5f else 0f
+                                            translationX = if (parallaxAlbumArt) sensorTiltX * 12f else 0f
+                                            translationY = if (parallaxAlbumArt) sensorTiltY * 8f else 0f
                                             val motionScale = when {
                                                 beatBounceAlbumArt -> beatBounceScale.value
                                                 parallaxAlbumArt -> 1.03f
