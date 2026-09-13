@@ -647,6 +647,32 @@ fun SettingsScreen(
                         )
                     }
                     Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Parallax album art",
+                            modifier = Modifier.weight(1f)
+                        )
+                        Switch(
+                            checked = settings.parallaxAlbumArt,
+                            onCheckedChange = { viewModel.setParallaxAlbumArt(it) }
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Beat bounce album art",
+                            modifier = Modifier.weight(1f)
+                        )
+                        Switch(
+                            checked = settings.beatBounceAlbumArt,
+                            onCheckedChange = { viewModel.setBeatBounceAlbumArt(it) }
+                        )
+                    }
+                    Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {

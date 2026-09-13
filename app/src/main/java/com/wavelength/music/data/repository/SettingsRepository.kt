@@ -45,6 +45,8 @@ data class AppSettingsState(
     val expandUpNextOnScroll: Boolean = false,
     val dynamicThemeFromAlbumArt: Boolean = false,
     val vinylStyleAlbumArt: Boolean = false,
+    val parallaxAlbumArt: Boolean = false,
+    val beatBounceAlbumArt: Boolean = false,
     val aiDjEnabled: Boolean = false,
     /** Milliseconds to fade out the ending track and fade in the next one; 0 disables it. */
     val crossfadeDurationMs: Int = 0,
@@ -100,6 +102,8 @@ class SettingsRepository @Inject constructor(
         expandUpNextOnScroll = prefs.getBoolean(KEY_EXPAND_UP_NEXT, false),
         dynamicThemeFromAlbumArt = prefs.getBoolean(KEY_DYNAMIC_THEME, false),
         vinylStyleAlbumArt = prefs.getBoolean(KEY_VINYL_STYLE, false),
+        parallaxAlbumArt = prefs.getBoolean(KEY_PARALLAX_ALBUM_ART, false),
+        beatBounceAlbumArt = prefs.getBoolean(KEY_BEAT_BOUNCE_ALBUM_ART, false),
         aiDjEnabled = prefs.getBoolean(KEY_AI_DJ, false),
         crossfadeDurationMs = prefs.getInt(KEY_CROSSFADE, 0),
         audioVisualizerEnabled = prefs.getBoolean(KEY_VISUALIZER, false),
@@ -245,8 +249,54 @@ class SettingsRepository @Inject constructor(
     }
 
     fun setVinylStyleAlbumArt(enabled: Boolean) {
-        prefs.edit { putBoolean(KEY_VINYL_STYLE, enabled) }
-        _state.update { it.copy(vinylStyleAlbumArt = enabled) }
+        prefs.edit {
+            putBoolean(KEY_VINYL_STYLE, enabled)
+            if (enabled) {
+                putBoolean(KEY_PARALLAX_ALBUM_ART, false)
+                putBoolean(KEY_BEAT_BOUNCE_ALBUM_ART, false)
+            }
+        }
+        _state.update {
+            it.copy(
+                vinylStyleAlbumArt = enabled,
+                parallaxAlbumArt = if (enabled) false else it.parallaxAlbumArt,
+                beatBounceAlbumArt = if (enabled) false else it.beatBounceAlbumArt
+            )
+        }
+    }
+
+    fun setParallaxAlbumArt(enabled: Boolean) {
+        prefs.edit {
+            putBoolean(KEY_PARALLAX_ALBUM_ART, enabled)
+            if (enabled) {
+                putBoolean(KEY_VINYL_STYLE, false)
+                putBoolean(KEY_BEAT_BOUNCE_ALBUM_ART, false)
+            }
+        }
+        _state.update {
+            it.copy(
+                parallaxAlbumArt = enabled,
+                vinylStyleAlbumArt = if (enabled) false else it.vinylStyleAlbumArt,
+                beatBounceAlbumArt = if (enabled) false else it.beatBounceAlbumArt
+            )
+        }
+    }
+
+    fun setBeatBounceAlbumArt(enabled: Boolean) {
+        prefs.edit {
+            putBoolean(KEY_BEAT_BOUNCE_ALBUM_ART, enabled)
+            if (enabled) {
+                putBoolean(KEY_VINYL_STYLE, false)
+                putBoolean(KEY_PARALLAX_ALBUM_ART, false)
+            }
+        }
+        _state.update {
+            it.copy(
+                beatBounceAlbumArt = enabled,
+                vinylStyleAlbumArt = if (enabled) false else it.vinylStyleAlbumArt,
+                parallaxAlbumArt = if (enabled) false else it.parallaxAlbumArt
+            )
+        }
     }
 
     fun setAiDjEnabled(enabled: Boolean) {
@@ -313,6 +363,8 @@ class SettingsRepository @Inject constructor(
         const val KEY_EXPAND_UP_NEXT = "expand_up_next_on_scroll"
         const val KEY_DYNAMIC_THEME = "dynamic_theme_from_album_art"
         const val KEY_VINYL_STYLE = "vinyl_style_album_art"
+        const val KEY_PARALLAX_ALBUM_ART = "parallax_album_art"
+        const val KEY_BEAT_BOUNCE_ALBUM_ART = "beat_bounce_album_art"
         const val KEY_AI_DJ = "ai_dj_enabled"
         const val KEY_CROSSFADE = "crossfade_duration_ms"
         const val KEY_VISUALIZER = "audio_visualizer_enabled"

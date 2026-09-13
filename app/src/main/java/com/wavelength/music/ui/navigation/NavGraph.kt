@@ -272,6 +272,8 @@ composable(
                         expandUpNextOnScroll = settings.expandUpNextOnScroll,
                         dynamicThemeFromAlbumArt = settings.dynamicThemeFromAlbumArt,
                         vinylStyleAlbumArt = settings.vinylStyleAlbumArt,
+                        parallaxAlbumArt = settings.parallaxAlbumArt,
+                        beatBounceAlbumArt = settings.beatBounceAlbumArt,
                         audioVisualizerEnabled = settings.audioVisualizerEnabled,
                         trackTransitionEnabled = settings.trackTransitionEnabled,
                         trackTransitionDurationMs = settings.trackTransitionDurationMs,

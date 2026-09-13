@@ -106,6 +106,10 @@ class AppSettingsViewModel @Inject constructor(
 
     fun setVinylStyleAlbumArt(enabled: Boolean) = settingsRepository.setVinylStyleAlbumArt(enabled)
 
+    fun setParallaxAlbumArt(enabled: Boolean) = settingsRepository.setParallaxAlbumArt(enabled)
+
+    fun setBeatBounceAlbumArt(enabled: Boolean) = settingsRepository.setBeatBounceAlbumArt(enabled)
+
     fun setAiDjEnabled(enabled: Boolean) = settingsRepository.setAiDjEnabled(enabled)
 
     fun setCrossfadeDurationMs(durationMs: Int) = settingsRepository.setCrossfadeDurationMs(durationMs)

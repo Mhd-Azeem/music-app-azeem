@@ -140,6 +140,8 @@ fun NowPlayingScreen(
     expandUpNextOnScroll: Boolean = false,
     dynamicThemeFromAlbumArt: Boolean = false,
     vinylStyleAlbumArt: Boolean = false,
+    parallaxAlbumArt: Boolean = false,
+    beatBounceAlbumArt: Boolean = false,
     audioVisualizerEnabled: Boolean = false,
     trackTransitionEnabled: Boolean = true,
     trackTransitionDurationMs: Int = 300,
@@ -195,6 +197,48 @@ fun NowPlayingScreen(
                     animationSpec = tween(durationMillis = 6000, easing = LinearEasing)
                 )
             }
+        }
+    }
+
+    // Subtle 3D parallax: a slow, premium floating tilt rather than a distracting wobble.
+    val parallaxPhase = remember { Animatable(0f) }
+    LaunchedEffect(parallaxAlbumArt, state.isPlaying) {
+        if (parallaxAlbumArt && state.isPlaying) {
+            while (true) {
+                parallaxPhase.animateTo(
+                    1f,
+                    animationSpec = tween(durationMillis = 1700, easing = LinearEasing)
+                )
+                parallaxPhase.animateTo(
+                    -1f,
+                    animationSpec = tween(durationMillis = 1700, easing = LinearEasing)
+                )
+            }
+        } else {
+            parallaxPhase.animateTo(0f, animationSpec = tween(220))
+        }
+    }
+
+    // Neat beat-bounce style: compact pulse with a soft spring return while music is playing.
+    val beatBounceScale = remember { Animatable(1f) }
+    LaunchedEffect(beatBounceAlbumArt, state.isPlaying) {
+        if (beatBounceAlbumArt && state.isPlaying) {
+            while (true) {
+                beatBounceScale.animateTo(
+                    1.045f,
+                    animationSpec = tween(durationMillis = 105, easing = LinearEasing)
+                )
+                beatBounceScale.animateTo(
+                    1f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    )
+                )
+                kotlinx.coroutines.delay(300)
+            }
+        } else {
+            beatBounceScale.animateTo(1f, animationSpec = tween(180))
         }
     }
 
@@ -459,8 +503,20 @@ fun NowPlayingScreen(
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .graphicsLayer { rotationZ = vinylAngle.value }
-                                            .clip(CircleShape)
+                                            .graphicsLayer {
+                                                rotationZ = if (vinylStyleAlbumArt) vinylAngle.value else 0f
+                                                rotationX = if (parallaxAlbumArt) parallaxPhase.value * 3.2f else 0f
+                                                rotationY = if (parallaxAlbumArt) -parallaxPhase.value * 5.2f else 0f
+                                                val motionScale = when {
+                                                    beatBounceAlbumArt -> beatBounceScale.value
+                                                    parallaxAlbumArt -> 1.025f
+                                                    else -> 1f
+                                                }
+                                                scaleX = motionScale
+                                                scaleY = motionScale
+                                                cameraDistance = 24f
+                                            }
+                                            .clip(if (vinylStyleAlbumArt) CircleShape else RoundedCornerShape(22.dp))
                                             .border(2.dp, Color.White.copy(alpha = 0.3f), CircleShape)
                                             .background(MaterialTheme.colorScheme.surfaceVariant)
                                     )
