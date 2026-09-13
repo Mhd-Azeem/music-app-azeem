@@ -40,6 +40,8 @@ class PlayerViewModel @Inject constructor(
     val sleepTimerRemainingMs: StateFlow<Long?> = sleepTimerController.remainingMs
     val sleepTimerIsEndOfTrack: StateFlow<Boolean> = sleepTimerController.isEndOfTrack
     val visualizerWaveform: StateFlow<ByteArray?> = visualizerController.waveform
+    val visualizerFft: StateFlow<ByteArray?> = visualizerController.fft
+    val visualizerSamplingRateHz: StateFlow<Int> = visualizerController.samplingRateHz
     val systemVolume: StateFlow<Float> = systemVolumeController.volume
 
     private val _lyrics = MutableStateFlow<ScreenState<List<LyricLine>>>(ScreenState.Empty)
