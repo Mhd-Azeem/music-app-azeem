@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
@@ -25,10 +26,6 @@
         android:theme="@style/Theme.Wavelength"
         android:usesCleartextTraffic="false">
 
-        <!-- MainActivity itself is not the launcher entry point: the activity-aliases below are,
-             so that switching the "app icon" (Settings > App icon) is just enabling one alias
-             and disabling the others (android:icon can't be changed to an arbitrary image at
-             runtime — Android requires it to be a build-time resource). -->
         <activity
             android:name=".MainActivity"
             android:exported="false"
