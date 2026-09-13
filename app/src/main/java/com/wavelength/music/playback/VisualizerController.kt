@@ -7,11 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Wraps `android.media.audiofx.Visualizer`, following the same (re)attach-on-audio-session-
- * change pattern as [EqualizerController]. Capture is opt-in via [setCaptureEnabled] — the
- * caller (Now Playing screen) only turns it on while a visualizer is actually visible AND the
- * user holds RECORD_AUDIO, since capturing costs battery/CPU and needs that runtime permission on
- * modern Android even for the app's own audio session. */
+/** Wraps [Visualizer] for live waveform and FFT capture from the active playback session. */
 @Singleton
 class VisualizerController @Inject constructor() {
     private var visualizer: Visualizer? = null
@@ -20,6 +16,12 @@ class VisualizerController @Inject constructor() {
 
     private val _waveform = MutableStateFlow<ByteArray?>(null)
     val waveform: StateFlow<ByteArray?> = _waveform.asStateFlow()
+
+    private val _fft = MutableStateFlow<ByteArray?>(null)
+    val fft: StateFlow<ByteArray?> = _fft.asStateFlow()
+
+    private val _samplingRateHz = MutableStateFlow(44_100)
+    val samplingRateHz: StateFlow<Int> = _samplingRateHz.asStateFlow()
 
     private val _isSupported = MutableStateFlow(false)
     val isSupported: StateFlow<Boolean> = _isSupported.asStateFlow()
@@ -31,8 +33,7 @@ class VisualizerController @Inject constructor() {
         attachIfReady()
     }
 
-    /** Call with `true` only while a visualizer UI is actually on screen and RECORD_AUDIO is
-     * granted; `false` releases it immediately so it isn't capturing in the background. */
+    /** Enable capture only while a UI feature needs live playback analysis. */
     fun setCaptureEnabled(enabled: Boolean) {
         captureEnabled = enabled
         if (enabled) {
@@ -44,6 +45,7 @@ class VisualizerController @Inject constructor() {
 
     private fun attachIfReady() {
         if (!captureEnabled || currentSessionId == 0 || visualizer != null) return
+
         runCatching {
             val v = Visualizer(currentSessionId)
             v.captureSize = Visualizer.getCaptureSizeRange()[1]
@@ -54,22 +56,31 @@ class VisualizerController @Inject constructor() {
                         waveform: ByteArray?,
                         samplingRate: Int
                     ) {
+                        // Android reports this sampling rate in milliHertz.
+                        _samplingRateHz.value = (samplingRate / 1000).coerceAtLeast(1)
                         _waveform.value = waveform?.copyOf()
                     }
 
-                    override fun onFftDataCapture(visualizer: Visualizer?, fft: ByteArray?, samplingRate: Int) {
-                        // Waveform capture only — a bar/wave UI doesn't need frequency data.
+                    override fun onFftDataCapture(
+                        visualizer: Visualizer?,
+                        fft: ByteArray?,
+                        samplingRate: Int
+                    ) {
+                        _samplingRateHz.value = (samplingRate / 1000).coerceAtLeast(1)
+                        _fft.value = fft?.copyOf()
                     }
                 },
                 Visualizer.getMaxCaptureRate() / 2,
                 true,
-                false
+                true
             )
             v.enabled = true
             visualizer = v
             _isSupported.value = true
         }.onFailure {
             _isSupported.value = false
+            _waveform.value = null
+            _fft.value = null
         }
     }
 
@@ -77,5 +88,6 @@ class VisualizerController @Inject constructor() {
         runCatching { visualizer?.release() }
         visualizer = null
         _waveform.value = null
+        _fft.value = null
     }
 }
