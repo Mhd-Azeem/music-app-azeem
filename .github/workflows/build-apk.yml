@@ -23,9 +23,6 @@ jobs:
           java-version: "17"
 
       - name: Write local.properties
-        # JIOSAAVN_BASE_URL can be overridden by adding a repository secret with that name.
-        # Left unset, the app falls back to its default JioSaavn deployment (see
-        # app/build.gradle.kts), so CI builds work without any secret configured.
         run: |
           echo "sdk.dir=${ANDROID_HOME}" > local.properties
           if [ -n "$JIOSAAVN_BASE_URL" ]; then
@@ -37,25 +34,52 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Prepare permanent signing key
+      - name: Prepare stable signing key
         env:
           AZMUSIC_KEYSTORE_BASE64: ${{ secrets.AZMUSIC_KEYSTORE_BASE64 }}
           AZMUSIC_KEYSTORE_PASSWORD: ${{ secrets.AZMUSIC_KEYSTORE_PASSWORD }}
           AZMUSIC_KEY_ALIAS: ${{ secrets.AZMUSIC_KEY_ALIAS }}
           AZMUSIC_KEY_PASSWORD: ${{ secrets.AZMUSIC_KEY_PASSWORD }}
         run: |
-          if [ -n "$AZMUSIC_KEYSTORE_BASE64" ]; then
-            echo "$AZMUSIC_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/azmusic-release.jks"
-            echo "AZMUSIC_KEYSTORE_PATH=$RUNNER_TEMP/azmusic-release.jks" >> "$GITHUB_ENV"
-            echo "AZMUSIC_KEYSTORE_PASSWORD=$AZMUSIC_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
-            echo "AZMUSIC_KEY_ALIAS=$AZMUSIC_KEY_ALIAS" >> "$GITHUB_ENV"
-            echo "AZMUSIC_KEY_PASSWORD=$AZMUSIC_KEY_PASSWORD" >> "$GITHUB_ENV"
-          else
-            echo "Permanent signing secrets not configured; using debug signing fallback."
+          missing=0
+          for value in "$AZMUSIC_KEYSTORE_BASE64" "$AZMUSIC_KEYSTORE_PASSWORD" "$AZMUSIC_KEY_ALIAS" "$AZMUSIC_KEY_PASSWORD"; do
+            if [ -z "$value" ]; then
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -eq 1 ]; then
+            if [ "$GITHUB_REF" = "refs/heads/feature/email-activation-access" ]; then
+              echo "::error::Permanent AzMusic signing secrets are required for release builds. Refusing to publish an APK signed by an ephemeral runner key."
+              exit 1
+            fi
+            echo "Non-release branch: permanent signing secrets unavailable; debug signing fallback is allowed."
+            exit 0
           fi
+
+          echo "$AZMUSIC_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/azmusic-release.jks"
+          echo "AZMUSIC_KEYSTORE_PATH=$RUNNER_TEMP/azmusic-release.jks" >> "$GITHUB_ENV"
+          echo "AZMUSIC_KEYSTORE_PASSWORD=$AZMUSIC_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "AZMUSIC_KEY_ALIAS=$AZMUSIC_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "AZMUSIC_KEY_PASSWORD=$AZMUSIC_KEY_PASSWORD" >> "$GITHUB_ENV"
+          keytool -list -keystore "$RUNNER_TEMP/azmusic-release.jks" -storepass "$AZMUSIC_KEYSTORE_PASSWORD" -alias "$AZMUSIC_KEY_ALIAS" >/dev/null
+          echo "Stable AzMusic signing key loaded successfully."
 
       - name: Build release APK
         run: ./gradlew assembleRelease --stacktrace
+
+      - name: Verify APK package and signature
+        run: |
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          if [ -z "$APKSIGNER" ]; then
+            echo "::error::apksigner was not found in the Android SDK."
+            exit 1
+          fi
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+          echo "APK size: $(stat -c%s "$APK") bytes"
+          echo "APK SHA-256: $(sha256sum "$APK" | awk '{print $1}')"
 
       - name: Rename release APK
         run: |
@@ -89,10 +113,9 @@ jobs:
             Build number: ${{ github.run_number }}
             Commit: ${{ github.sha }}
 
-            Automatically built from the email activation branch.
+            Automatically built from the email activation branch and signed with the permanent AzMusic release key.
 
-            This is a minified, optimized release build (not from the Play Store). Download
-            `AzMusic.apk` below and install it directly.
+            Download `AzMusic.apk` below and install/update it directly.
           prerelease: false
           make_latest: true
           files: app/build/outputs/apk/release/renamed/AzMusic.apk
