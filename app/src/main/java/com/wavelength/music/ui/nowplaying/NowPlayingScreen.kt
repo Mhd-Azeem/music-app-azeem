@@ -314,29 +314,47 @@ fun NowPlayingScreen(
         }
     }
 
-    // Scale is animated only when the live FFT detector below reports a real audio onset.
+    // Beat Bounce is driven directly by decoded PCM from ExoPlayer's audio processor chain.
+    // No Visualizer callback, microphone permission, fixed timer or synthetic BPM clock is used.
     val beatBounceScale = remember { Animatable(1f) }
-    var beatPulseSequence by remember { mutableStateOf(0L) }
-    var beatPulseAmount by remember { mutableFloatStateOf(0.075f) }
-    LaunchedEffect(beatPulseSequence, beatBounceAlbumArt, state.isPlaying) {
-        if (beatBounceAlbumArt && state.isPlaying && beatPulseSequence > 0L) {
+    val pcmBeatPulse by viewModel.pcmBeatPulse.collectAsStateWithLifecycle()
+    var lastHandledPcmBeat by remember { mutableStateOf(0L) }
+
+    LaunchedEffect(beatBounceAlbumArt) {
+        if (beatBounceAlbumArt) {
+            // Do not replay an old beat merely because the user just enabled the effect.
+            lastHandledPcmBeat = pcmBeatPulse.sequence
+        } else {
+            beatBounceScale.animateTo(1f, animationSpec = tween(120))
+        }
+    }
+
+    LaunchedEffect(pcmBeatPulse.sequence, beatBounceAlbumArt, state.isPlaying) {
+        if (
+            beatBounceAlbumArt &&
+            state.isPlaying &&
+            pcmBeatPulse.sequence > lastHandledPcmBeat
+        ) {
+            lastHandledPcmBeat = pcmBeatPulse.sequence
+            val amount = pcmBeatPulse.strength.coerceIn(0.055f, 0.16f)
+            beatBounceScale.stop()
             beatBounceScale.snapTo(1f)
             beatBounceScale.animateTo(
-                1f + beatPulseAmount,
-                animationSpec = tween(durationMillis = 62, easing = LinearEasing)
+                1f + amount,
+                animationSpec = tween(durationMillis = 58, easing = LinearEasing)
             )
             beatBounceScale.animateTo(
                 1f,
                 animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    dampingRatio = 0.52f,
                     stiffness = Spring.StiffnessHigh
                 )
             )
-        } else if (!beatBounceAlbumArt || !state.isPlaying) {
-            beatBounceScale.animateTo(1f, animationSpec = tween(140))
         }
     }
 
+    // RECORD_AUDIO is now needed only for the optional waveform visualizer UI. Beat Bounce no
+    // longer depends on Android's Visualizer API or any runtime audio-recording permission.
     var hasRecordAudioPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
@@ -346,133 +364,16 @@ fun NowPlayingScreen(
     val recordAudioPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted -> hasRecordAudioPermission = granted }
-    val needsAudioCapture = audioVisualizerEnabled || beatBounceAlbumArt
+    val needsAudioCapture = audioVisualizerEnabled
     LaunchedEffect(needsAudioCapture, hasRecordAudioPermission) {
         if (needsAudioCapture && !hasRecordAudioPermission) {
             recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
     val visualizerWaveform by viewModel.visualizerWaveform.collectAsStateWithLifecycle()
-    val visualizerFft by viewModel.visualizerFft.collectAsStateWithLifecycle()
-    val visualizerSamplingRateHz by viewModel.visualizerSamplingRateHz.collectAsStateWithLifecycle()
     DisposableEffect(needsAudioCapture, hasRecordAudioPermission) {
         viewModel.setVisualizerCaptureEnabled(needsAudioCapture && hasRecordAudioPermission)
         onDispose { viewModel.setVisualizerCaptureEnabled(false) }
-    }
-
-    // Hybrid real-audio beat detector. FFT detects kick/bass onsets when available; waveform
-    // energy provides a device-compatible fallback if a vendor does not deliver FFT callbacks.
-    // Both paths share one refractory timer so a single beat cannot double-trigger the bounce.
-    val beatDetectorState = remember { floatArrayOf(0f, 0f, 0f, 0f, 0f) }
-    // 0 avgBass, 1 avgFlux, 2 previousBass, 3 avgRms, 4 previousRms
-    val lastBeatAtMs = remember { longArrayOf(0L) }
-
-    LaunchedEffect(visualizerFft, visualizerSamplingRateHz, beatBounceAlbumArt, state.isPlaying) {
-        val fft = visualizerFft
-        if (!beatBounceAlbumArt || !state.isPlaying || fft == null || fft.size < 64) {
-            return@LaunchedEffect
-        }
-
-        val captureSize = fft.size
-        val sampleRate = visualizerSamplingRateHz.coerceAtLeast(8_000)
-        var bassMagnitudeSum = 0.0
-        var bassBins = 0
-        var lowMidMagnitudeSum = 0.0
-        var lowMidBins = 0
-
-        for (bin in 1 until captureSize / 2) {
-            val frequencyHz = bin.toFloat() * sampleRate.toFloat() / captureSize.toFloat()
-            if (frequencyHz > 520f) break
-            val reIndex = bin * 2
-            val imIndex = reIndex + 1
-            if (imIndex >= fft.size) break
-            val re = fft[reIndex].toInt().toFloat()
-            val im = fft[imIndex].toInt().toFloat()
-            val magnitude = kotlin.math.sqrt(re * re + im * im)
-            when {
-                frequencyHz in 35f..220f -> {
-                    bassMagnitudeSum += magnitude
-                    bassBins++
-                }
-                frequencyHz in 220f..520f -> {
-                    lowMidMagnitudeSum += magnitude
-                    lowMidBins++
-                }
-            }
-        }
-
-        if (bassBins == 0) return@LaunchedEffect
-        val bass = (bassMagnitudeSum / bassBins).toFloat()
-        val lowMid = if (lowMidBins > 0) (lowMidMagnitudeSum / lowMidBins).toFloat() else 0f
-
-        var avgBass = beatDetectorState[0]
-        var avgFlux = beatDetectorState[1]
-        val previousBass = beatDetectorState[2]
-        if (avgBass <= 0f) avgBass = bass.coerceAtLeast(1f)
-        val flux = (bass - previousBass).coerceAtLeast(0f)
-        if (avgFlux <= 0f) avgFlux = flux.coerceAtLeast(0.35f)
-
-        val bassRatio = bass / avgBass.coerceAtLeast(1f)
-        val fluxRatio = flux / avgFlux.coerceAtLeast(0.35f)
-        val tonalContrast = bass / (lowMid + 1f)
-        val now = SystemClock.elapsedRealtime()
-        val isBeat = bassRatio >= 1.10f &&
-            fluxRatio >= 1.16f &&
-            bass >= 2.0f &&
-            tonalContrast >= 0.52f &&
-            now - lastBeatAtMs[0] >= 125L
-
-        val clippedBass = minOf(bass, avgBass * 1.45f)
-        val clippedFlux = minOf(flux, avgFlux * 2.1f)
-        beatDetectorState[0] = avgBass * 0.95f + clippedBass * 0.05f
-        beatDetectorState[1] = avgFlux * 0.91f + clippedFlux * 0.09f
-        beatDetectorState[2] = bass
-
-        if (isBeat) {
-            lastBeatAtMs[0] = now
-            beatPulseAmount = (0.060f + (bassRatio - 1.10f) * 0.10f)
-                .coerceIn(0.060f, 0.145f)
-            beatPulseSequence++
-        }
-    }
-
-    LaunchedEffect(visualizerWaveform, beatBounceAlbumArt, state.isPlaying) {
-        val waveform = visualizerWaveform
-        if (!beatBounceAlbumArt || !state.isPlaying || waveform == null || waveform.size < 32) {
-            return@LaunchedEffect
-        }
-
-        var squareSum = 0.0
-        var peak = 0f
-        waveform.forEach { sample ->
-            val centered = (((sample.toInt() and 0xFF) - 128) / 128f)
-            val a = kotlin.math.abs(centered)
-            squareSum += (centered * centered).toDouble()
-            if (a > peak) peak = a
-        }
-        val rms = kotlin.math.sqrt(squareSum / waveform.size).toFloat()
-        var avgRms = beatDetectorState[3]
-        val previousRms = beatDetectorState[4]
-        if (avgRms <= 0f) avgRms = rms.coerceAtLeast(0.008f)
-        val rise = (rms - previousRms).coerceAtLeast(0f)
-        val ratio = rms / avgRms.coerceAtLeast(0.008f)
-        val now = SystemClock.elapsedRealtime()
-
-        val waveformBeat = ratio >= 1.13f &&
-            rise >= maxOf(0.006f, avgRms * 0.08f) &&
-            peak >= 0.20f &&
-            now - lastBeatAtMs[0] >= 125L
-
-        val clippedRms = minOf(rms, avgRms * 1.35f)
-        beatDetectorState[3] = avgRms * 0.94f + clippedRms * 0.06f
-        beatDetectorState[4] = rms
-
-        if (waveformBeat) {
-            lastBeatAtMs[0] = now
-            beatPulseAmount = (0.058f + (ratio - 1.13f) * 0.12f)
-                .coerceIn(0.058f, 0.135f)
-            beatPulseSequence++
-        }
     }
 
     val lyricsState by viewModel.lyrics.collectAsStateWithLifecycle()
