@@ -12,6 +12,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.PI
 import kotlin.math.exp
+import kotlin.math.max
 import kotlin.math.sqrt
 
 /**
@@ -35,16 +36,22 @@ class PcmBeatAnalyzer @Inject constructor() : TeeAudioProcessor.AudioBufferSink 
     private var channelCount = 2
     private var encoding = C.ENCODING_PCM_16BIT
 
-    private var lowPassAlpha = 0.025f
-    private var lowPassState = 0f
+    // Two low-pass filters are subtracted to form a simple 45-220 Hz bass/kick band-pass.
+    // Per-channel filter state avoids left/right phase cancellation before analysis.
+    private var low220Alpha = 0.03f
+    private var low45Alpha = 0.006f
+    private var low220State = FloatArray(2)
+    private var low45State = FloatArray(2)
+
     private var bassSquareSum = 0.0
     private var fullSquareSum = 0.0
     private var framesInWindow = 0
-    private var targetFramesPerWindow = 512
+    private var targetFramesPerWindow = 384
 
     private var averageBass = 0f
     private var averageFull = 0f
     private var previousBass = 0f
+    private var previousFull = 0f
     private var lastBeatAtMs = 0L
     private var sequence = 0L
 
@@ -53,21 +60,26 @@ class PcmBeatAnalyzer @Inject constructor() : TeeAudioProcessor.AudioBufferSink 
         this.channelCount = channelCount.coerceAtLeast(1)
         this.encoding = encoding
 
-        // ~11–14 ms analysis windows depending on sample rate.
-        targetFramesPerWindow = (this.sampleRateHz / 86).coerceIn(128, 1024)
-        val cutoffHz = 190f
-        lowPassAlpha = (1f - exp((-2.0 * PI * cutoffHz / this.sampleRateHz).toFloat()))
-            .coerceIn(0.005f, 0.25f)
+        // ~7-9 ms windows are short enough to catch kick/snare attacks without becoming noisy.
+        targetFramesPerWindow = (this.sampleRateHz / 125).coerceIn(128, 768)
+        low220Alpha = onePoleAlpha(220f)
+        low45Alpha = onePoleAlpha(45f)
+        low220State = FloatArray(this.channelCount)
+        low45State = FloatArray(this.channelCount)
 
-        lowPassState = 0f
         bassSquareSum = 0.0
         fullSquareSum = 0.0
         framesInWindow = 0
         averageBass = 0f
         averageFull = 0f
         previousBass = 0f
+        previousFull = 0f
         lastBeatAtMs = 0L
     }
+
+    private fun onePoleAlpha(cutoffHz: Float): Float =
+        (1f - exp((-2.0 * PI * cutoffHz / sampleRateHz).toFloat()))
+            .coerceIn(0.001f, 0.35f)
 
     override fun handleBuffer(buffer: ByteBuffer) {
         val input = buffer.duplicate().order(ByteOrder.LITTLE_ENDIAN)
@@ -81,30 +93,48 @@ class PcmBeatAnalyzer @Inject constructor() : TeeAudioProcessor.AudioBufferSink 
     private fun consumePcm16(input: ByteBuffer) {
         val bytesPerFrame = 2 * channelCount
         while (input.remaining() >= bytesPerFrame) {
-            var mono = 0f
-            repeat(channelCount) {
-                mono += input.short / 32768f
+            var bassEnergy = 0.0
+            var fullEnergy = 0.0
+            for (channel in 0 until channelCount) {
+                val sample = input.short / 32768f
+                val band = filterBass(channel, sample)
+                bassEnergy += (band * band).toDouble()
+                fullEnergy += (sample * sample).toDouble()
             }
-            analyzeFrame(mono / channelCount)
+            analyzeFrameEnergy(
+                bassEnergy / channelCount,
+                fullEnergy / channelCount
+            )
         }
     }
 
     private fun consumePcmFloat(input: ByteBuffer) {
         val bytesPerFrame = 4 * channelCount
         while (input.remaining() >= bytesPerFrame) {
-            var mono = 0f
-            repeat(channelCount) {
-                mono += input.float.coerceIn(-1f, 1f)
+            var bassEnergy = 0.0
+            var fullEnergy = 0.0
+            for (channel in 0 until channelCount) {
+                val sample = input.float.coerceIn(-1f, 1f)
+                val band = filterBass(channel, sample)
+                bassEnergy += (band * band).toDouble()
+                fullEnergy += (sample * sample).toDouble()
             }
-            analyzeFrame(mono / channelCount)
+            analyzeFrameEnergy(
+                bassEnergy / channelCount,
+                fullEnergy / channelCount
+            )
         }
     }
 
-    private fun analyzeFrame(sample: Float) {
-        // One-pole low-pass isolates kick/bass energy while full-band RMS prevents noise triggers.
-        lowPassState += lowPassAlpha * (sample - lowPassState)
-        bassSquareSum += (lowPassState * lowPassState).toDouble()
-        fullSquareSum += (sample * sample).toDouble()
+    private fun filterBass(channel: Int, sample: Float): Float {
+        low220State[channel] += low220Alpha * (sample - low220State[channel])
+        low45State[channel] += low45Alpha * (sample - low45State[channel])
+        return low220State[channel] - low45State[channel]
+    }
+
+    private fun analyzeFrameEnergy(bassEnergy: Double, fullEnergy: Double) {
+        bassSquareSum += bassEnergy
+        fullSquareSum += fullEnergy
         framesInWindow++
 
         if (framesInWindow < targetFramesPerWindow) return
@@ -116,34 +146,47 @@ class PcmBeatAnalyzer @Inject constructor() : TeeAudioProcessor.AudioBufferSink 
         fullSquareSum = 0.0
         framesInWindow = 0
 
-        if (averageBass <= 0f) averageBass = bassRms.coerceAtLeast(0.004f)
-        if (averageFull <= 0f) averageFull = fullRms.coerceAtLeast(0.008f)
+        if (averageBass <= 0f) averageBass = bassRms.coerceAtLeast(0.0025f)
+        if (averageFull <= 0f) averageFull = fullRms.coerceAtLeast(0.006f)
 
-        val bassRatio = bassRms / averageBass.coerceAtLeast(0.004f)
-        val fullRatio = fullRms / averageFull.coerceAtLeast(0.008f)
+        val bassRatio = bassRms / averageBass.coerceAtLeast(0.0025f)
+        val fullRatio = fullRms / averageFull.coerceAtLeast(0.006f)
         val bassRise = (bassRms - previousBass).coerceAtLeast(0f)
+        val fullRise = (fullRms - previousFull).coerceAtLeast(0f)
         val now = SystemClock.elapsedRealtime()
 
-        // A beat requires a real low-frequency onset, enough overall program energy, and a
-        // refractory period. There is no timer-generated pulse or inferred BPM clock here.
-        val isBeat = bassRatio >= 1.12f &&
-            bassRise >= maxOf(0.0025f, averageBass * 0.07f) &&
-            fullRms >= 0.018f &&
-            fullRatio >= 0.90f &&
-            now - lastBeatAtMs >= 115L
+        // Primary detector: kick/bass onset. Secondary detector: broader drum transient for songs
+        // where the kick is light but the rhythmic attack is still obvious. Both are PCM-driven.
+        val bassOnset = bassRatio >= 1.045f &&
+            bassRise >= max(0.0008f, averageBass * 0.025f) &&
+            fullRatio >= 0.78f
 
-        // Slow baseline adaptation follows song/mastering loudness without swallowing transients.
-        val clippedBass = minOf(bassRms, averageBass * 1.40f)
-        val clippedFull = minOf(fullRms, averageFull * 1.32f)
-        averageBass = averageBass * 0.965f + clippedBass * 0.035f
-        averageFull = averageFull * 0.97f + clippedFull * 0.03f
+        val broadOnset = fullRatio >= 1.10f &&
+            fullRise >= max(0.0015f, averageFull * 0.035f) &&
+            bassRatio >= 0.90f
+
+        val isBeat = (bassOnset || broadOnset) &&
+            fullRms >= 0.006f &&
+            now - lastBeatAtMs >= 92L
+
+        // Baselines adapt slowly so loud masters and quiet songs both work while attacks remain
+        // visible to the detector. Clamp transients before feeding them into the baseline.
+        val clippedBass = minOf(bassRms, averageBass * 1.30f)
+        val clippedFull = minOf(fullRms, averageFull * 1.24f)
+        averageBass = averageBass * 0.972f + clippedBass * 0.028f
+        averageFull = averageFull * 0.975f + clippedFull * 0.025f
         previousBass = bassRms
+        previousFull = fullRms
 
         if (isBeat) {
             lastBeatAtMs = now
             sequence++
-            val strength = (0.055f + (bassRatio - 1.12f) * 0.14f)
-                .coerceIn(0.055f, 0.16f)
+            val onsetScore = max(
+                (bassRatio - 1f) * 1.8f,
+                (fullRatio - 1f) * 1.25f
+            )
+            val strength = (0.045f + onsetScore * 0.12f)
+                .coerceIn(0.045f, 0.155f)
             _beatPulse.value = BeatPulse(sequence = sequence, strength = strength)
         }
     }
