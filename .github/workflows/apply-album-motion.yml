@@ -1,0 +1,35 @@
+name: Apply Album Motion Patch
+
+on:
+  push:
+    branches:
+      - feature/email-activation-access
+    paths:
+      - .github/scripts/apply_album_motion.py
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feature/email-activation-access
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+      - name: Apply album motion patch
+        run: python .github/scripts/apply_album_motion.py
+      - name: Commit patched app sources
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/java/com/wavelength/music
+          if git diff --cached --quiet; then
+            echo "No source changes needed."
+            exit 0
+          fi
+          git commit -m "feat: add parallax and beat bounce album art styles"
+          git push origin HEAD:feature/email-activation-access
