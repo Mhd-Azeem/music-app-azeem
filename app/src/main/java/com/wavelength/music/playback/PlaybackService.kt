@@ -1,11 +1,18 @@
 package com.wavelength.music.playback
 
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.Player
+import androidx.media3.common.audio.AudioProcessor
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
+import androidx.media3.exoplayer.audio.TeeAudioProcessor
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.wavelength.music.MainActivity
@@ -13,6 +20,7 @@ import com.wavelength.music.widget.MusicWidgetUpdater
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
+@UnstableApi
 @AndroidEntryPoint
 class PlaybackService : MediaSessionService() {
 
@@ -21,6 +29,9 @@ class PlaybackService : MediaSessionService() {
 
     @Inject
     lateinit var visualizerController: VisualizerController
+
+    @Inject
+    lateinit var pcmBeatAnalyzer: PcmBeatAnalyzer
 
     private var mediaSession: MediaSession? = null
 
@@ -46,7 +57,24 @@ class PlaybackService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
 
-        val player = ExoPlayer.Builder(this)
+        // Feed decoded PCM directly into PcmBeatAnalyzer while passing the audio through unchanged.
+        // This avoids Android Visualizer/vendor compatibility issues entirely for Beat Bounce.
+        val beatTap = TeeAudioProcessor(pcmBeatAnalyzer)
+        val renderersFactory = object : DefaultRenderersFactory(this) {
+            override fun buildAudioSink(
+                context: Context,
+                enableFloatOutput: Boolean,
+                enableAudioTrackPlaybackParams: Boolean
+            ): AudioSink {
+                return DefaultAudioSink.Builder(context)
+                    .setEnableFloatOutput(enableFloatOutput)
+                    .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+                    .setAudioProcessors(arrayOf<AudioProcessor>(beatTap))
+                    .build()
+            }
+        }
+
+        val player = ExoPlayer.Builder(this, renderersFactory)
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA)
