@@ -225,8 +225,8 @@ fun NowPlayingScreen(
         if (beatBounceAlbumArt && state.isPlaying) {
             while (true) {
                 beatBounceScale.animateTo(
-                    1.045f,
-                    animationSpec = tween(durationMillis = 105, easing = LinearEasing)
+                    1.065f,
+                    animationSpec = tween(durationMillis = 115, easing = LinearEasing)
                 )
                 beatBounceScale.animateTo(
                     1f,
@@ -537,6 +537,18 @@ fun NowPlayingScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .aspectRatio(1f)
+                                        .graphicsLayer {
+                                            rotationX = if (parallaxAlbumArt) parallaxPhase.value * 4.5f else 0f
+                                            rotationY = if (parallaxAlbumArt) -parallaxPhase.value * 7f else 0f
+                                            val motionScale = when {
+                                                beatBounceAlbumArt -> beatBounceScale.value
+                                                parallaxAlbumArt -> 1.03f
+                                                else -> 1f
+                                            }
+                                            scaleX = motionScale
+                                            scaleY = motionScale
+                                            cameraDistance = 24f
+                                        }
                                         .clip(RoundedCornerShape(12.dp))
                                         .background(MaterialTheme.colorScheme.surfaceVariant)
                                 )

@@ -53,6 +53,9 @@ class MainActivity : ComponentActivity() {
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     private val updaterClient by lazy { OkHttpClient() }
+    private val updaterPrefs by lazy {
+        getSharedPreferences("azmusic_updater", Context.MODE_PRIVATE)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -108,10 +111,14 @@ class MainActivity : ComponentActivity() {
                             Button(onClick = {
                                 if (canInstallPackages()) {
                                     downloadAndInstall(available)
-                                    updateDismissed = true
                                 } else {
+                                    updaterPrefs.edit()
+                                        .putString(KEY_PENDING_APK_URL, available.apkUrl)
+                                        .putLong(KEY_PENDING_BUILD_NUMBER, available.buildNumber)
+                                        .apply()
                                     openUnknownAppsSettings()
                                 }
+                                updateDismissed = true
                             }) {
                                 Text("Download & install")
                             }
@@ -119,6 +126,27 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!canInstallPackages()) return
+
+        val pendingDownloadId = updaterPrefs.getLong(KEY_PENDING_DOWNLOAD_ID, -1L)
+        if (pendingDownloadId != -1L) {
+            tryLaunchDownloadedUpdate(pendingDownloadId)
+            return
+        }
+
+        val pendingUrl = updaterPrefs.getString(KEY_PENDING_APK_URL, null)
+        val pendingBuild = updaterPrefs.getLong(KEY_PENDING_BUILD_NUMBER, -1L)
+        if (!pendingUrl.isNullOrBlank() && pendingBuild > 0L) {
+            updaterPrefs.edit()
+                .remove(KEY_PENDING_APK_URL)
+                .remove(KEY_PENDING_BUILD_NUMBER)
+                .apply()
+            downloadAndInstall(UpdateInfo(pendingBuild, pendingUrl))
         }
     }
 
@@ -192,6 +220,7 @@ class MainActivity : ComponentActivity() {
             .setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, fileName)
 
         val downloadId = downloadManager.enqueue(request)
+        updaterPrefs.edit().putLong(KEY_PENDING_DOWNLOAD_ID, downloadId).apply()
         Toast.makeText(this, "AzMusic update downloading…", Toast.LENGTH_SHORT).show()
 
         val receiver = object : BroadcastReceiver() {
@@ -201,22 +230,7 @@ class MainActivity : ComponentActivity() {
 
                 runCatching { unregisterReceiver(this) }
 
-                val uri = downloadManager.getUriForDownloadedFile(downloadId)
-                if (uri == null) {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Update download failed. Please try again.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    return
-                }
-
-                val installIntent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(uri, "application/vnd.android.package-archive")
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                startActivity(installIntent)
+                tryLaunchDownloadedUpdate(downloadId)
             }
         }
 
@@ -229,8 +243,69 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun tryLaunchDownloadedUpdate(downloadId: Long): Boolean {
+        val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val cursor = downloadManager.query(DownloadManager.Query().setFilterById(downloadId))
+            ?: return false
+
+        cursor.use {
+            if (!it.moveToFirst()) return false
+            val statusColumn = it.getColumnIndex(DownloadManager.COLUMN_STATUS)
+            if (statusColumn < 0) return false
+
+            when (it.getInt(statusColumn)) {
+                DownloadManager.STATUS_SUCCESSFUL -> {
+                    val uri = downloadManager.getUriForDownloadedFile(downloadId) ?: return false
+                    updaterPrefs.edit().remove(KEY_PENDING_DOWNLOAD_ID).apply()
+                    launchPackageInstaller(uri)
+                    return true
+                }
+                DownloadManager.STATUS_FAILED -> {
+                    updaterPrefs.edit().remove(KEY_PENDING_DOWNLOAD_ID).apply()
+                    Toast.makeText(
+                        this,
+                        "Update download failed. Please try again.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+        return false
+    }
+
+    private fun launchPackageInstaller(uri: Uri) {
+        val installIntent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
+            data = uri
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        runCatching {
+            startActivity(installIntent)
+        }.recoverCatching {
+            startActivity(
+                Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "application/vnd.android.package-archive")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            )
+        }.onFailure {
+            Toast.makeText(
+                this,
+                "Download finished. Tap the completed AzMusic download to install it.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
     private data class UpdateInfo(
         val buildNumber: Long,
         val apkUrl: String
     )
+
+    private companion object {
+        const val KEY_PENDING_DOWNLOAD_ID = "pending_update_download_id"
+        const val KEY_PENDING_APK_URL = "pending_update_apk_url"
+        const val KEY_PENDING_BUILD_NUMBER = "pending_update_build_number"
+    }
 }
