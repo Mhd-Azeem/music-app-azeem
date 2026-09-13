@@ -13,6 +13,7 @@ import javax.inject.Singleton
 import kotlin.math.PI
 import kotlin.math.exp
 import kotlin.math.max
+import kotlin.math.pow
 import kotlin.math.sqrt
 
 /**
@@ -60,7 +61,7 @@ class PcmBeatAnalyzer @Inject constructor() : TeeAudioProcessor.AudioBufferSink 
         this.channelCount = channelCount.coerceAtLeast(1)
         this.encoding = encoding
 
-        // ~7-9 ms windows are short enough to catch kick/snare attacks without becoming noisy.
+        // ~7-9 ms windows catch bass attacks without making the detector sluggish.
         targetFramesPerWindow = (this.sampleRateHz / 125).coerceIn(128, 768)
         low220Alpha = onePoleAlpha(220f)
         low45Alpha = onePoleAlpha(45f)
@@ -155,19 +156,36 @@ class PcmBeatAnalyzer @Inject constructor() : TeeAudioProcessor.AudioBufferSink 
         val fullRise = (fullRms - previousFull).coerceAtLeast(0f)
         val now = SystemClock.elapsedRealtime()
 
-        // Primary detector: kick/bass onset. Secondary detector: broader drum transient for songs
-        // where the kick is light but the rhythmic attack is still obvious. Both are PCM-driven.
-        val bassOnset = bassRatio >= 1.045f &&
-            bassRise >= max(0.0008f, averageBass * 0.025f) &&
-            fullRatio >= 0.78f
+        // Measure how bass-heavy this instant really is, not just whether some transient happened.
+        // This prevents light vocals/snare/quiet bass from producing the same visual jump as a kick.
+        val bassShare = (bassRms / (fullRms + 0.0005f)).coerceIn(0f, 1.5f)
+        val absoluteBass = ((bassRms - 0.0065f) / 0.055f).coerceIn(0f, 1f)
+        val relativeBass = ((bassRatio - 1.02f) / 0.55f).coerceIn(0f, 1f)
+        val bassDominance = ((bassShare - 0.08f) / 0.42f).coerceIn(0f, 1f)
+        val bassIntensity = (
+            absoluteBass * 0.52f +
+                relativeBass * 0.30f +
+                bassDominance * 0.18f
+            ).coerceIn(0f, 1f)
 
-        val broadOnset = fullRatio >= 1.10f &&
-            fullRise >= max(0.0015f, averageFull * 0.035f) &&
-            bassRatio >= 0.90f
+        // Primary detector: real kick/bass onset. Secondary detector only participates when the
+        // signal already contains meaningful bass, so broad drum/vocal transients stay calm.
+        val bassOnset = bassRatio >= 1.08f &&
+            bassRise >= max(0.00125f, averageBass * 0.040f) &&
+            fullRatio >= 0.82f &&
+            bassRms >= 0.007f
 
+        val broadOnset = bassIntensity >= 0.42f &&
+            fullRatio >= 1.14f &&
+            fullRise >= max(0.0020f, averageFull * 0.045f) &&
+            bassRatio >= 0.98f
+
+        // Low-bass material stays calm. Medium/high bass must have a real onset and enough
+        // measured bass intensity before any visual pulse is emitted.
         val isBeat = (bassOnset || broadOnset) &&
-            fullRms >= 0.006f &&
-            now - lastBeatAtMs >= 92L
+            bassIntensity >= 0.24f &&
+            fullRms >= 0.010f &&
+            now - lastBeatAtMs >= 108L
 
         // Baselines adapt slowly so loud masters and quiet songs both work while attacks remain
         // visible to the detector. Clamp transients before feeding them into the baseline.
@@ -181,12 +199,12 @@ class PcmBeatAnalyzer @Inject constructor() : TeeAudioProcessor.AudioBufferSink 
         if (isBeat) {
             lastBeatAtMs = now
             sequence++
-            val onsetScore = max(
-                (bassRatio - 1f) * 1.8f,
-                (fullRatio - 1f) * 1.25f
-            )
-            val strength = (0.045f + onsetScore * 0.12f)
-                .coerceIn(0.045f, 0.155f)
+
+            // Visual strength follows measured bass intensity with a curved response:
+            // medium bass stays restrained, while genuinely strong bass grows much more.
+            val curved = bassIntensity.pow(1.65f)
+            val strength = (0.055f + curved * 0.105f)
+                .coerceIn(0.055f, 0.16f)
             _beatPulse.value = BeatPulse(sequence = sequence, strength = strength)
         }
     }
