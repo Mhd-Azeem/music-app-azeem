@@ -9,6 +9,12 @@ on:
 permissions:
   contents: write
 
+# Only the newest build for a branch should keep running. Without this, an older
+# slower run can finish after a newer run and overwrite the `latest` release.
+concurrency:
+  group: azmusic-build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -93,8 +99,21 @@ jobs:
           path: app/build/outputs/apk/release/renamed/AzMusic.apk
           retention-days: 30
 
-      - name: Remove stale release assets
+      - name: Confirm this is still the newest email-activation commit
         if: github.ref == 'refs/heads/feature/email-activation-access'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CURRENT_HEAD="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/feature/email-activation-access" --jq '.object.sha')"
+          echo "Workflow commit: $GITHUB_SHA"
+          echo "Current branch head: $CURRENT_HEAD"
+          if [ "$CURRENT_HEAD" != "$GITHUB_SHA" ]; then
+            echo "A newer commit exists. This run may keep its artifact, but it must not overwrite the latest release."
+            echo "SKIP_RELEASE=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Remove stale release assets
+        if: github.ref == 'refs/heads/feature/email-activation-access' && env.SKIP_RELEASE != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -104,7 +123,7 @@ jobs:
             done || true
 
       - name: Publish to Releases
-        if: github.ref == 'refs/heads/feature/email-activation-access'
+        if: github.ref == 'refs/heads/feature/email-activation-access' && env.SKIP_RELEASE != 'true'
         uses: softprops/action-gh-release@v3
         with:
           tag_name: latest
