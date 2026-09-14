@@ -923,401 +923,227 @@ fun NowPlayingScreen(
 
             if (glassmorphismNowPlaying) {
                 val glassUpcoming = state.queue.drop(state.currentIndex + 1)
+                val fanState = rememberLazyListState()
+
+                // Up Next: real queue cards arranged as a horizontally scrollable circular fan.
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
+                    modifier = Modifier.fillMaxWidth().weight(1f),
                     contentAlignment = Alignment.BottomCenter
                 ) {
                     if (glassUpcoming.isNotEmpty()) {
                         LazyRow(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(106.dp),
-                            contentPadding = PaddingValues(horizontal = 58.dp),
+                            state = fanState,
+                            modifier = Modifier.fillMaxWidth().height(184.dp),
+                            contentPadding = PaddingValues(horizontal = 54.dp),
                             horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.Bottom
                         ) {
                             itemsIndexed(glassUpcoming, key = { _, entry -> entry.instanceId }) { index, entry ->
-                                // Keep the queue horizontally scrollable while arranging each
-                                // vertical title along one shallow, smooth visual curve.
-                                // Fan the upcoming titles around a shallow circular arc. The
-                                // LazyRow still scrolls horizontally, while each visible item is
-                                // angled like a spoke instead of staying parallel.
-                                val curveStep = index % 9
-                                // Reference fan: the centre upcoming song is lowest/straight,
-                                // while songs toward either side climb and rotate outward.
-                                val arcOffset = when (curveStep) {
-                                    0, 8 -> 18.dp
-                                    1, 7 -> 11.dp
-                                    2, 6 -> 6.dp
-                                    3, 5 -> 2.dp
-                                    else -> 0.dp
-                                }
-                                val spokeRotation = when (curveStep) {
-                                    0 -> -32f
-                                    1 -> -24f
-                                    2 -> -16f
-                                    3 -> -8f
-                                    4 -> 0f
-                                    5 -> 8f
-                                    6 -> 16f
-                                    7 -> 24f
-                                    else -> 32f
+                                val centerIndex = fanState.firstVisibleItemIndex + 3
+                                val delta = (index - centerIndex).coerceIn(-4, 4)
+                                val distance = kotlin.math.abs(delta)
+                                val lift = when (distance) {
+                                    0 -> 0.dp
+                                    1 -> 7.dp
+                                    2 -> 20.dp
+                                    3 -> 39.dp
+                                    else -> 62.dp
                                 }
                                 Box(
                                     modifier = Modifier
-                                        .width(48.dp)
-                                        .height(94.dp)
-                                        .offset(y = arcOffset)
+                                        .width(62.dp)
+                                        .height(146.dp)
+                                        .offset(y = lift)
+                                        .graphicsLayer { rotationZ = delta * 10f }
+                                        .clip(RoundedCornerShape(11.dp))
+                                        .background(Color(0xFFFFEA28))
+                                        .border(1.dp, Color.White.copy(alpha = 0.82f), RoundedCornerShape(11.dp))
                                         .clickable { viewModel.playQueueItem(state.currentIndex + 1 + index) }
-                                        .padding(vertical = 2.dp),
-                                    contentAlignment = Alignment.Center
+                                        .padding(5.dp),
+                                    contentAlignment = Alignment.TopCenter
                                 ) {
-                                    Text(
-                                        text = entry.track.name,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White.copy(alpha = 0.94f),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier
-                                            .width(80.dp)
-                                            .graphicsLayer { rotationZ = -90f + spokeRotation },
-                                        textAlign = TextAlign.Center
-                                    )
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        AsyncImage(
+                                            model = entry.track.albumArtUrl,
+                                            contentDescription = entry.track.name,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(54.dp)
+                                                .clip(RoundedCornerShape(7.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().height(78.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = entry.track.name,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = Color(0xFF111111),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.width(72.dp).graphicsLayer { rotationZ = 90f },
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            if (glassmorphismNowPlaying) {
-                // Single thin curved boundary between Up Next and the active player.
-                Canvas(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(28.dp)
-                ) {
-                    drawArc(
-                        color = Color.White.copy(alpha = 0.46f),
-                        startAngle = 198f,
-                        sweepAngle = 144f,
-                        useCenter = false,
-                        topLeft = Offset(10.dp.toPx(), -88.dp.toPx()),
-                        size = Size(size.width - 20.dp.toPx(), 180.dp.toPx()),
-                        style = Stroke(width = 1.4.dp.toPx())
-                    )
-                }
-            }
-
-            if (glassmorphismNowPlaying) {
-                // Compact reference-style arched seek timeline.
                 val progressFraction = if (state.durationMs > 0L) {
                     (state.positionMs.toFloat() / state.durationMs.toFloat()).coerceIn(0f, 1f)
                 } else 0f
-                val seekFromX: (Float, Float) -> Unit = { x, width ->
-                    if (state.durationMs > 0L && width > 0f) {
-                        val p = (x / width).coerceIn(0f, 1f)
-                        viewModel.seekTo((state.durationMs * p).toLong())
-                    }
-                }
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 2.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(112.dp)
-                            .padding(horizontal = 24.dp)
-                            .pointerInput(state.durationMs) {
-                                detectTapGestures { offset -> seekFromX(offset.x, size.width.toFloat()) }
-                            }
-                            .pointerInput(state.durationMs) {
-                                detectDragGestures(
-                                    onDragStart = { offset -> seekFromX(offset.x, size.width.toFloat()) }
-                                ) { change, _ ->
-                                    change.consume()
-                                    seekFromX(change.position.x, size.width.toFloat())
-                                }
-                            }
-                    ) {
-                        Canvas(modifier = Modifier.fillMaxSize()) {
-                            val stroke = 3.4.dp.toPx()
-                            val arcLeft = 0.dp.toPx()
-                            val arcRight = size.width
-                            val arcWidth = arcRight - arcLeft
-                            val arcHeight = 238.dp.toPx()
-                            val top = -4.dp.toPx()
-                            val arcSize = Size(arcWidth, arcHeight)
-                            val startAngle = 206f
-                            val sweepAngle = 128f
-
-                            drawArc(
-                                color = Color.White.copy(alpha = 0.28f),
-                                startAngle = startAngle,
-                                sweepAngle = sweepAngle,
-                                useCenter = false,
-                                topLeft = Offset(arcLeft, top),
-                                size = arcSize,
-                                style = Stroke(width = stroke)
-                            )
-                            drawArc(
-                                color = Color.White.copy(alpha = 0.95f),
-                                startAngle = startAngle,
-                                sweepAngle = sweepAngle * progressFraction,
-                                useCenter = false,
-                                topLeft = Offset(arcLeft, top),
-                                size = arcSize,
-                                style = Stroke(width = stroke)
-                            )
-
-                            val angle = Math.toRadians((startAngle + sweepAngle * progressFraction).toDouble())
-                            val cx = arcLeft + arcWidth / 2f
-                            val cy = top + arcHeight / 2f
-                            val rx = arcWidth / 2f
-                            val ry = arcHeight / 2f
-                            val thumb = Offset(
-                                x = cx + (rx * kotlin.math.cos(angle)).toFloat(),
-                                y = cy + (ry * kotlin.math.sin(angle)).toFloat()
-                            )
-                            drawCircle(
-                                color = Color.White.copy(alpha = 0.24f),
-                                radius = 10.dp.toPx(),
-                                center = thumb
-                            )
-                            drawCircle(
-                                color = Color.White,
-                                radius = 5.dp.toPx(),
-                                center = thumb
-                            )
-                        }
-                    }
-
-                    IconButton(
-                        onClick = viewModel::toggleFavorite,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                            contentDescription = "Favorite",
-                            tint = if (isFavorite) accentColor else Color.White.copy(alpha = 0.88f),
-                            modifier = Modifier.size(21.dp)
-                        )
-                    }
-                    Text(
-                        text = "${formatMillis(state.positionMs)} / ${formatMillis(state.durationMs)}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.White.copy(alpha = 0.84f),
-                        modifier = Modifier.padding(top = 1.dp)
-                    )
-                }
-
-                // Keep shuffle and repeat close to the transport assembly like the reference.
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 2.dp, start = 54.dp, end = 54.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(50.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.12f))
-                            .border(1.dp, Color.White.copy(alpha = 0.36f), CircleShape)
-                            .clickable(onClick = viewModel::toggleShuffle),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Shuffle,
-                            contentDescription = "Shuffle",
-                            tint = if (state.shuffleEnabled) accentColor else Color.White.copy(alpha = 0.90f),
-                            modifier = Modifier.size(21.dp)
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(50.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.12f))
-                            .border(1.dp, Color.White.copy(alpha = 0.36f), CircleShape)
-                            .clickable(onClick = viewModel::cycleRepeatMode),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (state.repeatMode == RepeatMode.ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
-                            contentDescription = "Repeat",
-                            tint = if (state.repeatMode != RepeatMode.OFF) accentColor else Color.White.copy(alpha = 0.90f),
-                            modifier = Modifier.size(21.dp)
-                        )
-                    }
-                }
-
-                // One continuous reference-style Saturn control. The outer glass border is a
-                // single organic silhouette shared by Previous, Play/Pause and Next.
-                val saturnTransportShape = remember {
+                val lowerGlassShape = remember {
                     GenericShape { size, _ ->
-                        val w = size.width
-                        val h = size.height
-                        moveTo(0f, h * 0.50f)
-                        cubicTo(0f, h * 0.36f, w * 0.035f, h * 0.31f, w * 0.095f, h * 0.31f)
-                        lineTo(w * 0.29f, h * 0.31f)
-                        cubicTo(w * 0.345f, h * 0.31f, w * 0.355f, h * 0.10f, w * 0.425f, h * 0.035f)
-                        cubicTo(w * 0.465f, -0.005f, w * 0.535f, -0.005f, w * 0.575f, h * 0.035f)
-                        cubicTo(w * 0.645f, h * 0.10f, w * 0.655f, h * 0.31f, w * 0.71f, h * 0.31f)
-                        lineTo(w * 0.905f, h * 0.31f)
-                        cubicTo(w * 0.965f, h * 0.31f, w, h * 0.36f, w, h * 0.50f)
-                        cubicTo(w, h * 0.64f, w * 0.965f, h * 0.69f, w * 0.905f, h * 0.69f)
-                        lineTo(w * 0.71f, h * 0.69f)
-                        cubicTo(w * 0.655f, h * 0.69f, w * 0.645f, h * 0.90f, w * 0.575f, h * 0.965f)
-                        cubicTo(w * 0.535f, h * 1.005f, w * 0.465f, h * 1.005f, w * 0.425f, h * 0.965f)
-                        cubicTo(w * 0.355f, h * 0.90f, w * 0.345f, h * 0.69f, w * 0.29f, h * 0.69f)
-                        lineTo(w * 0.095f, h * 0.69f)
-                        cubicTo(w * 0.035f, h * 0.69f, 0f, h * 0.64f, 0f, h * 0.50f)
+                        moveTo(0f, size.height * 0.23f)
+                        cubicTo(size.width * 0.20f, size.height * 0.02f, size.width * 0.34f, 0f, size.width * 0.50f, 0f)
+                        cubicTo(size.width * 0.66f, 0f, size.width * 0.80f, size.height * 0.02f, size.width, size.height * 0.23f)
+                        lineTo(size.width, size.height)
+                        lineTo(0f, size.height)
                         close()
                     }
                 }
+
+                // One large frosted lower player panel with the same circular-cap silhouette.
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(142.dp)
-                        .padding(horizontal = 78.dp),
-                    contentAlignment = Alignment.Center
+                        .height(340.dp)
+                        .clip(lowerGlassShape)
+                        .background(Color(0xFFD7ECFF).copy(alpha = 0.82f))
+                        .border(1.5.dp, Color.White.copy(alpha = 0.78f), lowerGlassShape)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(108.dp)
-                            .clip(saturnTransportShape)
-                            .background(Color.White.copy(alpha = 0.10f))
-                            .border(1.35.dp, Color.White.copy(alpha = 0.58f), saturnTransportShape)
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(top = 52.dp, start = 28.dp, end = 28.dp, bottom = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight()
-                                    .clickable(onClick = viewModel::skipPrevious),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Filled.SkipPrevious,
-                                    contentDescription = "Previous",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(30.dp)
+                        // Single curved seek line inside the panel.
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(92.dp)
+                                .pointerInput(state.durationMs) {
+                                    detectTapGestures { offset ->
+                                        if (state.durationMs > 0L) {
+                                            val p = (offset.x / size.width.toFloat()).coerceIn(0f, 1f)
+                                            viewModel.seekTo((state.durationMs * p).toLong())
+                                        }
+                                    }
+                                }
+                        ) {
+                            Canvas(Modifier.fillMaxSize()) {
+                                val startAngle = 202f
+                                val sweepAngle = 136f
+                                val arcSize = Size(size.width, 176.dp.toPx())
+                                val top = -5.dp.toPx()
+                                drawArc(
+                                    color = Color(0xFF087EAE),
+                                    startAngle = startAngle,
+                                    sweepAngle = sweepAngle,
+                                    useCenter = false,
+                                    topLeft = Offset(0f, top),
+                                    size = arcSize,
+                                    style = Stroke(width = 2.4.dp.toPx())
                                 )
-                            }
-                            Box(modifier = Modifier.width(92.dp).fillMaxHeight())
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight()
-                                    .clickable(onClick = viewModel::skipNext),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Filled.SkipNext,
-                                    contentDescription = "Next",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(30.dp)
+                                val angle = Math.toRadians((startAngle + sweepAngle * progressFraction).toDouble())
+                                val cx = size.width / 2f
+                                val cy = top + arcSize.height / 2f
+                                val thumb = Offset(
+                                    cx + (arcSize.width / 2f * kotlin.math.cos(angle)).toFloat(),
+                                    cy + (arcSize.height / 2f * kotlin.math.sin(angle)).toFloat()
                                 )
+                                drawCircle(Color(0xFF087EAE), 7.dp.toPx(), thumb)
                             }
-                        }
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(94.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.98f))
-                            .clickable(enabled = !state.isBuffering, onClick = viewModel::playPause),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (state.isBuffering) {
-                            CircularProgressIndicator(
-                                strokeWidth = 3.dp,
-                                color = Color.Black,
-                                modifier = Modifier.size(30.dp)
+                            Text(
+                                text = formatMillis(state.positionMs),
+                                color = Color(0xFF08283A),
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.align(Alignment.BottomStart)
                             )
-                        } else {
-                            Icon(
-                                imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                                contentDescription = "Play/Pause",
-                                tint = Color.Black,
-                                modifier = Modifier.size(42.dp)
+                            Text(
+                                text = formatMillis(state.durationMs),
+                                color = Color(0xFF08283A),
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.align(Alignment.BottomEnd)
                             )
                         }
-                    }
-                }
-            } else {
-                Column(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
-                    Slider(
-                        value = state.positionMs.toFloat().coerceIn(0f, state.durationMs.toFloat().coerceAtLeast(1f)),
-                        onValueChange = { viewModel.seekTo(it.toLong()) },
-                        valueRange = 0f..state.durationMs.toFloat().coerceAtLeast(1f),
-                        colors = SliderDefaults.colors(
-                            thumbColor = accentColor,
-                            activeTrackColor = accentColor
-                        )
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(formatMillis(state.positionMs), style = MaterialTheme.typography.labelSmall)
-                        Text(formatMillis(state.durationMs), style = MaterialTheme.typography.labelSmall)
-                    }
-                }
 
-                var transportRowModifier = Modifier.fillMaxWidth().padding(top = 16.dp)
-                if (isLiquid) {
-                    transportRowModifier = transportRowModifier
-                        .clip(pillShape)
-                        .hazeChild(state = hazeState, style = glassStyle) { inputScale = HazeInputScale.Auto }
-                        .border(1.dp, Color.White.copy(alpha = 0.25f), pillShape)
-                }
-                Row(
-                    modifier = transportRowModifier,
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = viewModel::toggleShuffle) {
-                        Icon(
-                            imageVector = Icons.Filled.Shuffle,
-                            contentDescription = "Shuffle",
-                            tint = if (state.shuffleEnabled) accentColor else Color.White
-                        )
-                    }
-                    IconButton(onClick = viewModel::skipPrevious) {
-                        Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous", modifier = Modifier.padding(4.dp))
-                    }
-                    if (state.isBuffering) {
-                        Box(modifier = Modifier.padding(8.dp).padding(4.dp).size(24.dp)) {
-                            CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.fillMaxSize())
+                        Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                            // Compact connected Previous / Play-Pause / Next control.
+                            Row(
+                                modifier = Modifier
+                                    .width(220.dp)
+                                    .height(76.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(Color(0xFF9CCEF4).copy(alpha = 0.72f)),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Box(
+                                    modifier = Modifier.width(62.dp).fillMaxHeight().clickable(onClick = viewModel::skipPrevious),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Filled.SkipPrevious, "Previous", tint = Color(0xFF075B83), modifier = Modifier.size(34.dp))
+                                }
+                                Box(modifier = Modifier.width(96.dp))
+                                Box(
+                                    modifier = Modifier.width(62.dp).fillMaxHeight().clickable(onClick = viewModel::skipNext),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Filled.SkipNext, "Next", tint = Color(0xFF075B83), modifier = Modifier.size(34.dp))
+                                }
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(126.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF9CCEF4).copy(alpha = 0.92f))
+                                    .border(1.5.dp, Color.White.copy(alpha = 0.75f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(92.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFD9EEFF))
+                                        .clickable(enabled = !state.isBuffering, onClick = viewModel::playPause),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (state.isBuffering) {
+                                        CircularProgressIndicator(modifier = Modifier.size(36.dp), color = Color(0xFF075B83), strokeWidth = 3.dp)
+                                    } else {
+                                        Icon(
+                                            imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                            contentDescription = if (state.isPlaying) "Pause" else "Play",
+                                            tint = Color(0xFF075B83),
+                                            modifier = Modifier.size(46.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            Box(
+                                modifier = Modifier.align(Alignment.CenterStart).size(48.dp).clip(CircleShape)
+                                    .background(Color(0xFFEAF6FF).copy(alpha = 0.82f)).clickable(onClick = viewModel::toggleShuffle),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Filled.Shuffle, "Shuffle", tint = if (state.shuffleEnabled) accentColor else Color(0xFF08283A), modifier = Modifier.size(24.dp))
+                            }
+                            Box(
+                                modifier = Modifier.align(Alignment.CenterEnd).size(48.dp).clip(CircleShape)
+                                    .background(Color(0xFFEAF6FF).copy(alpha = 0.82f)).clickable(onClick = viewModel::cycleRepeatMode),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (state.repeatMode == RepeatMode.ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
+                                    contentDescription = "Repeat",
+                                    tint = if (state.repeatMode != RepeatMode.OFF) accentColor else Color(0xFF08283A),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
-                    } else {
-                        IconButton(onClick = viewModel::playPause, modifier = Modifier.padding(8.dp)) {
-                            Icon(
-                                imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                                contentDescription = "Play/Pause",
-                                modifier = Modifier.padding(4.dp)
-                            )
-                        }
-                    }
-                    IconButton(onClick = viewModel::skipNext) {
-                        Icon(Icons.Filled.SkipNext, contentDescription = "Next")
-                    }
-                    IconButton(onClick = viewModel::cycleRepeatMode) {
-                        Icon(
-                            imageVector = if (state.repeatMode == RepeatMode.ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
-                            contentDescription = "Repeat",
-                            tint = if (state.repeatMode != RepeatMode.OFF) accentColor else Color.White
-                        )
                     }
                 }
             }
