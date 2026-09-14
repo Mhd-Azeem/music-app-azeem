@@ -1,0 +1,23 @@
+name: Apply Glass Reference Refine
+on:
+  push:
+    paths:
+      - '.github/glass-reference-refine-trigger.txt'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feature/email-activation-access
+      - run: python .github/scripts/refine_glass_reference.py
+      - name: Commit source and cleanup
+        run: |
+          rm -f .github/scripts/refine_glass_reference.py .github/workflows/apply_glass_reference_refine.yml .github/glass-reference-refine-trigger.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: match glass now playing reference geometry'
+          git push origin HEAD:feature/email-activation-access
