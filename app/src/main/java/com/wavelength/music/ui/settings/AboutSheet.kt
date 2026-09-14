@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Removed Glass Now Playing outer margins and closed the gaps between Up Next cards and the curved separator",
     "Fixed Glass Up Next motion so songs continuously rotate around the circular fan while scrolling, with the separator realigned to the fan baseline",
     "Rebuilt Glass Now Playing to the supplied reference: yellow album-art Up Next cards in a circular swipe fan, one large curved frosted player panel, arched seek line, and compact connected transport",
     "Corrected Glass Now Playing geometry: clean single separator, unclipped circular Up Next fan, separated seek arc, and compact single-outline Saturn controls",
