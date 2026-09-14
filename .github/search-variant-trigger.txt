@@ -1,1 +1,0 @@
-Apply exact-title and requested-variant search ranking fix.
