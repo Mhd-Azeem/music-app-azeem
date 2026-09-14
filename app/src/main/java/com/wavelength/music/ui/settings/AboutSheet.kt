@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Fixed exact song-variant search matching and ranking for slowed, reverb, lofi, remix, and sped-up queries",
     "Search now prioritizes the exact song title before version words like slowed, reverb, lofi, remix and sped-up",
     "Updater now opens the Android installer automatically as soon as the APK download finishes",
     "Background opacity slider restored with live 0–100% control",

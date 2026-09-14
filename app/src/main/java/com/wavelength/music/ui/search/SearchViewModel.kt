@@ -268,13 +268,13 @@ class SearchViewModel @Inject constructor(
     private fun requestedVariantTokens(value: String): Set<String> {
         val n = normalizeForMatch(value)
         val out = linkedSetOf<String>()
-        if (Regex("\bslowed\b").containsMatchIn(n)) out += "slowed"
-        if (Regex("\breverb\b").containsMatchIn(n)) out += "reverb"
-        if (Regex("\b(lofi|lo fi)\b").containsMatchIn(n)) out += "lofi"
-        if (Regex("\b(sped up|speed up|nightcore)\b").containsMatchIn(n)) out += "spedup"
-        if (Regex("\bremix\b").containsMatchIn(n)) out += "remix"
-        if (Regex("\binstrumental\b").containsMatchIn(n)) out += "instrumental"
-        if (Regex("\bkaraoke\b").containsMatchIn(n)) out += "karaoke"
+        if (Regex("""\bslowed\b""").containsMatchIn(n)) out += "slowed"
+        if (Regex("""\breverb\b""").containsMatchIn(n)) out += "reverb"
+        if (Regex("""\b(lofi|lo fi)\b""").containsMatchIn(n)) out += "lofi"
+        if (Regex("""\b(sped up|speed up|nightcore)\b""").containsMatchIn(n)) out += "spedup"
+        if (Regex("""\bremix\b""").containsMatchIn(n)) out += "remix"
+        if (Regex("""\binstrumental\b""").containsMatchIn(n)) out += "instrumental"
+        if (Regex("""\bkaraoke\b""").containsMatchIn(n)) out += "karaoke"
         return out
     }
 
@@ -283,8 +283,8 @@ class SearchViewModel @Inject constructor(
     private fun baseTitleQuery(value: String): String {
         var n = normalizeForMatch(value)
         val phrases = listOf("sped up", "speed up", "nightcore", "slowed", "reverb", "lofi", "lo fi", "remix", "instrumental", "karaoke", "version", "edit")
-        phrases.forEach { p -> n = n.replace(Regex("\b${Regex.escape(p)}\b"), " ") }
-        return n.replace(Regex("\s+"), " ").trim()
+        phrases.forEach { p -> n = n.replace(Regex("""\b${Regex.escape(p)}\b"""), " ") }
+        return n.replace(Regex("""\s+"""), " ").trim()
     }
 
     private fun levenshtein(a: String, b: String): Int {
