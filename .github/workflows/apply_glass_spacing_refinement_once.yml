@@ -1,0 +1,22 @@
+name: Apply Glass Spacing Refinement Once
+on:
+  push:
+    paths: ['.github/glass-spacing-refinement-trigger.txt']
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feature/email-activation-access
+      - run: python .github/scripts/apply_glass_spacing_refinement.py
+      - name: Commit and self-clean
+        run: |
+          rm -f .github/scripts/apply_glass_spacing_refinement.py .github/workflows/apply_glass_spacing_refinement_once.yml .github/glass-spacing-refinement-trigger.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: refine Glass Up Next and control spacing'
+          git push origin HEAD:feature/email-activation-access
