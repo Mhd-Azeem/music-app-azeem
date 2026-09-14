@@ -1,1 +1,1 @@
-Trigger canonical Build APK after the final glass geometry source patch.
+Trigger canonical Build APK from final reference-player HEAD after one-time patch completed.
