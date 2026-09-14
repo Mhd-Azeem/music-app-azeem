@@ -1,0 +1,38 @@
+name: Apply Theme Style Selector
+
+on:
+  push:
+    paths:
+      - '.github/theme-style-trigger.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/email-activation-access
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Simplify theme selector
+        run: python .github/scripts/simplify-theme-style.py
+      - name: Verify selector
+        run: |
+          grep -q 'SettingsSection(title = "Theme Style")' app/src/main/java/com/wavelength/music/ui/settings/SettingsScreen.kt
+          grep -q 'RadioButton' app/src/main/java/com/wavelength/music/ui/settings/SettingsScreen.kt
+          ! grep -q 'SettingsSection(title = "Default Themes")' app/src/main/java/com/wavelength/music/ui/settings/SettingsScreen.kt
+          ! grep -q 'SettingsSection(title = "Liquid Themes")' app/src/main/java/com/wavelength/music/ui/settings/SettingsScreen.kt
+      - name: Commit app changes and remove temporary files
+        run: |
+          rm -f .github/scripts/simplify-theme-style.py .github/workflows/apply-theme-style-selector.yml .github/theme-style-trigger.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat: replace theme presets with solid liquid selector'
+          git push origin HEAD:feature/email-activation-access
