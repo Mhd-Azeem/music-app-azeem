@@ -1,0 +1,1 @@
+Build after default settings update: album art OFF, expand Up next ON.
