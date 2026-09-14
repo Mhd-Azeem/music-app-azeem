@@ -23,6 +23,19 @@ import androidx.compose.ui.unit.dp
 import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
+private val latestUpdates = listOf(
+    "Simplified appearance selector with Solid and Liquid modes using one variable accent color",
+    "New album-art styles: Depth Float, Bass Zoom, Spatial Float, Parallax, and Vinyl",
+    "Album-art style now defaults to Off",
+    "Expand Up Next when scrolled now defaults to On",
+    "Smart Queue automatically adds related songs when Up Next is nearly empty",
+    "Gapless Playback option added, enabled by default",
+    "Adjustable crossfade retained for smooth transitions between songs",
+    "Swipe down on Now Playing to collapse back to the mini-player",
+    "Email Activation moved into Settings below Cloudflare Usage and above About",
+    "Theme accent color picker is collapsible and applies to both Solid and Liquid modes"
+)
+
 private val featureGroups = listOf(
     "Playback" to listOf(
         "Stream millions of songs via JioSaavn, plus play files already on your device",
@@ -31,7 +44,7 @@ private val featureGroups = listOf(
         "Sleep timer — countdown or end-of-track",
         "Synced lyrics, shown alongside the track",
         "Audio visualizer on Now Playing",
-        "AI DJ — keeps the queue topped up automatically",
+        "Smart Queue — keeps Up Next topped up automatically",
         "Smart shuffle weighted by your listening history",
         "Drag-to-reorder Up Next queue",
         "Volume slider, optionally synced with your device's system volume"
@@ -51,9 +64,11 @@ private val featureGroups = listOf(
         "Paginated search results with infinite scroll"
     ),
     "Personalization" to listOf(
+        "Single variable accent color shared by Solid and Liquid appearance modes",
+        "Solid or Liquid appearance selection",
         "Multiple app icon presets",
         "Custom background photo, plus a gallery of favorite wallpapers",
-        "Liquid Glass, dynamic (album-art-based), and vinyl-style themes",
+        "Depth Float, Bass Zoom, Spatial Float, Parallax, and Vinyl album-art styles",
         "Adjustable background opacity",
         "Configurable track-change animation, on/off with adjustable speed"
     ),
@@ -67,7 +82,8 @@ private val featureGroups = listOf(
         "Swipe gestures — collapse Now Playing, skip tracks, switch between Home/Search/Library",
         "Pull-to-refresh on Home",
         "Local backup and restore — playlists, favorites, settings, and wallpapers",
-        "Offline mode banner when there's no connection"
+        "Offline mode banner when there's no connection",
+        "Email activation access management from Settings"
     )
 )
 
@@ -95,12 +111,26 @@ fun AboutSheet(onDismiss: () -> Unit) {
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
-                        text = "Version ${BuildConfig.VERSION_NAME}",
+                        text = "Version ${BuildConfig.VERSION_NAME} • Build ${BuildConfig.VERSION_CODE}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
+
+            Text(
+                text = "Latest updates",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 18.dp, bottom = 4.dp)
+            )
+            latestUpdates.forEach { update ->
+                Row(modifier = Modifier.padding(vertical = 2.dp)) {
+                    Text("•  ", color = MaterialTheme.colorScheme.primary)
+                    Text(update, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+
             featureGroups.forEach { (group, items) ->
                 Text(
                     text = group,
