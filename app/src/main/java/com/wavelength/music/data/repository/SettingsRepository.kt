@@ -52,7 +52,7 @@ data class AppSettingsState(
     val backgroundOpacity: Float = DEFAULT_BACKGROUND_OPACITY,
     val builtInWallpaper: BuiltInWallpaper = BuiltInWallpaper.DEFAULT,
     val customAccentArgb: Int = DEFAULT_CUSTOM_ACCENT_ARGB,
-    val expandUpNextOnScroll: Boolean = false,
+    val expandUpNextOnScroll: Boolean = true,
     val dynamicThemeFromAlbumArt: Boolean = false,
     val albumArtStyle: AlbumArtStyle = AlbumArtStyle.OFF,
     val aiDjEnabled: Boolean = false,
@@ -107,7 +107,7 @@ class SettingsRepository @Inject constructor(
             BuiltInWallpaper.valueOf(prefs.getString(KEY_BUILT_IN_WALLPAPER, null) ?: BuiltInWallpaper.DEFAULT.name)
         }.getOrDefault(BuiltInWallpaper.DEFAULT),
         customAccentArgb = prefs.getInt(KEY_CUSTOM_ACCENT_ARGB, DEFAULT_CUSTOM_ACCENT_ARGB),
-        expandUpNextOnScroll = prefs.getBoolean(KEY_EXPAND_UP_NEXT, false),
+        expandUpNextOnScroll = prefs.getBoolean(KEY_EXPAND_UP_NEXT, true),
         dynamicThemeFromAlbumArt = prefs.getBoolean(KEY_DYNAMIC_THEME, false),
         albumArtStyle = loadAlbumArtStyle(),
         aiDjEnabled = prefs.getBoolean(KEY_AI_DJ, false),
