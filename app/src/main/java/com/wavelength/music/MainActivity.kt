@@ -35,12 +35,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import com.wavelength.music.ui.components.OfflineBanner
 import com.wavelength.music.ui.navigation.WavelengthNavHost
 import com.wavelength.music.ui.settings.AppSettingsViewModel
 import com.wavelength.music.ui.theme.WavelengthTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -197,7 +200,7 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Toast.makeText(
                 this,
-                "Allow AzMusic to install updates, then return and tap Download & install again.",
+                "Allow AzMusic to install updates. When you return, the update will continue automatically.",
                 Toast.LENGTH_LONG
             ).show()
             startActivity(
@@ -223,6 +226,13 @@ class MainActivity : ComponentActivity() {
         updaterPrefs.edit().putLong(KEY_PENDING_DOWNLOAD_ID, downloadId).apply()
         Toast.makeText(this, "AzMusic update downloading…", Toast.LENGTH_SHORT).show()
 
+        // Keep a foreground watcher as the primary path. Some Android builds deliver the
+        // DownloadManager completion broadcast late, or won't allow the receiver to launch an
+        // activity immediately. While AzMusic is visible, poll this exact download and open the
+        // installer the moment it becomes successful. The broadcast receiver and onResume()
+        // logic below remain as fallbacks.
+        watchDownloadAndLaunchInstaller(downloadId)
+
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 if (intent?.action != DownloadManager.ACTION_DOWNLOAD_COMPLETE) return
@@ -240,6 +250,16 @@ class MainActivity : ComponentActivity() {
         } else {
             @Suppress("DEPRECATION")
             registerReceiver(receiver, filter)
+        }
+    }
+
+    private fun watchDownloadAndLaunchInstaller(downloadId: Long) {
+        lifecycleScope.launch {
+            // Stay lightweight: DownloadManager status changes are slow compared with UI frames.
+            while (!isFinishing && updaterPrefs.getLong(KEY_PENDING_DOWNLOAD_ID, -1L) == downloadId) {
+                if (tryLaunchDownloadedUpdate(downloadId)) return@launch
+                delay(500L)
+            }
         }
     }
 

@@ -1,1 +1,0 @@
-Apply automatic installer launch after DownloadManager completion.

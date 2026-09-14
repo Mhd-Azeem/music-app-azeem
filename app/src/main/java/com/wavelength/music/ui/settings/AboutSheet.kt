@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Updater now opens the Android installer automatically as soon as the APK download finishes",
     "Background opacity slider restored with live 0–100% control",
     "Simplified appearance selector with Solid and Liquid modes using one variable accent color",
     "New album-art styles: Depth Float, Bass Zoom, Spatial Float, Parallax, and Vinyl",
