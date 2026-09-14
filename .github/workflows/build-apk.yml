@@ -27,6 +27,12 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: gradle
+      - name: Apply staged source patch if present
+        run: |
+          if [ -f .github/scripts/pending_patch.py ]; then
+            python .github/scripts/pending_patch.py
+            echo "AZMUSIC_PATCH_APPLIED=1" >> "$GITHUB_ENV"
+          fi
       - name: Write local.properties
         run: |
           echo "sdk.dir=${ANDROID_HOME}" > local.properties
@@ -49,6 +55,12 @@ jobs:
             echo "AZMUSIC_KEY_ALIAS=$AZMUSIC_KEY_ALIAS" >> "$GITHUB_ENV"
             echo "AZMUSIC_KEY_PASSWORD=$AZMUSIC_KEY_PASSWORD" >> "$GITHUB_ENV"
           fi
+      - name: Verify newest branch commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          HEAD_SHA=$(gh api repos/$GITHUB_REPOSITORY/commits/feature/email-activation-access --jq .sha)
+          test "$HEAD_SHA" = "$GITHUB_SHA" || { echo "Newer commit exists; refusing stale build."; exit 1; }
       - name: Build AzMusic release
         run: ./gradlew :app:assembleRelease --build-cache --parallel --stacktrace
       - name: Prepare APK
@@ -62,12 +74,6 @@ jobs:
           path: release-apks/AzMusic.apk
           retention-days: 30
           compression-level: 0
-      - name: Verify newest branch commit
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          HEAD_SHA=$(gh api repos/$GITHUB_REPOSITORY/commits/feature/email-activation-access --jq .sha)
-          test "$HEAD_SHA" = "$GITHUB_SHA" || { echo "Newer commit exists; refusing stale release."; exit 1; }
       - name: Remove stale release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -86,3 +92,12 @@ jobs:
           prerelease: false
           make_latest: true
           files: release-apks/AzMusic.apk
+      - name: Persist staged patch and clean staging file
+        if: env.AZMUSIC_PATCH_APPLIED == '1'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/scripts/pending_patch.py
+          git add app/src/main/java/com/wavelength/music/ui/nowplaying/NowPlayingScreen.kt app/src/main/java/com/wavelength/music/ui/settings/AboutSheet.kt
+          git commit -m 'feat: refine Now Playing separator and transport geometry'
+          git push origin HEAD:feature/email-activation-access
