@@ -67,7 +67,7 @@ data class AppSettingsState(
      * one the hardware rocker controls) instead of an app-only software gain. */
     val syncVolumeWithSystem: Boolean = true,
     /** When enabled in Liquid themes, the current track artwork fills the Now Playing backdrop. */
-    val liquidAlbumArtBackground: Boolean = true
+    val liquidAlbumArtBackground: Boolean = false
 )
 
 const val DEFAULT_BACKGROUND_OPACITY = 0.25f
@@ -116,7 +116,7 @@ class SettingsRepository @Inject constructor(
         trackTransitionEnabled = prefs.getBoolean(KEY_TRACK_TRANSITION_ENABLED, true),
         trackTransitionDurationMs = prefs.getInt(KEY_TRACK_TRANSITION_DURATION, DEFAULT_TRACK_TRANSITION_DURATION_MS),
         syncVolumeWithSystem = prefs.getBoolean(KEY_SYNC_VOLUME_WITH_SYSTEM, true),
-        liquidAlbumArtBackground = prefs.getBoolean(KEY_LIQUID_ALBUM_ART_BACKGROUND, true)
+        liquidAlbumArtBackground = false
     )
 
     private fun loadAlbumArtStyle(): AlbumArtStyle {

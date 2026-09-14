@@ -101,6 +101,7 @@ fun SettingsScreen(
     var showClearDownloadsConfirm by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
     var showAlbumArtStyleMenu by remember { mutableStateOf(false) }
+    var showThemeColorPicker by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     val eqSupported by equalizerViewModel.isSupported.collectAsStateWithLifecycle()
@@ -428,42 +429,61 @@ fun SettingsScreen(
             }
 
             item {
-                SettingsSection(title = "Liquid Theme Color") {
-                    Text(
-                        text = "Tap or drag anywhere in the color box to choose from millions of shades.",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                    LiquidColorPicker(
-                        selectedArgb = settings.customAccentArgb,
-                        onColorSelected = viewModel::setCustomAccentArgb,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .height(190.dp)
-                    )
+                SettingsSection(title = "Theme Accent Color") {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable { showThemeColorPicker = !showThemeColorPicker }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Box(
                                 modifier = Modifier
-                                    .size(28.dp)
+                                    .size(34.dp)
                                     .clip(CircleShape)
                                     .background(Color(settings.customAccentArgb))
-                                    .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
+                                    .border(2.dp, Color.White.copy(alpha = 0.65f), CircleShape)
                             )
-                            Text(
-                                text = "#%08X".format(settings.customAccentArgb),
-                                modifier = Modifier.padding(start = 10.dp)
-                            )
+                            Column(modifier = Modifier.padding(start = 12.dp)) {
+                                Text(text = "#%08X".format(settings.customAccentArgb))
+                                Text(
+                                    text = if (showThemeColorPicker) {
+                                        "Tap to collapse color picker"
+                                    } else {
+                                        "Tap to customize all theme colors"
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        IconButton(onClick = { showThemeColorPicker = !showThemeColorPicker }) {
+                            Icon(Icons.Filled.ExpandMore, contentDescription = "Expand theme color picker")
                         }
                         TextButton(onClick = { viewModel.setCustomAccentArgb(0xFF22D3EE.toInt()) }) {
                             Text("Reset")
                         }
+                    }
+                    if (showThemeColorPicker) {
+                        Text(
+                            text = "Tap or drag anywhere in the color box. This accent applies to both solid and Liquid themes.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                        )
+                        LiquidColorPicker(
+                            selectedArgb = settings.customAccentArgb,
+                            onColorSelected = viewModel::setCustomAccentArgb,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .height(190.dp)
+                        )
                     }
                 }
             }
@@ -582,29 +602,6 @@ fun SettingsScreen(
                                 onClick = { viewModel.selectTheme(theme) }
                             )
                         }
-                    }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Song cover as Liquid background")
-                            Text(
-                                text = if (settings.liquidAlbumArtBackground) {
-                                    "On • cover artwork shown at 100% opacity"
-                                } else {
-                                    "Off • use the normal app wallpaper instead"
-                                },
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = settings.liquidAlbumArtBackground,
-                            onCheckedChange = viewModel::setLiquidAlbumArtBackground
-                        )
                     }
                 }
             }

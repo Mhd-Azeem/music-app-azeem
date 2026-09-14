@@ -8,8 +8,8 @@ import androidx.compose.ui.graphics.Color
 
 private fun schemeFor(theme: AppTheme, customAccent: Color? = null): ColorScheme = when (theme) {
     AppTheme.CLASSIC -> darkColorScheme(
-        primary = WavelengthGreen,
-        secondary = WavelengthGreenLight,
+        primary = customAccent ?: WavelengthGreen,
+        secondary = customAccent?.copy(alpha = 0.78f) ?: WavelengthGreenLight,
         background = Color.Transparent,
         surface = WavelengthSurface,
         surfaceVariant = WavelengthSurfaceVariant,
@@ -18,8 +18,8 @@ private fun schemeFor(theme: AppTheme, customAccent: Color? = null): ColorScheme
         error = WavelengthError
     )
     AppTheme.MARVEL -> darkColorScheme(
-        primary = Color(0xFFED1D24),
-        secondary = Color(0xFFFFD700),
+        primary = customAccent ?: Color(0xFFED1D24),
+        secondary = customAccent?.copy(alpha = 0.78f) ?: Color(0xFFFFD700),
         background = Color.Transparent,
         surface = Color(0xFF1A1414),
         surfaceVariant = Color(0xFF2A1E1E),
@@ -28,8 +28,8 @@ private fun schemeFor(theme: AppTheme, customAccent: Color? = null): ColorScheme
         error = WavelengthError
     )
     AppTheme.PINK -> darkColorScheme(
-        primary = Color(0xFFEC4899),
-        secondary = Color(0xFFF9A8D4),
+        primary = customAccent ?: Color(0xFFEC4899),
+        secondary = customAccent?.copy(alpha = 0.78f) ?: Color(0xFFF9A8D4),
         background = Color.Transparent,
         surface = Color(0xFF1E1418),
         surfaceVariant = Color(0xFF2A1E24),
@@ -38,8 +38,8 @@ private fun schemeFor(theme: AppTheme, customAccent: Color? = null): ColorScheme
         error = WavelengthError
     )
     AppTheme.BLACK -> darkColorScheme(
-        primary = Color(0xFFE0E0E0),
-        secondary = Color(0xFF9E9E9E),
+        primary = customAccent ?: Color(0xFFE0E0E0),
+        secondary = customAccent?.copy(alpha = 0.78f) ?: Color(0xFF9E9E9E),
         background = Color.Transparent,
         surface = Color(0xFF000000),
         surfaceVariant = Color(0xFF1A1A1A),
@@ -48,8 +48,8 @@ private fun schemeFor(theme: AppTheme, customAccent: Color? = null): ColorScheme
         error = WavelengthError
     )
     AppTheme.GREY -> darkColorScheme(
-        primary = Color(0xFF9E9E9E),
-        secondary = Color(0xFFBDBDBD),
+        primary = customAccent ?: Color(0xFF9E9E9E),
+        secondary = customAccent?.copy(alpha = 0.78f) ?: Color(0xFFBDBDBD),
         background = Color.Transparent,
         surface = Color(0xFF232323),
         surfaceVariant = Color(0xFF2E2E2E),
@@ -58,8 +58,8 @@ private fun schemeFor(theme: AppTheme, customAccent: Color? = null): ColorScheme
         error = WavelengthError
     )
     AppTheme.OCEAN -> darkColorScheme(
-        primary = Color(0xFF22D3EE),
-        secondary = Color(0xFF0EA5E9),
+        primary = customAccent ?: Color(0xFF22D3EE),
+        secondary = customAccent?.copy(alpha = 0.78f) ?: Color(0xFF0EA5E9),
         background = Color.Transparent,
         surface = Color(0xFF0F2027),
         surfaceVariant = Color(0xFF1B3A42),
@@ -68,8 +68,8 @@ private fun schemeFor(theme: AppTheme, customAccent: Color? = null): ColorScheme
         error = WavelengthError
     )
     AppTheme.SUNSET -> darkColorScheme(
-        primary = Color(0xFFFF7A45),
-        secondary = Color(0xFFFFB84D),
+        primary = customAccent ?: Color(0xFFFF7A45),
+        secondary = customAccent?.copy(alpha = 0.78f) ?: Color(0xFFFFB84D),
         background = Color.Transparent,
         surface = Color(0xFF2A1810),
         surfaceVariant = Color(0xFF3D2418),
@@ -133,7 +133,7 @@ fun WavelengthTheme(
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = schemeFor(theme, if (theme.isGlass) customLiquidAccent else null),
+        colorScheme = schemeFor(theme, customLiquidAccent),
         typography = WavelengthTypography,
         content = content
     )

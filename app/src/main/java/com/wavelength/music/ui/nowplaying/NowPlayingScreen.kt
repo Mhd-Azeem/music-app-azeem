@@ -151,7 +151,7 @@ fun NowPlayingScreen(
     trackTransitionEnabled: Boolean = true,
     trackTransitionDurationMs: Int = 300,
     syncVolumeWithSystem: Boolean = true,
-    liquidAlbumArtBackground: Boolean = true
+    liquidAlbumArtBackground: Boolean = false
 ) {
     val trackTransitionSpec: FiniteAnimationSpec<Float> = if (trackTransitionEnabled) {
         tween(trackTransitionDurationMs)
