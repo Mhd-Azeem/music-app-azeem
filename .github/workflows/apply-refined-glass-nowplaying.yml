@@ -1,0 +1,36 @@
+name: Apply Refined Glass Now Playing
+
+on:
+  push:
+    branches:
+      - feature/email-activation-access
+    paths:
+      - '.github/scripts/refine_glass_nowplaying.py'
+      - '.github/workflows/apply-refined-glass-nowplaying.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: feature/email-activation-access
+          fetch-depth: 0
+
+      - name: Apply refined glass patch
+        run: python .github/scripts/refine_glass_nowplaying.py
+
+      - name: Commit source changes and clean helper files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/java/com/wavelength/music/ui/nowplaying/NowPlayingScreen.kt
+          git add app/src/main/java/com/wavelength/music/ui/settings/AboutSheet.kt
+          git rm .github/scripts/refine_glass_nowplaying.py
+          git rm .github/workflows/apply-refined-glass-nowplaying.yml
+          git commit -m "feat: refine glass Now Playing to match reference"
+          git push origin feature/email-activation-access
