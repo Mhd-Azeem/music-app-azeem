@@ -1,0 +1,36 @@
+name: Apply Auto Installer
+
+on:
+  push:
+    branches: [feature/email-activation-access]
+    paths:
+      - '.github/auto-installer-trigger.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/email-activation-access
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Apply updater auto-launch patch
+        run: python .github/scripts/auto-install-update.py
+      - name: Verify updater changes
+        run: |
+          grep -q 'watchDownloadAndLaunchInstaller' app/src/main/java/com/wavelength/music/MainActivity.kt
+          grep -q 'opens the Android installer automatically' app/src/main/java/com/wavelength/music/ui/settings/AboutSheet.kt
+      - name: Commit app changes and clean helper files
+        run: |
+          rm -f .github/scripts/auto-install-update.py .github/workflows/apply-auto-installer.yml .github/auto-installer-trigger.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat: auto-open installer after update download' || exit 0
+          git push origin HEAD:feature/email-activation-access
