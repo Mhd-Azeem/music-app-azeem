@@ -1,0 +1,21 @@
+name: Apply Visible Zero Gap Fix
+on:
+  push:
+    paths: ['.github/visible-zero-gap-trigger.txt']
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feature/email-activation-access
+      - run: python .github/scripts/apply_visible_zero_gap_fix.py
+      - run: |
+          rm -f .github/scripts/apply_visible_zero_gap_fix.py .github/workflows/apply_visible_zero_gap_fix.yml .github/visible-zero-gap-trigger.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: make glass zero-gap layout visibly edge-to-edge'
+          git push origin HEAD:feature/email-activation-access
