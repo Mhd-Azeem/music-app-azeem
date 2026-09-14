@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Wavelength"
 include(":app")
+include(":sarigama-demo")
