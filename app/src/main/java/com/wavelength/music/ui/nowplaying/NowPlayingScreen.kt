@@ -933,9 +933,9 @@ fun NowPlayingScreen(
                         LazyRow(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(92.dp),
-                            contentPadding = PaddingValues(horizontal = 54.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                .height(116.dp),
+                            contentPadding = PaddingValues(horizontal = 38.dp),
+                            horizontalArrangement = Arrangement.spacedBy(1.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             itemsIndexed(glassUpcoming, key = { _, entry -> entry.instanceId }) { index, entry ->
@@ -945,28 +945,30 @@ fun NowPlayingScreen(
                                 // LazyRow still scrolls horizontally, while each visible item is
                                 // angled like a spoke instead of staying parallel.
                                 val curveStep = index % 9
+                                // Reference fan: the centre upcoming song is lowest/straight,
+                                // while songs toward either side climb and rotate outward.
                                 val arcOffset = when (curveStep) {
-                                    0, 8 -> 18.dp
-                                    1, 7 -> 12.dp
-                                    2, 6 -> 7.dp
-                                    3, 5 -> 3.dp
-                                    else -> 0.dp
+                                    0, 8 -> 0.dp
+                                    1, 7 -> 8.dp
+                                    2, 6 -> 15.dp
+                                    3, 5 -> 21.dp
+                                    else -> 24.dp
                                 }
                                 val spokeRotation = when (curveStep) {
-                                    0 -> -30f
-                                    1 -> -22f
-                                    2 -> -14f
-                                    3 -> -7f
+                                    0 -> -38f
+                                    1 -> -29f
+                                    2 -> -20f
+                                    3 -> -10f
                                     4 -> 0f
-                                    5 -> 7f
-                                    6 -> 14f
-                                    7 -> 22f
-                                    else -> 30f
+                                    5 -> 10f
+                                    6 -> 20f
+                                    7 -> 29f
+                                    else -> 38f
                                 }
                                 Box(
                                     modifier = Modifier
-                                        .width(46.dp)
-                                        .height(82.dp)
+                                        .width(50.dp)
+                                        .height(104.dp)
                                         .offset(y = arcOffset)
                                         .clickable { viewModel.playQueueItem(state.currentIndex + 1 + index) }
                                         .padding(vertical = 2.dp),
@@ -979,7 +981,7 @@ fun NowPlayingScreen(
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier
-                                            .width(78.dp)
+                                            .width(88.dp)
                                             .graphicsLayer { rotationZ = -90f + spokeRotation },
                                         textAlign = TextAlign.Center
                                     )
@@ -1165,17 +1167,17 @@ fun NowPlayingScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(132.dp)
-                        .padding(horizontal = 18.dp),
+                        .height(154.dp)
+                        .padding(horizontal = 42.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(116.dp)
+                            .height(126.dp)
                             .clip(saturnTransportShape)
-                            .background(Color.White.copy(alpha = 0.13f))
-                            .border(1.6.dp, Color.White.copy(alpha = 0.68f), saturnTransportShape)
+                            .background(Color.White.copy(alpha = 0.10f))
+                            .border(1.35.dp, Color.White.copy(alpha = 0.58f), saturnTransportShape)
                     ) {
                         Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                             Box(
@@ -1192,7 +1194,7 @@ fun NowPlayingScreen(
                                     modifier = Modifier.size(30.dp)
                                 )
                             }
-                            Box(modifier = Modifier.width(112.dp).fillMaxHeight())
+                            Box(modifier = Modifier.width(126.dp).fillMaxHeight())
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
@@ -1211,13 +1213,13 @@ fun NowPlayingScreen(
                     }
                     Box(
                         modifier = Modifier
-                            .size(108.dp)
+                            .size(126.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.10f))
                     )
                     Box(
                         modifier = Modifier
-                            .size(88.dp)
+                            .size(94.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.98f))
                             .clickable(enabled = !state.isBuffering, onClick = viewModel::playPause),
@@ -1234,7 +1236,7 @@ fun NowPlayingScreen(
                                 imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                                 contentDescription = "Play/Pause",
                                 tint = Color.Black,
-                                modifier = Modifier.size(42.dp)
+                                modifier = Modifier.size(44.dp)
                             )
                         }
                     }
