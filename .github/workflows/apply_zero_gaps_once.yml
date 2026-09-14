@@ -1,0 +1,22 @@
+name: Apply Zero Gaps Once
+on:
+  push:
+    paths: ['.github/zero-gaps-once-trigger.txt']
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feature/email-activation-access
+      - run: python .github/scripts/fix_glass_zero_gaps.py
+      - name: Commit and self-clean
+        run: |
+          rm -f .github/scripts/fix_glass_zero_gaps.py .github/workflows/apply_zero_gaps_once.yml .github/zero-gaps-once-trigger.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: remove glass player margins and queue gaps'
+          git push origin HEAD:feature/email-activation-access
