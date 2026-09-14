@@ -40,6 +40,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -572,36 +573,60 @@ fun SettingsScreen(
             }
 
             item {
-                SettingsSection(title = "Default Themes") {
-                    LazyRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                SettingsSection(title = "Theme Style") {
+                    Text(
+                        text = "Choose how the variable accent color is rendered across the app.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(AppTheme.entries.filter { !it.isGlass }, key = { it.name }) { theme ->
-                            ThemeOption(
-                                theme = theme,
-                                selected = settings.theme == theme,
-                                onClick = { viewModel.selectTheme(theme) }
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(14.dp))
+                                .clickable { viewModel.selectTheme(AppTheme.CLASSIC) }
+                                .padding(horizontal = 8.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = !settings.theme.isGlass,
+                                onClick = { viewModel.selectTheme(AppTheme.CLASSIC) }
                             )
+                            Column(modifier = Modifier.padding(start = 4.dp)) {
+                                Text("Solid", style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    "Clean solid interface",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
-                    }
-                }
-            }
-
-            item {
-                SettingsSection(title = "Liquid Themes") {
-                    LazyRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        items(AppTheme.entries.filter { it.isGlass }, key = { it.name }) { theme ->
-                            ThemeOption(
-                                theme = theme,
-                                selected = settings.theme == theme,
-                                onClick = { viewModel.selectTheme(theme) }
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(14.dp))
+                                .clickable { viewModel.selectTheme(AppTheme.LIQUID) }
+                                .padding(horizontal = 8.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = settings.theme.isGlass,
+                                onClick = { viewModel.selectTheme(AppTheme.LIQUID) }
                             )
+                            Column(modifier = Modifier.padding(start = 4.dp)) {
+                                Text("Liquid", style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    "Glass and blur interface",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }
