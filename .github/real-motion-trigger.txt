@@ -1,1 +1,1 @@
-Apply real sensor parallax and audio-reactive beat bounce.
+Build simplified Solid/Liquid theme style selector.
