@@ -528,22 +528,22 @@ fun NowPlayingScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        scaleX = 1.03f
-                        scaleY = 1.03f
+                        scaleX = 1.00f
+                        scaleY = 1.00f
                     }
-                    .blur(14.dp)
-                    .alpha(0.86f),
+                    .blur(5.dp)
+                    .alpha(1.00f),
                 contentScale = ContentScale.Crop
             )
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.07f))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.035f))
             )
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White.copy(alpha = 0.14f))
+                    .background(Color.White.copy(alpha = 0.055f))
             )
         }
         if (isLiquid && liquidAlbumArtBackground && !track?.albumArtUrl.isNullOrBlank()) {
@@ -566,14 +566,14 @@ fun NowPlayingScreen(
                 )
                 .background(
                     when {
-                        glassmorphismNowPlaying -> Color.White.copy(alpha = 0.16f)
+                        glassmorphismNowPlaying -> Color.White.copy(alpha = 0.075f)
                         isLiquid -> Color.Transparent
                         else -> MaterialTheme.colorScheme.background
                     }
                 )
                 .border(
                     width = if (glassmorphismNowPlaying) 1.dp else 0.dp,
-                    color = if (glassmorphismNowPlaying) Color.White.copy(alpha = 0.38f) else Color.Transparent,
+                    color = if (glassmorphismNowPlaying) Color.White.copy(alpha = 0.28f) else Color.Transparent,
                     shape = if (glassmorphismNowPlaying) RoundedCornerShape(34.dp) else RoundedCornerShape(0.dp)
                 )
                 .padding(if (glassmorphismNowPlaying) 20.dp else 24.dp)
@@ -757,12 +757,13 @@ fun NowPlayingScreen(
                 }
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = if (glassmorphismNowPlaying) 10.dp else 32.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            if (!glassmorphismNowPlaying) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 32.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                     Crossfade(
                         targetState = track,
                         animationSpec = trackTransitionSpec,
@@ -858,6 +859,11 @@ fun NowPlayingScreen(
                     }
                 }
             }
+            }
+
+            if (glassmorphismNowPlaying) {
+                Box(modifier = Modifier.weight(1f))
+            }
 
             if (glassmorphismNowPlaying) {
                 // Compact reference-style arched seek timeline.
@@ -874,13 +880,13 @@ fun NowPlayingScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 12.dp),
+                        .padding(top = 2.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(86.dp)
+                            .height(94.dp)
                             .padding(horizontal = 10.dp)
                             .pointerInput(state.durationMs) {
                                 detectTapGestures { offset -> seekFromX(offset.x, size.width.toFloat()) }
@@ -899,11 +905,11 @@ fun NowPlayingScreen(
                             val arcLeft = 16.dp.toPx()
                             val arcRight = size.width - 16.dp.toPx()
                             val arcWidth = arcRight - arcLeft
-                            val arcHeight = 90.dp.toPx()
-                            val top = 18.dp.toPx()
+                            val arcHeight = 104.dp.toPx()
+                            val top = 12.dp.toPx()
                             val arcSize = Size(arcWidth, arcHeight)
-                            val startAngle = 205f
-                            val sweepAngle = 130f
+                            val startAngle = 202f
+                            val sweepAngle = 136f
 
                             drawArc(
                                 color = Color.White.copy(alpha = 0.34f),
@@ -969,7 +975,7 @@ fun NowPlayingScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 10.dp, start = 50.dp, end = 50.dp),
+                        .padding(top = 6.dp, start = 46.dp, end = 46.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -1012,25 +1018,25 @@ fun NowPlayingScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(126.dp)
-                        .padding(horizontal = 26.dp),
+                        .height(132.dp)
+                        .padding(horizontal = 24.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(70.dp),
+                            .height(74.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(70.dp)
+                                .height(74.dp)
                                 .clip(
                                     RoundedCornerShape(
                                         topStart = 36.dp,
-                                        topEnd = 22.dp,
-                                        bottomEnd = 22.dp,
+                                        topEnd = 38.dp,
+                                        bottomEnd = 38.dp,
                                         bottomStart = 36.dp
                                     )
                                 )
@@ -1040,8 +1046,8 @@ fun NowPlayingScreen(
                                     Color.White.copy(alpha = 0.34f),
                                     RoundedCornerShape(
                                         topStart = 36.dp,
-                                        topEnd = 22.dp,
-                                        bottomEnd = 22.dp,
+                                        topEnd = 38.dp,
+                                        bottomEnd = 38.dp,
                                         bottomStart = 36.dp
                                     )
                                 )
@@ -1056,18 +1062,18 @@ fun NowPlayingScreen(
                             )
                         }
 
-                        Box(modifier = Modifier.size(94.dp))
+                        Box(modifier = Modifier.size(18.dp))
 
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(70.dp)
+                                .height(74.dp)
                                 .clip(
                                     RoundedCornerShape(
-                                        topStart = 22.dp,
+                                        topStart = 38.dp,
                                         topEnd = 36.dp,
                                         bottomEnd = 36.dp,
-                                        bottomStart = 22.dp
+                                        bottomStart = 38.dp
                                     )
                                 )
                                 .background(Color.White.copy(alpha = 0.16f))
@@ -1075,10 +1081,10 @@ fun NowPlayingScreen(
                                     1.dp,
                                     Color.White.copy(alpha = 0.34f),
                                     RoundedCornerShape(
-                                        topStart = 22.dp,
+                                        topStart = 38.dp,
                                         topEnd = 36.dp,
                                         bottomEnd = 36.dp,
-                                        bottomStart = 22.dp
+                                        bottomStart = 38.dp
                                     )
                                 )
                                 .clickable(onClick = viewModel::skipNext),
@@ -1095,17 +1101,17 @@ fun NowPlayingScreen(
 
                     Box(
                         modifier = Modifier
-                            .size(114.dp)
+                            .size(120.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.13f))
                             .border(1.dp, Color.White.copy(alpha = 0.30f), CircleShape)
                     )
                     Box(
                         modifier = Modifier
-                            .size(91.dp)
+                            .size(88.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.96f))
-                            .border(7.dp, Color.White.copy(alpha = 0.20f), CircleShape)
+                            .border(6.dp, Color.White.copy(alpha = 0.23f), CircleShape)
                             .clickable(enabled = !state.isBuffering, onClick = viewModel::playPause),
                         contentAlignment = Alignment.Center
                     ) {
