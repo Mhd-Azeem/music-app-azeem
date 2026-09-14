@@ -1,1 +1,1 @@
-Build exact glass Now Playing reference commit 8e2d196368f7d82b5df17685664ef2fd0ac63aac.
+Build restored glass Now Playing compile fix commit 8a8f8f30c982dac4324d251a29694d9b3005b515.
