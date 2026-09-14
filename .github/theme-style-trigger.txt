@@ -1,0 +1,1 @@
+apply solid/liquid theme style selector
