@@ -1,0 +1,22 @@
+name: Apply Reference Player Once
+on:
+  push:
+    paths: ['.github/reference-player-trigger.txt']
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feature/email-activation-access
+      - run: python .github/scripts/apply_reference_player.py
+      - name: Commit source and self-clean
+        run: |
+          rm -f .github/scripts/apply_reference_player.py .github/workflows/apply_reference_player_once.yml .github/reference-player-trigger.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat: rebuild glass player to exact reference layout'
+          git push origin HEAD:feature/email-activation-access
