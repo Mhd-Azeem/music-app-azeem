@@ -1,0 +1,43 @@
+name: Restore and Fix Glass Now Playing
+on:
+  push:
+    branches:
+      - feature/email-activation-access
+    paths:
+      - .github/workflows/restore-and-fix-glass.yml
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore full file and apply compile fix
+        run: |
+          git checkout 3eb20596c8bbd1b122324475855b1571478f40fd -- app/src/main/java/com/wavelength/music/ui/nowplaying/NowPlayingScreen.kt
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/java/com/wavelength/music/ui/nowplaying/NowPlayingScreen.kt')
+          s = p.read_text()
+          old = 'import androidx.compose.foundation.clickable\nimport androidx.compose.foundation.gestures.detectTapGestures\n'
+          new = 'import androidx.compose.foundation.clickable\nimport androidx.compose.foundation.gestures.detectDragGestures\nimport androidx.compose.foundation.gestures.detectTapGestures\n'
+          if 'import androidx.compose.foundation.gestures.detectDragGestures' not in s:
+              s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          a = Path('app/src/main/java/com/wavelength/music/ui/settings/AboutSheet.kt')
+          t = a.read_text()
+          marker = 'private val latestUpdates = listOf(\n'
+          line = '    "Fixed the curved glass seek timeline gesture build issue",\n'
+          if line not in t:
+              t = t.replace(marker, marker + line, 1)
+          a.write_text(t)
+          PY
+          git rm .github/workflows/restore-and-fix-glass.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/java/com/wavelength/music/ui/nowplaying/NowPlayingScreen.kt app/src/main/java/com/wavelength/music/ui/settings/AboutSheet.kt
+          git commit -m "fix: restore full glass Now Playing and compile seek gestures"
+          git push
