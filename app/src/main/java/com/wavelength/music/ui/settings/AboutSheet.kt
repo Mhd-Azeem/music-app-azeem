@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Refined Glass Now Playing to closely match the reference: cleaner artwork, centered metadata, compact arc timeline, organic liquid transport, and minimal controls",
     "Fixed the curved glass seek timeline gesture build issue",
     "Glass Now Playing now matches the reference with an arched seek timeline and connected liquid playback controls",
     "Glassmorphism Now Playing now includes reference-style liquid-glass Previous, Play/Pause, Next, Shuffle and Repeat controls",
