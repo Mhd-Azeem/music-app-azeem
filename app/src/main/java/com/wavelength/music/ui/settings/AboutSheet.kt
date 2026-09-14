@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Now Playing refined with a thicker translucent timeline-shaped separator, softer lower playback frost, larger Play/Pause orbit, and Previous/Next moved closer to center",
     "Refined Glass Now Playing to match the supplied reference: true circular-fan Up Next geometry and corrected compact Saturn transport proportions",
     "Glass Now Playing now separates Up Next from playback with a curved divider, stronger lower-panel frost, and a horizontally scrollable circular fan queue",
     "Fixed Glass Up Next screenshot issue: removed numbering/encoded-looking prefixes, tightened spacing, and softened the horizontal arc",

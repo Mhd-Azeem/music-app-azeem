@@ -993,6 +993,47 @@ fun NowPlayingScreen(
             }
 
             if (glassmorphismNowPlaying) {
+                // Curved translucent separator: deliberately follows the same visual language
+                // as the seek timeline, separating Up Next from the active playback controls.
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp)
+                ) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val separatorStroke = 5.6.dp.toPx()
+                        val separatorHeight = 132.dp.toPx()
+                        drawArc(
+                            color = Color.White.copy(alpha = 0.42f),
+                            startAngle = 202f,
+                            sweepAngle = 136f,
+                            useCenter = false,
+                            topLeft = Offset(0f, -78.dp.toPx()),
+                            size = Size(size.width, separatorHeight),
+                            style = Stroke(width = separatorStroke)
+                        )
+                    }
+                    // Extra soft frost immediately below the divider. This intentionally stays
+                    // subtle so the lower playback zone is only a little blurrier than Up Next.
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(30.dp)
+                            .blur(10.dp)
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = 0.035f),
+                                        Color.Black.copy(alpha = 0.14f)
+                                    )
+                                )
+                            )
+                    )
+                }
+            }
+
+            if (glassmorphismNowPlaying) {
                 // Compact reference-style arched seek timeline.
                 val progressFraction = if (state.durationMs > 0L) {
                     (state.positionMs.toFloat() / state.durationMs.toFloat()).coerceIn(0f, 1f)
@@ -1167,14 +1208,14 @@ fun NowPlayingScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(154.dp)
-                        .padding(horizontal = 42.dp),
+                        .height(160.dp)
+                        .padding(horizontal = 50.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(126.dp)
+                            .height(132.dp)
                             .clip(saturnTransportShape)
                             .background(Color.White.copy(alpha = 0.10f))
                             .border(1.35.dp, Color.White.copy(alpha = 0.58f), saturnTransportShape)
@@ -1194,7 +1235,7 @@ fun NowPlayingScreen(
                                     modifier = Modifier.size(30.dp)
                                 )
                             }
-                            Box(modifier = Modifier.width(126.dp).fillMaxHeight())
+                            Box(modifier = Modifier.width(104.dp).fillMaxHeight())
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
@@ -1213,13 +1254,14 @@ fun NowPlayingScreen(
                     }
                     Box(
                         modifier = Modifier
-                            .size(126.dp)
+                            .size(138.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.10f))
+                            .border(1.6.dp, Color.White.copy(alpha = 0.50f), CircleShape)
                     )
                     Box(
                         modifier = Modifier
-                            .size(94.dp)
+                            .size(98.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.98f))
                             .clickable(enabled = !state.isBuffering, onClick = viewModel::playPause),
