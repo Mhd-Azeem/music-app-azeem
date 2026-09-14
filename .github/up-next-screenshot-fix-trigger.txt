@@ -1,0 +1,1 @@
+Fix the Glass Up Next layout visible in the latest user screenshot.
