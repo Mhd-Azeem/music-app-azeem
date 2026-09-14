@@ -784,6 +784,38 @@ fun SettingsScreen(
             }
 
             item {
+                SettingsSection(title = "Now Playing Style") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Glassmorphism Now Playing")
+                            Text(
+                                text = if (settings.glassmorphismNowPlaying) {
+                                    "On • frosted glass with a blurred album-art backdrop"
+                                } else {
+                                    "Off • use the standard Now Playing layout"
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = settings.glassmorphismNowPlaying,
+                            onCheckedChange = viewModel::setGlassmorphismNowPlaying
+                        )
+                    }
+                    Text(
+                        text = "Transforms the entire Now Playing screen into a translucent frosted-glass interface while keeping playback controls, lyrics, volume and Up Next fully usable.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+            }
+
+            item {
                 SettingsSection(title = "Smart Queue") {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),

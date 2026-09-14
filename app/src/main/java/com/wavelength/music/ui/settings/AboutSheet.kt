@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Optional Glassmorphism Now Playing mode with a blurred album-art backdrop and frosted translucent interface",
     "Fixed exact song-variant search matching and ranking for slowed, reverb, lofi, remix, and sped-up queries",
     "Search now prioritizes the exact song title before version words like slowed, reverb, lofi, remix and sped-up",
     "Updater now opens the Android installer automatically as soon as the APK download finishes",
@@ -69,6 +70,7 @@ private val featureGroups = listOf(
     ),
     "Personalization" to listOf(
         "Single variable accent color shared by Solid and Liquid appearance modes",
+        "Optional Glassmorphism Now Playing interface with frosted album-art backdrop",
         "Solid or Liquid appearance selection",
         "Multiple app icon presets",
         "Custom background photo, plus a gallery of favorite wallpapers",

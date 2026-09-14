@@ -151,6 +151,7 @@ fun NowPlayingScreen(
     trackTransitionEnabled: Boolean = true,
     trackTransitionDurationMs: Int = 300,
     syncVolumeWithSystem: Boolean = true,
+    glassmorphismNowPlaying: Boolean = false,
     liquidAlbumArtBackground: Boolean = false
 ) {
     val trackTransitionSpec: FiniteAnimationSpec<Float> = if (trackTransitionEnabled) {
@@ -517,6 +518,31 @@ fun NowPlayingScreen(
                 translationY = dragOffset
             }
     ) {
+        if (glassmorphismNowPlaying && !track?.albumArtUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = track?.albumArtUrl,
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = 1.16f
+                        scaleY = 1.16f
+                    }
+                    .blur(34.dp)
+                    .alpha(0.78f),
+                contentScale = ContentScale.Crop
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f))
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White.copy(alpha = 0.06f))
+            )
+        }
         if (isLiquid && liquidAlbumArtBackground && !track?.albumArtUrl.isNullOrBlank()) {
             AsyncImage(
                 model = track?.albumArtUrl,
@@ -531,11 +557,23 @@ fun NowPlayingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    if (isLiquid) Color.Transparent
-                    else MaterialTheme.colorScheme.background
+                .clip(
+                    if (glassmorphismNowPlaying) RoundedCornerShape(34.dp)
+                    else RoundedCornerShape(0.dp)
                 )
-                .padding(24.dp)
+                .background(
+                    when {
+                        glassmorphismNowPlaying -> Color.White.copy(alpha = 0.11f)
+                        isLiquid -> Color.Transparent
+                        else -> MaterialTheme.colorScheme.background
+                    }
+                )
+                .border(
+                    width = if (glassmorphismNowPlaying) 1.dp else 0.dp,
+                    color = if (glassmorphismNowPlaying) Color.White.copy(alpha = 0.30f) else Color.Transparent,
+                    shape = if (glassmorphismNowPlaying) RoundedCornerShape(34.dp) else RoundedCornerShape(0.dp)
+                )
+                .padding(if (glassmorphismNowPlaying) 20.dp else 24.dp)
         ) {
             Column(
                 modifier = Modifier

@@ -68,6 +68,8 @@ data class AppSettingsState(
     /** Whether the Now Playing volume slider controls the device's actual media volume (the same
      * one the hardware rocker controls) instead of an app-only software gain. */
     val syncVolumeWithSystem: Boolean = true,
+    /** Frosted-glass Now Playing layout inspired by translucent modern music players. */
+    val glassmorphismNowPlaying: Boolean = false,
     /** When enabled in Liquid themes, the current track artwork fills the Now Playing backdrop. */
     val liquidAlbumArtBackground: Boolean = false
 )
@@ -119,6 +121,7 @@ class SettingsRepository @Inject constructor(
         trackTransitionEnabled = prefs.getBoolean(KEY_TRACK_TRANSITION_ENABLED, true),
         trackTransitionDurationMs = prefs.getInt(KEY_TRACK_TRANSITION_DURATION, DEFAULT_TRACK_TRANSITION_DURATION_MS),
         syncVolumeWithSystem = prefs.getBoolean(KEY_SYNC_VOLUME_WITH_SYSTEM, true),
+        glassmorphismNowPlaying = prefs.getBoolean(KEY_GLASSMORPHISM_NOW_PLAYING, false),
         liquidAlbumArtBackground = false
     )
 
@@ -321,6 +324,11 @@ class SettingsRepository @Inject constructor(
         _state.update { it.copy(syncVolumeWithSystem = enabled) }
     }
 
+    fun setGlassmorphismNowPlaying(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_GLASSMORPHISM_NOW_PLAYING, enabled) }
+        _state.update { it.copy(glassmorphismNowPlaying = enabled) }
+    }
+
     fun setLiquidAlbumArtBackground(enabled: Boolean) {
         prefs.edit { putBoolean(KEY_LIQUID_ALBUM_ART_BACKGROUND, enabled) }
         _state.update { it.copy(liquidAlbumArtBackground = enabled) }
@@ -363,6 +371,7 @@ class SettingsRepository @Inject constructor(
         const val KEY_TRACK_TRANSITION_ENABLED = "track_transition_enabled"
         const val KEY_TRACK_TRANSITION_DURATION = "track_transition_duration_ms"
         const val KEY_SYNC_VOLUME_WITH_SYSTEM = "sync_volume_with_system"
+        const val KEY_GLASSMORPHISM_NOW_PLAYING = "glassmorphism_now_playing"
         const val KEY_LIQUID_ALBUM_ART_BACKGROUND = "liquid_album_art_background"
     }
 }

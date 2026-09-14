@@ -121,6 +121,9 @@ class AppSettingsViewModel @Inject constructor(
 
     fun setSyncVolumeWithSystem(enabled: Boolean) = settingsRepository.setSyncVolumeWithSystem(enabled)
 
+    fun setGlassmorphismNowPlaying(enabled: Boolean) =
+        settingsRepository.setGlassmorphismNowPlaying(enabled)
+
     fun setLiquidAlbumArtBackground(enabled: Boolean) =
         settingsRepository.setLiquidAlbumArtBackground(enabled)
 

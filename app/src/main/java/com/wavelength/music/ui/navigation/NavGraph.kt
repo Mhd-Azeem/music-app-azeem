@@ -275,6 +275,7 @@ composable(
                         trackTransitionEnabled = settings.trackTransitionEnabled,
                         trackTransitionDurationMs = settings.trackTransitionDurationMs,
                         syncVolumeWithSystem = settings.syncVolumeWithSystem,
+                        glassmorphismNowPlaying = settings.glassmorphismNowPlaying,
                         liquidAlbumArtBackground = false
                     )
                 }
