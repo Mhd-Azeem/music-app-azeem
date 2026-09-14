@@ -1,0 +1,31 @@
+name: Apply Exact Glass Now Playing
+
+on:
+  push:
+    branches:
+      - feature/email-activation-access
+    paths:
+      - '.github/scripts/apply_exact_glass_nowplaying.py'
+      - '.github/workflows/apply-exact-glass-nowplaying.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/email-activation-access
+      - name: Apply exact glass Now Playing patch
+        run: python .github/scripts/apply_exact_glass_nowplaying.py
+      - name: Commit source changes and clean helper files
+        run: |
+          rm -f .github/scripts/apply_exact_glass_nowplaying.py
+          rm -f .github/workflows/apply-exact-glass-nowplaying.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: match glass Now Playing reference controls exactly"
+          git push origin feature/email-activation-access
