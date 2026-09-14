@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Up Next now scrolls continuously along the curved player timeline with live circular position and tangent rotation",
     "Removed the inherited Glass Now Playing parent horizontal inset so the main player panel reaches both screen edges",
     "Made the Glass player zero-gap layout visibly edge-to-edge, with tightly overlapping Up Next cards touching the separator crown",
     "Removed Glass Now Playing outer margins and closed the gaps between Up Next cards and the curved separator",
