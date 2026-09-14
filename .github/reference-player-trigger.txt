@@ -1,0 +1,1 @@
+Apply once, commit source, self-clean, then build canonical APK.
