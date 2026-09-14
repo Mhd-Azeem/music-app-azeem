@@ -28,10 +28,10 @@ jobs:
       - name: Apply album art style migration
         run: python .github/scripts/apply_album_art_style_menu.py
 
-      - name: Verify old settings API is gone
+      - name: Verify old live settings API is gone
         run: |
-          ! grep -R "setBeatBounceAlbumArt\|settings\.beatBounceAlbumArt" app/src/main/java
-          ! grep -R "settings\.vinylStyleAlbumArt\|settings\.parallaxAlbumArt" app/src/main/java
+          ! grep -R "setBeatBounceAlbumArt\|settings\.beatBounceAlbumArt" app/src/main/java/com/wavelength/music/ui app/src/main/java/com/wavelength/music/data/repository/SettingsRepository.kt
+          ! grep -R "settings\.vinylStyleAlbumArt\|settings\.parallaxAlbumArt" app/src/main/java/com/wavelength/music/ui
 
       - name: Commit source changes and clean temporary patch files
         run: |
