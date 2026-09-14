@@ -768,12 +768,12 @@ fun SettingsScreen(
             }
 
             item {
-                SettingsSection(title = "AI DJ") {
+                SettingsSection(title = "Smart Queue") {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Keep the queue going automatically", modifier = Modifier.weight(1f))
+                        Text("Automatically continue Up Next", modifier = Modifier.weight(1f))
                         Switch(
                             checked = settings.aiDjEnabled,
                             onCheckedChange = { viewModel.setAiDjEnabled(it) }
@@ -786,6 +786,40 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
+                }
+            }
+
+            item {
+                SettingsSection(title = "Gapless Playback") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Seamless track transitions")
+                            Text(
+                                text = if (settings.gaplessPlaybackEnabled) {
+                                    "On • next track starts without an added pause"
+                                } else {
+                                    "Off • adds a short separation between tracks"
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = settings.gaplessPlaybackEnabled,
+                            onCheckedChange = viewModel::setGaplessPlaybackEnabled
+                        )
+                    }
+                    if (settings.crossfadeDurationMs > 0) {
+                        Text(
+                            text = "Crossfade takes priority while it is enabled.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
                 }
             }
 

@@ -56,6 +56,8 @@ data class AppSettingsState(
     val dynamicThemeFromAlbumArt: Boolean = false,
     val albumArtStyle: AlbumArtStyle = AlbumArtStyle.OFF,
     val aiDjEnabled: Boolean = false,
+    /** Native seamless playlist transitions when crossfade is off. */
+    val gaplessPlaybackEnabled: Boolean = true,
     /** Milliseconds to fade out the ending track and fade in the next one; 0 disables it. */
     val crossfadeDurationMs: Int = 0,
     val audioVisualizerEnabled: Boolean = false,
@@ -111,6 +113,7 @@ class SettingsRepository @Inject constructor(
         dynamicThemeFromAlbumArt = prefs.getBoolean(KEY_DYNAMIC_THEME, false),
         albumArtStyle = loadAlbumArtStyle(),
         aiDjEnabled = prefs.getBoolean(KEY_AI_DJ, false),
+        gaplessPlaybackEnabled = prefs.getBoolean(KEY_GAPLESS_PLAYBACK, true),
         crossfadeDurationMs = prefs.getInt(KEY_CROSSFADE, 0),
         audioVisualizerEnabled = prefs.getBoolean(KEY_VISUALIZER, false),
         trackTransitionEnabled = prefs.getBoolean(KEY_TRACK_TRANSITION_ENABLED, true),
@@ -286,6 +289,11 @@ class SettingsRepository @Inject constructor(
         _state.update { it.copy(aiDjEnabled = enabled) }
     }
 
+    fun setGaplessPlaybackEnabled(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_GAPLESS_PLAYBACK, enabled) }
+        _state.update { it.copy(gaplessPlaybackEnabled = enabled) }
+    }
+
     fun setCrossfadeDurationMs(durationMs: Int) {
         val clamped = durationMs.coerceIn(0, 8000)
         prefs.edit { putInt(KEY_CROSSFADE, clamped) }
@@ -349,6 +357,7 @@ class SettingsRepository @Inject constructor(
         const val KEY_PARALLAX_ALBUM_ART = "parallax_album_art"
         const val KEY_BEAT_BOUNCE_ALBUM_ART = "beat_bounce_album_art"
         const val KEY_AI_DJ = "ai_dj_enabled"
+        const val KEY_GAPLESS_PLAYBACK = "gapless_playback_enabled"
         const val KEY_CROSSFADE = "crossfade_duration_ms"
         const val KEY_VISUALIZER = "audio_visualizer_enabled"
         const val KEY_TRACK_TRANSITION_ENABLED = "track_transition_enabled"

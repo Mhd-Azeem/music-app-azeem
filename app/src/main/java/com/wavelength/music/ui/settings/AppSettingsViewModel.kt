@@ -109,6 +109,8 @@ class AppSettingsViewModel @Inject constructor(
 
     fun setAiDjEnabled(enabled: Boolean) = settingsRepository.setAiDjEnabled(enabled)
 
+    fun setGaplessPlaybackEnabled(enabled: Boolean) = settingsRepository.setGaplessPlaybackEnabled(enabled)
+
     fun setCrossfadeDurationMs(durationMs: Int) = settingsRepository.setCrossfadeDurationMs(durationMs)
 
     fun setAudioVisualizerEnabled(enabled: Boolean) = settingsRepository.setAudioVisualizerEnabled(enabled)

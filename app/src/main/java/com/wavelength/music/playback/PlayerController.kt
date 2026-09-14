@@ -127,6 +127,7 @@ class PlayerController @Inject constructor(
             }
             fadeOutTriggeredForIndex = -1
             val crossfadeMs = settingsRepository.state.value.crossfadeDurationMs
+            val gaplessEnabled = settingsRepository.state.value.gaplessPlaybackEnabled
             val isNaturalProgression = reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
                 reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT
             if (crossfadeMs > 0 && isNaturalProgression) {
@@ -134,6 +135,22 @@ class PlayerController @Inject constructor(
             } else {
                 crossfadeJob?.cancel()
                 controller?.volume = targetVolume
+                // Media3 playlists are naturally gapless for supported streams. When the user
+                // explicitly disables Gapless Playback, add a short intentional separation only
+                // for automatic transitions. Manual skips remain immediate.
+                if (isNaturalProgression && !gaplessEnabled) {
+                    val transitionIndex = index
+                    controller?.pause()
+                    controllerScope.launch {
+                        delay(350L)
+                        val active = controller
+                        if (active != null && active.currentMediaItemIndex == transitionIndex &&
+                            !requiresActivation(track)
+                        ) {
+                            active.play()
+                        }
+                    }
+                }
             }
         }
 
