@@ -3,6 +3,7 @@ package com.wavelength.music.ui.navigation
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -169,12 +171,42 @@ fun WavelengthNavHost() {
             contentModifier = contentModifier.haze(state = hazeState)
         }
         Box(modifier = contentModifier) {
-            AppBackground(
-                hasCustomBackground = settings.hasCustomBackground,
-                customBackgroundFile = settingsViewModel.customBackgroundFile,
-                opacity = settings.backgroundOpacity,
-                builtInWallpaper = settings.builtInWallpaper
-            )
+            if (settings.glassmorphismNowPlaying) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF071A2B),
+                                    Color(settings.customAccentArgb).copy(alpha = 0.42f),
+                                    Color(0xFF10243D),
+                                    Color(0xFF241B3A)
+                                )
+                            )
+                        )
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0.13f),
+                                    Color.Transparent
+                                ),
+                                radius = 900f
+                            )
+                        )
+                )
+            } else {
+                AppBackground(
+                    hasCustomBackground = settings.hasCustomBackground,
+                    customBackgroundFile = settingsViewModel.customBackgroundFile,
+                    opacity = settings.backgroundOpacity,
+                    builtInWallpaper = settings.builtInWallpaper
+                )
+            }
             NavHost(
                 navController = navController,
                 startDestination = Screen.Home.route,

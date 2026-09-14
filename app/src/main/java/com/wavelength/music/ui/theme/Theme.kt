@@ -137,11 +137,11 @@ fun WavelengthTheme(
     val appScheme = if (glassmorphismEnabled) {
         baseScheme.copy(
             background = Color.Transparent,
-            surface = Color.White.copy(alpha = 0.10f),
-            surfaceVariant = Color.White.copy(alpha = 0.16f),
-            surfaceContainer = Color.White.copy(alpha = 0.09f),
-            surfaceContainerLow = Color.White.copy(alpha = 0.07f),
-            surfaceContainerHigh = Color.White.copy(alpha = 0.14f),
+            surface = Color(0xFF102238).copy(alpha = 0.72f),
+            surfaceVariant = Color(0xFF17324D).copy(alpha = 0.66f),
+            surfaceContainer = Color(0xFF102A42).copy(alpha = 0.64f),
+            surfaceContainerLow = Color(0xFF0C2035).copy(alpha = 0.58f),
+            surfaceContainerHigh = Color(0xFF1B3853).copy(alpha = 0.70f),
             outline = Color.White.copy(alpha = 0.34f),
             outlineVariant = Color.White.copy(alpha = 0.20f),
             onBackground = Color.White,

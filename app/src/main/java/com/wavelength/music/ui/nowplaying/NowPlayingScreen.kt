@@ -890,28 +890,27 @@ fun NowPlayingScreen(
                                     1, 3 -> 12.dp
                                     else -> 0.dp
                                 }
-                                Column(
+                                Box(
                                     modifier = Modifier
-                                        .width(92.dp)
+                                        .width(68.dp)
+                                        .height(104.dp)
                                         .offset(y = arcOffset)
-                                        .clip(RoundedCornerShape(18.dp))
-                                        .background(Color.White.copy(alpha = 0.08f))
-                                        .border(1.dp, Color.White.copy(alpha = 0.22f), RoundedCornerShape(18.dp))
+                                        .clip(RoundedCornerShape(22.dp))
+                                        .background(Color.White.copy(alpha = 0.075f))
+                                        .border(1.dp, Color.White.copy(alpha = 0.24f), RoundedCornerShape(22.dp))
                                         .clickable { viewModel.playQueueItem(state.currentIndex + 1 + index) }
-                                        .padding(horizontal = 8.dp, vertical = 10.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                                        .padding(vertical = 7.dp),
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = "%02d".format(index + 1),
+                                        text = "%02d   ${entry.track.name}",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White.copy(alpha = 0.70f)
-                                    )
-                                    Text(
-                                        text = entry.track.name,
-                                        style = MaterialTheme.typography.labelMedium,
                                         color = Color.White.copy(alpha = 0.92f),
-                                        maxLines = 2,
+                                        maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier
+                                            .width(92.dp)
+                                            .graphicsLayer { rotationZ = -90f },
                                         textAlign = TextAlign.Center
                                     )
                                 }
@@ -961,11 +960,11 @@ fun NowPlayingScreen(
                             val arcLeft = 0.dp.toPx()
                             val arcRight = size.width
                             val arcWidth = arcRight - arcLeft
-                            val arcHeight = 214.dp.toPx()
-                            val top = 10.dp.toPx()
+                            val arcHeight = 270.dp.toPx()
+                            val top = -10.dp.toPx()
                             val arcSize = Size(arcWidth, arcHeight)
-                            val startAngle = 202f
-                            val sweepAngle = 136f
+                            val startAngle = 206f
+                            val sweepAngle = 128f
 
                             drawArc(
                                 color = Color.White.copy(alpha = 0.28f),
@@ -1076,20 +1075,20 @@ fun NowPlayingScreen(
                         val w = size.width
                         val h = size.height
                         moveTo(0f, h * 0.50f)
-                        cubicTo(0f, h * 0.34f, w * 0.04f, h * 0.28f, w * 0.10f, h * 0.28f)
-                        lineTo(w * 0.28f, h * 0.28f)
-                        cubicTo(w * 0.34f, h * 0.28f, w * 0.34f, h * 0.08f, w * 0.42f, h * 0.03f)
-                        cubicTo(w * 0.47f, 0f, w * 0.53f, 0f, w * 0.58f, h * 0.03f)
-                        cubicTo(w * 0.66f, h * 0.08f, w * 0.66f, h * 0.28f, w * 0.72f, h * 0.28f)
-                        lineTo(w * 0.90f, h * 0.28f)
-                        cubicTo(w * 0.96f, h * 0.28f, w, h * 0.34f, w, h * 0.50f)
-                        cubicTo(w, h * 0.66f, w * 0.96f, h * 0.72f, w * 0.90f, h * 0.72f)
-                        lineTo(w * 0.72f, h * 0.72f)
-                        cubicTo(w * 0.66f, h * 0.72f, w * 0.66f, h * 0.92f, w * 0.58f, h * 0.97f)
-                        cubicTo(w * 0.53f, h, w * 0.47f, h, w * 0.42f, h * 0.97f)
-                        cubicTo(w * 0.34f, h * 0.92f, w * 0.34f, h * 0.72f, w * 0.28f, h * 0.72f)
-                        lineTo(w * 0.10f, h * 0.72f)
-                        cubicTo(w * 0.04f, h * 0.72f, 0f, h * 0.66f, 0f, h * 0.50f)
+                        cubicTo(0f, h * 0.36f, w * 0.035f, h * 0.31f, w * 0.095f, h * 0.31f)
+                        lineTo(w * 0.29f, h * 0.31f)
+                        cubicTo(w * 0.345f, h * 0.31f, w * 0.355f, h * 0.10f, w * 0.425f, h * 0.035f)
+                        cubicTo(w * 0.465f, -0.005f, w * 0.535f, -0.005f, w * 0.575f, h * 0.035f)
+                        cubicTo(w * 0.645f, h * 0.10f, w * 0.655f, h * 0.31f, w * 0.71f, h * 0.31f)
+                        lineTo(w * 0.905f, h * 0.31f)
+                        cubicTo(w * 0.965f, h * 0.31f, w, h * 0.36f, w, h * 0.50f)
+                        cubicTo(w, h * 0.64f, w * 0.965f, h * 0.69f, w * 0.905f, h * 0.69f)
+                        lineTo(w * 0.71f, h * 0.69f)
+                        cubicTo(w * 0.655f, h * 0.69f, w * 0.645f, h * 0.90f, w * 0.575f, h * 0.965f)
+                        cubicTo(w * 0.535f, h * 1.005f, w * 0.465f, h * 1.005f, w * 0.425f, h * 0.965f)
+                        cubicTo(w * 0.355f, h * 0.90f, w * 0.345f, h * 0.69f, w * 0.29f, h * 0.69f)
+                        lineTo(w * 0.095f, h * 0.69f)
+                        cubicTo(w * 0.035f, h * 0.69f, 0f, h * 0.64f, 0f, h * 0.50f)
                         close()
                     }
                 }
