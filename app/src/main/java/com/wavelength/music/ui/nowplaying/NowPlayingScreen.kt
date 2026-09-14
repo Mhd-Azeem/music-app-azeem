@@ -939,7 +939,7 @@ fun NowPlayingScreen(
                             state = fanState,
                             modifier = Modifier.fillMaxWidth().height(196.dp),
                             contentPadding = PaddingValues(horizontal = 0.dp),
-                            horizontalArrangement = Arrangement.spacedBy((-22).dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.Bottom
                         ) {
                             itemsIndexed(glassUpcoming, key = { _, entry -> entry.instanceId }) { index, entry ->
@@ -1001,6 +1001,8 @@ fun NowPlayingScreen(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(18.dp))
+
                 val progressFraction = if (state.durationMs > 0L) {
                     (state.positionMs.toFloat() / state.durationMs.toFloat()).coerceIn(0f, 1f)
                 } else 0f
@@ -1033,7 +1035,7 @@ fun NowPlayingScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 0.dp)
+                                .padding(horizontal = 18.dp)
                                 .height(92.dp)
                                 .pointerInput(state.durationMs) {
                                     detectTapGestures { offset ->
@@ -1135,14 +1137,14 @@ fun NowPlayingScreen(
                                 }
                             }
                             Box(
-                                modifier = Modifier.align(Alignment.CenterStart).size(48.dp).clip(CircleShape)
+                                modifier = Modifier.align(Alignment.CenterStart).padding(start = 18.dp).size(48.dp).clip(CircleShape)
                                     .background(Color(0xFFEAF6FF).copy(alpha = 0.82f)).clickable(onClick = viewModel::toggleShuffle),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(Icons.Filled.Shuffle, "Shuffle", tint = if (state.shuffleEnabled) accentColor else Color(0xFF08283A), modifier = Modifier.size(24.dp))
                             }
                             Box(
-                                modifier = Modifier.align(Alignment.CenterEnd).size(48.dp).clip(CircleShape)
+                                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 18.dp).size(48.dp).clip(CircleShape)
                                     .background(Color(0xFFEAF6FF).copy(alpha = 0.82f)).clickable(onClick = viewModel::cycleRepeatMode),
                                 contentAlignment = Alignment.Center
                             ) {
