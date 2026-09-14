@@ -173,12 +173,12 @@ class PcmBeatAnalyzer @Inject constructor() : TeeAudioProcessor.AudioBufferSink 
         // Measure how bass-heavy this instant really is, not just whether some transient happened.
         // This prevents light vocals/snare/quiet bass from producing the same visual jump as a kick.
         val bassShare = (bassRms / (fullRms + 0.0005f)).coerceIn(0f, 1.5f)
-        val absoluteBass = ((bassRms - 0.0065f) / 0.055f).coerceIn(0f, 1f)
-        val relativeBass = ((bassRatio - 1.02f) / 0.55f).coerceIn(0f, 1f)
+        val beatAbsoluteBass = ((bassRms - 0.0065f) / 0.055f).coerceIn(0f, 1f)
+        val beatRelativeBass = ((bassRatio - 1.02f) / 0.55f).coerceIn(0f, 1f)
         val bassDominance = ((bassShare - 0.08f) / 0.42f).coerceIn(0f, 1f)
         val bassIntensity = (
-            absoluteBass * 0.52f +
-                relativeBass * 0.30f +
+            beatAbsoluteBass * 0.52f +
+                beatRelativeBass * 0.30f +
                 bassDominance * 0.18f
             ).coerceIn(0f, 1f)
 
