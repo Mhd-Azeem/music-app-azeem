@@ -933,9 +933,9 @@ fun NowPlayingScreen(
                         LazyRow(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(116.dp),
-                            contentPadding = PaddingValues(horizontal = 38.dp),
-                            horizontalArrangement = Arrangement.spacedBy(1.dp),
+                                .height(106.dp),
+                            contentPadding = PaddingValues(horizontal = 58.dp),
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             itemsIndexed(glassUpcoming, key = { _, entry -> entry.instanceId }) { index, entry ->
@@ -948,27 +948,27 @@ fun NowPlayingScreen(
                                 // Reference fan: the centre upcoming song is lowest/straight,
                                 // while songs toward either side climb and rotate outward.
                                 val arcOffset = when (curveStep) {
-                                    0, 8 -> 0.dp
-                                    1, 7 -> 8.dp
-                                    2, 6 -> 15.dp
-                                    3, 5 -> 21.dp
-                                    else -> 24.dp
+                                    0, 8 -> 18.dp
+                                    1, 7 -> 11.dp
+                                    2, 6 -> 6.dp
+                                    3, 5 -> 2.dp
+                                    else -> 0.dp
                                 }
                                 val spokeRotation = when (curveStep) {
-                                    0 -> -38f
-                                    1 -> -29f
-                                    2 -> -20f
-                                    3 -> -10f
+                                    0 -> -32f
+                                    1 -> -24f
+                                    2 -> -16f
+                                    3 -> -8f
                                     4 -> 0f
-                                    5 -> 10f
-                                    6 -> 20f
-                                    7 -> 29f
-                                    else -> 38f
+                                    5 -> 8f
+                                    6 -> 16f
+                                    7 -> 24f
+                                    else -> 32f
                                 }
                                 Box(
                                     modifier = Modifier
-                                        .width(50.dp)
-                                        .height(104.dp)
+                                        .width(48.dp)
+                                        .height(94.dp)
                                         .offset(y = arcOffset)
                                         .clickable { viewModel.playQueueItem(state.currentIndex + 1 + index) }
                                         .padding(vertical = 2.dp),
@@ -981,7 +981,7 @@ fun NowPlayingScreen(
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier
-                                            .width(88.dp)
+                                            .width(80.dp)
                                             .graphicsLayer { rotationZ = -90f + spokeRotation },
                                         textAlign = TextAlign.Center
                                     )
@@ -993,42 +993,20 @@ fun NowPlayingScreen(
             }
 
             if (glassmorphismNowPlaying) {
-                // Curved translucent separator: deliberately follows the same visual language
-                // as the seek timeline, separating Up Next from the active playback controls.
-                Box(
+                // Single thin curved boundary between Up Next and the active player.
+                Canvas(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(54.dp)
+                        .height(28.dp)
                 ) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val separatorStroke = 5.6.dp.toPx()
-                        val separatorHeight = 132.dp.toPx()
-                        drawArc(
-                            color = Color.White.copy(alpha = 0.42f),
-                            startAngle = 202f,
-                            sweepAngle = 136f,
-                            useCenter = false,
-                            topLeft = Offset(0f, -78.dp.toPx()),
-                            size = Size(size.width, separatorHeight),
-                            style = Stroke(width = separatorStroke)
-                        )
-                    }
-                    // Extra soft frost immediately below the divider. This intentionally stays
-                    // subtle so the lower playback zone is only a little blurrier than Up Next.
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .height(30.dp)
-                            .blur(10.dp)
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(
-                                        Color.White.copy(alpha = 0.035f),
-                                        Color.Black.copy(alpha = 0.14f)
-                                    )
-                                )
-                            )
+                    drawArc(
+                        color = Color.White.copy(alpha = 0.46f),
+                        startAngle = 198f,
+                        sweepAngle = 144f,
+                        useCenter = false,
+                        topLeft = Offset(10.dp.toPx(), -88.dp.toPx()),
+                        size = Size(size.width - 20.dp.toPx(), 180.dp.toPx()),
+                        style = Stroke(width = 1.4.dp.toPx())
                     )
                 }
             }
@@ -1054,8 +1032,8 @@ fun NowPlayingScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(132.dp)
-                            .padding(horizontal = 2.dp)
+                            .height(112.dp)
+                            .padding(horizontal = 24.dp)
                             .pointerInput(state.durationMs) {
                                 detectTapGestures { offset -> seekFromX(offset.x, size.width.toFloat()) }
                             }
@@ -1073,8 +1051,8 @@ fun NowPlayingScreen(
                             val arcLeft = 0.dp.toPx()
                             val arcRight = size.width
                             val arcWidth = arcRight - arcLeft
-                            val arcHeight = 270.dp.toPx()
-                            val top = -10.dp.toPx()
+                            val arcHeight = 238.dp.toPx()
+                            val top = -4.dp.toPx()
                             val arcSize = Size(arcWidth, arcHeight)
                             val startAngle = 206f
                             val sweepAngle = 128f
@@ -1208,14 +1186,14 @@ fun NowPlayingScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(160.dp)
-                        .padding(horizontal = 50.dp),
+                        .height(142.dp)
+                        .padding(horizontal = 78.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(132.dp)
+                            .height(108.dp)
                             .clip(saturnTransportShape)
                             .background(Color.White.copy(alpha = 0.10f))
                             .border(1.35.dp, Color.White.copy(alpha = 0.58f), saturnTransportShape)
@@ -1235,7 +1213,7 @@ fun NowPlayingScreen(
                                     modifier = Modifier.size(30.dp)
                                 )
                             }
-                            Box(modifier = Modifier.width(104.dp).fillMaxHeight())
+                            Box(modifier = Modifier.width(92.dp).fillMaxHeight())
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
@@ -1254,14 +1232,7 @@ fun NowPlayingScreen(
                     }
                     Box(
                         modifier = Modifier
-                            .size(138.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.10f))
-                            .border(1.6.dp, Color.White.copy(alpha = 0.50f), CircleShape)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(98.dp)
+                            .size(94.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.98f))
                             .clickable(enabled = !state.isBuffering, onClick = viewModel::playPause),
@@ -1278,7 +1249,7 @@ fun NowPlayingScreen(
                                 imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                                 contentDescription = "Play/Pause",
                                 tint = Color.Black,
-                                modifier = Modifier.size(44.dp)
+                                modifier = Modifier.size(42.dp)
                             )
                         }
                     }
