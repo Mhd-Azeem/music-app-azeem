@@ -1,1 +1,1 @@
-Build exact-variant search fix commit 086ddd2b6594f8c5f4a3772a778c05a80e9a34cc.
+Build corrected exact-variant search commit 8970dc4d427357d6659bf1fb4faf349caa688432.
