@@ -42,18 +42,17 @@ jobs:
             echo "AZMUSIC_KEY_ALIAS=$AZMUSIC_KEY_ALIAS" >> "$GITHUB_ENV"
             echo "AZMUSIC_KEY_PASSWORD=$AZMUSIC_KEY_PASSWORD" >> "$GITHUB_ENV"
           fi
-      - name: Build original and Sinhala demo
-        run: ./gradlew :app:assembleRelease :sarigama-demo:assembleRelease --stacktrace
-      - name: Rename APKs
+      - name: Build AzMusic release
+        run: ./gradlew :app:assembleRelease --stacktrace
+      - name: Prepare APK
         run: |
           mkdir -p release-apks
           cp app/build/outputs/apk/release/app-release.apk release-apks/AzMusic.apk
-          cp sarigama-demo/build/outputs/apk/release/sarigama-demo-release.apk release-apks/AzMusic-Sinhala-Sarigama-Demo.apk
-      - name: Upload APK artifacts
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
-          name: azmusic-apks
-          path: release-apks/*.apk
+          name: azmusic-apk
+          path: release-apks/AzMusic.apk
           retention-days: 30
       - name: Remove stale release assets
         if: github.ref == 'refs/heads/feature/email-activation-access'
@@ -61,19 +60,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release view latest --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' 2>/dev/null | while read -r asset; do gh release delete-asset latest "$asset" --repo "$GITHUB_REPOSITORY" -y; done || true
-      - name: Publish both APKs to Releases
+      - name: Publish AzMusic APK to Releases
         if: github.ref == 'refs/heads/feature/email-activation-access'
         uses: softprops/action-gh-release@v3
         with:
           tag_name: latest
           name: AzMusic Latest
           body: |
+            Build number: ${{ github.run_number }}
             Automatically rebuilt from commit ${{ github.sha }}.
 
-            `AzMusic.apk` is the normal app.
-            `AzMusic-Sinhala-Sarigama-Demo.apk` is an isolated test build with a different application ID, so it can be installed alongside AzMusic. It contains only Home, Search and Now Playing and embeds Sarigama to test Sinhala catalogue/search/playback compatibility without changing the production app.
+            `AzMusic.apk` is the production Android app.
           prerelease: false
           make_latest: true
-          files: |
-            release-apks/AzMusic.apk
-            release-apks/AzMusic-Sinhala-Sarigama-Demo.apk
+          files: release-apks/AzMusic.apk
