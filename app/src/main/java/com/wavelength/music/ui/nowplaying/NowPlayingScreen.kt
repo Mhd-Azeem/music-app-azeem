@@ -636,7 +636,9 @@ fun NowPlayingScreen(
                     color = if (glassmorphismNowPlaying) Color.White.copy(alpha = 0.28f) else Color.Transparent,
                     shape = if (glassmorphismNowPlaying) RoundedCornerShape(34.dp) else RoundedCornerShape(0.dp)
                 )
-                .padding(if (glassmorphismNowPlaying) 20.dp else 24.dp)
+                // Glass mode must remain edge-to-edge. The previous 20.dp parent padding
+                // constrained every child, so fillMaxWidth() could never reach screen edges.
+                .padding(if (glassmorphismNowPlaying) 0.dp else 24.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -689,7 +691,9 @@ fun NowPlayingScreen(
                     )
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = if (glassmorphismNowPlaying) 20.dp else 0.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
