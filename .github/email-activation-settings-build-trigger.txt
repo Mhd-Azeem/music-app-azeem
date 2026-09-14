@@ -1,0 +1,1 @@
+Trigger Build APK from final Email Activation settings layout commit.
