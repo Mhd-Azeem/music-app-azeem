@@ -41,17 +41,10 @@ class SearchViewModel @Inject constructor(
 
     private var searchJob: Job? = null
 
-    // Paging state for the currently-displayed query only — reset on every new search, not tied
-    // to _query directly since onQueryChange fires on every keystroke but a page only ever
-    // belongs to the query that was actually committed to _results.
     private var pagedQuery: String = ""
     private var currentPage = 0
     private var canLoadMore = true
 
-    /** Called from [SearchScreen] every time it's actually navigated to (via `LaunchedEffect`),
-     * not just once from `init` — bottom-nav tabs reuse the same ViewModel instance across
-     * revisits (`restoreState`/`launchSingleTop`), so a query set by a later Home chip tap would
-     * otherwise never be picked up once this ViewModel already exists from an earlier visit. */
     fun consumePendingSearch() {
         pendingSearchQuery.consume()?.let {
             onQueryChange(it)
@@ -75,26 +68,44 @@ class SearchViewModel @Inject constructor(
 
     private suspend fun runSearch(q: String) {
         val selected = _selectedLanguage.value
-        val effectiveQuery = if (selected == "All") q else "$q $selected"
+        val languageSuffix = selected.takeUnless { it == "All" }?.let { " $it" }.orEmpty()
+        val effectiveQuery = "$q$languageSuffix"
         pagedQuery = effectiveQuery
         currentPage = 0
         canLoadMore = true
+
         repository.searchTracks(effectiveQuery, page = 0, limit = SEARCH_PAGE_SIZE).fold(
-            onSuccess = { tracks ->
-                // Show normal metadata results immediately.
+            onSuccess = { primaryTracks ->
+                // JioSaavn can perform poorly when a version keyword such as "slowed" or
+                // "reverb" is appended to an otherwise exact song title. In that case, also
+                // search the base title and merge both result sets before ranking. This keeps
+                // the intended song family in the candidate pool instead of returning unrelated
+                // tracks that merely contain "slowed".
+                val baseQuery = stripVersionIntent(q)
+                val fallbackTracks = if (
+                    baseQuery.isNotBlank() &&
+                    normalizeForMatch(baseQuery) != normalizeForMatch(q)
+                ) {
+                    repository.searchTracks(
+                        "$baseQuery$languageSuffix",
+                        page = 0,
+                        limit = SEARCH_PAGE_SIZE
+                    ).getOrDefault(emptyList())
+                } else {
+                    emptyList()
+                }
+
+                val tracks = primaryTracks + fallbackTracks
                 val ranked = rankTracks(dedupeTracks(tracks), q)
-                canLoadMore = tracks.isNotEmpty()
+                canLoadMore = primaryTracks.isNotEmpty()
                 _results.value = if (ranked.isEmpty()) ScreenState.Empty else ScreenState.Success(ranked)
 
-                // Phrase-like searches are also checked against lyrics. These matches are merged
-                // in after the normal list so title/artist search stays fast while lyric discovery
-                // can enrich it a moment later.
                 if (shouldTryLyricsSearch(q)) {
                     val language = selected.takeUnless { it == "All" }
                     val lyricMatches = repository.searchTracksByLyrics(q, language = language)
                     if (pagedQuery == effectiveQuery && lyricMatches.isNotEmpty()) {
                         val latest = (_results.value as? ScreenState.Success)?.data.orEmpty()
-                        val merged = dedupeTracks(lyricMatches + latest)
+                        val merged = rankTracks(dedupeTracks(lyricMatches + latest), q)
                         _results.value = ScreenState.Success(merged)
                     }
                 }
@@ -104,7 +115,7 @@ class SearchViewModel @Inject constructor(
                     val language = selected.takeUnless { it == "All" }
                     val lyricMatches = repository.searchTracksByLyrics(q, language = language)
                     if (lyricMatches.isNotEmpty()) {
-                        _results.value = ScreenState.Success(dedupeTracks(lyricMatches))
+                        _results.value = ScreenState.Success(rankTracks(dedupeTracks(lyricMatches), q))
                     } else {
                         _results.value = ScreenState.Error(e.message ?: "Something went wrong")
                     }
@@ -115,8 +126,6 @@ class SearchViewModel @Inject constructor(
         )
     }
 
-    /** Loads later result pages until the API actually returns an empty page. Artist searches
-     * can return short or overlapping pages, so page size is not a reliable end-of-results signal. */
     fun loadMore() {
         val first = _results.value
         if (first !is ScreenState.Success || _isLoadingMore.value || !canLoadMore) return
@@ -130,7 +139,6 @@ class SearchViewModel @Inject constructor(
                     val nextPage = currentPage + 1
                     val result = repository.searchTracks(q, page = nextPage, limit = SEARCH_PAGE_SIZE)
                     val newTracks = result.getOrElse {
-                        // Keep current results and allow the next scroll to retry.
                         return@launch
                     }
 
@@ -149,9 +157,6 @@ class SearchViewModel @Inject constructor(
                         _results.value = ScreenState.Success(merged)
                         break
                     }
-
-                    // Entire page overlapped with what we already have; try a few later pages
-                    // immediately so the user does not get stuck at the bottom of an artist list.
                     attempts++
                 }
             } finally {
@@ -188,12 +193,12 @@ class SearchViewModel @Inject constructor(
         return tracks.filter { track ->
             val canonicalTitle = canonicalSongTitle(track.name)
             val canonicalLanguage = track.language.lowercase().trim()
+            val version = versionSignature(track.name)
 
-            // JioSaavn often returns the same recording several times with different IDs,
-            // album metadata, featured-artist ordering, or suffixes such as "(From ...)",
-            // "- Single", "Original Motion Picture Soundtrack", etc. For search results,
-            // title + language is intentionally the primary identity so those copies collapse.
-            val key = "$canonicalLanguage|$canonicalTitle"
+            // Preserve meaningful alternate versions. Previously, "slowed", "reverb", "lofi",
+            // etc. were stripped before deduplication, which could collapse the exact requested
+            // version into the original song (or another variant) before ranking even ran.
+            val key = "$canonicalLanguage|$canonicalTitle|$version"
             key.isNotBlank() && seen.add(key)
         }
     }
@@ -206,22 +211,48 @@ class SearchViewModel @Inject constructor(
     private fun rankTracks(tracks: List<Track>, query: String): List<Track> {
         val q = normalizeForMatch(query)
         if (q.isBlank()) return tracks
-        val words = q.split(' ').filter { it.isNotBlank() }
+
+        val baseQuery = normalizeForMatch(stripVersionIntent(query))
+        val queryWords = q.split(' ').filter { it.isNotBlank() }
+        val baseWords = baseQuery.split(' ').filter { it.isNotBlank() }
+        val requestedVersions = requestedVersionTerms(query)
 
         fun score(track: Track): Int {
             val title = normalizeForMatch(track.name)
             val artist = normalizeForMatch(track.artistName)
             val album = normalizeForMatch(track.albumName)
+            val trackVersions = requestedVersionTerms(track.name)
             var score = 0
-            if (title == q) score += 1000
+
+            if (title == q) score += 1400
             if (artist == q) score += 700
-            if (title.startsWith(q)) score += 450
+            if (title.startsWith(q)) score += 550
             if (artist.startsWith(q)) score += 350
-            if (title.contains(q)) score += 250
+            if (title.contains(q)) score += 350
             if (artist.contains(q)) score += 200
             if (album.contains(q)) score += 100
-            score += words.count { it in title } * 60
-            score += words.count { it in artist } * 40
+
+            // Strongly prefer the requested song title even when the API returned it from the
+            // base-title fallback search.
+            if (baseQuery.isNotBlank()) {
+                if (title == baseQuery) score += 900
+                if (title.startsWith(baseQuery)) score += 650
+                if (title.contains(baseQuery)) score += 500
+                score += baseWords.count { it in title } * 90
+            }
+
+            score += queryWords.count { it in title } * 60
+            score += queryWords.count { it in artist } * 40
+
+            // Version-aware ranking: "ennai kolladhey slowed" should rank an Ennai Kolladhey
+            // slowed/reverb entry above unrelated songs that happen to contain "slowed".
+            if (requestedVersions.isNotEmpty()) {
+                val matched = requestedVersions.intersect(trackVersions).size
+                score += matched * 500
+                if (matched == requestedVersions.size) score += 450
+                if (trackVersions.isEmpty()) score -= 180
+            }
+
             if (track.source != com.wavelength.music.data.model.TrackSource.JIOSAAVN) score += 80
             return score
         }
@@ -238,17 +269,35 @@ class SearchViewModel @Inject constructor(
         .replace(Regex("\\s+"), " ")
         .trim()
 
-    private fun canonicalSongTitle(raw: String): String {
+    private fun stripVersionIntent(raw: String): String {
+        val versionWords = VERSION_TERMS.joinToString("|") { Regex.escape(it) }
         return raw
-            .lowercase()
-            // Remove bracketed metadata/version labels.
-            .replace(Regex("\\([^)]*(from|movie|film|soundtrack|version|remix|mix|edit|single|theme|ost|original|lofi|lo-fi|slowed|reverb|karaoke|instrumental)[^)]*\\)", RegexOption.IGNORE_CASE), " ")
-            .replace(Regex("\\[[^]]*(from|movie|film|soundtrack|version|remix|mix|edit|single|theme|ost|original|lofi|lo-fi|slowed|reverb|karaoke|instrumental)[^]]*]", RegexOption.IGNORE_CASE), " ")
-            // Remove common dash suffixes added by catalog metadata.
-            .replace(Regex("\\s*[-–—:]\\s*(from|original motion picture soundtrack|motion picture soundtrack|soundtrack|ost|single|song|theme|version|remix|mix|edit|lofi|lo-fi|slowed|reverb|karaoke|instrumental).*", RegexOption.IGNORE_CASE), " ")
-            // Remove explicit 'from <movie>' tail even without punctuation.
-            .replace(Regex("\\s+from\\s+.+$", RegexOption.IGNORE_CASE), " ")
-            // Normalize punctuation/spacing so tiny naming differences collapse.
+            .replace(Regex("\\b(?:$versionWords)\\b", RegexOption.IGNORE_CASE), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim(' ', '-', '–', '—', '(', ')', '[', ']', ':')
+    }
+
+    private fun requestedVersionTerms(raw: String): Set<String> {
+        val normalized = normalizeForMatch(raw)
+        return VERSION_TERMS.filterTo(linkedSetOf()) { term ->
+            Regex("(^|\\s)${Regex.escape(term)}(\\s|$)").containsMatchIn(normalized)
+        }
+    }
+
+    private fun versionSignature(raw: String): String = requestedVersionTerms(raw)
+        .sorted()
+        .joinToString("+")
+        .ifBlank { "original" }
+
+    private fun canonicalSongTitle(raw: String): String {
+        return stripVersionIntent(
+            raw
+                .lowercase()
+                .replace(Regex("\\([^)]*(from|movie|film|soundtrack|single|theme|ost|original motion picture)[^)]*\\)", RegexOption.IGNORE_CASE), " ")
+                .replace(Regex("\\[[^]]*(from|movie|film|soundtrack|single|theme|ost|original motion picture)[^]]*]", RegexOption.IGNORE_CASE), " ")
+                .replace(Regex("\\s*[-–—:]\\s*(from|original motion picture soundtrack|motion picture soundtrack|soundtrack|ost|single|song|theme).*", RegexOption.IGNORE_CASE), " ")
+                .replace(Regex("\\s+from\\s+.+$", RegexOption.IGNORE_CASE), " ")
+        )
             .replace("&", " and ")
             .replace(Regex("[^a-z0-9\\p{L}]+"), " ")
             .replace(Regex("\\s+"), " ")
@@ -291,5 +340,17 @@ class SearchViewModel @Inject constructor(
 
     private companion object {
         const val SEARCH_PAGE_SIZE = 20
+        val VERSION_TERMS = listOf(
+            "slowed",
+            "reverb",
+            "lofi",
+            "remix",
+            "acoustic",
+            "instrumental",
+            "karaoke",
+            "sped",
+            "speed",
+            "nightcore"
+        )
     }
 }
