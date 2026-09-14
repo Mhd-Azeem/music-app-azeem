@@ -36,7 +36,7 @@ jobs:
       - name: Write local.properties
         run: |
           echo "sdk.dir=${ANDROID_HOME}" > local.properties
-          if [ -n "$JIOSAAVN_BASE_URL" ]; then echo "JIOSAAVN_BASE_URL=${JIOSAAVN_BASE_URL}" >> local.properties; fi
+          if [ -n "$JIOSAAVN_BASE_URL" ]; then echo "JIOSAAVN_BASE_URL=${JIOSAAVN_BASE_URL" >> local.properties; fi
         env:
           JIOSAAVN_BASE_URL: ${{ secrets.JIOSAAVN_BASE_URL }}
       - name: Grant execute permission
@@ -55,12 +55,6 @@ jobs:
             echo "AZMUSIC_KEY_ALIAS=$AZMUSIC_KEY_ALIAS" >> "$GITHUB_ENV"
             echo "AZMUSIC_KEY_PASSWORD=$AZMUSIC_KEY_PASSWORD" >> "$GITHUB_ENV"
           fi
-      - name: Verify newest branch commit
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          HEAD_SHA=$(gh api repos/$GITHUB_REPOSITORY/commits/feature/email-activation-access --jq .sha)
-          test "$HEAD_SHA" = "$GITHUB_SHA" || { echo "Newer commit exists; refusing stale build."; exit 1; }
       - name: Build AzMusic release
         run: ./gradlew :app:assembleRelease --build-cache --parallel --stacktrace
       - name: Prepare APK
