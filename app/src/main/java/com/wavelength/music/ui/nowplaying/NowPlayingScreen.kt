@@ -886,7 +886,7 @@ fun NowPlayingScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(94.dp)
+                            .height(112.dp)
                             .padding(horizontal = 10.dp)
                             .pointerInput(state.durationMs) {
                                 detectTapGestures { offset -> seekFromX(offset.x, size.width.toFloat()) }
@@ -901,18 +901,18 @@ fun NowPlayingScreen(
                             }
                     ) {
                         Canvas(modifier = Modifier.fillMaxSize()) {
-                            val stroke = 2.6.dp.toPx()
-                            val arcLeft = 16.dp.toPx()
-                            val arcRight = size.width - 16.dp.toPx()
+                            val stroke = 3.0.dp.toPx()
+                            val arcLeft = 6.dp.toPx()
+                            val arcRight = size.width - 6.dp.toPx()
                             val arcWidth = arcRight - arcLeft
-                            val arcHeight = 104.dp.toPx()
-                            val top = 12.dp.toPx()
+                            val arcHeight = 138.dp.toPx()
+                            val top = 8.dp.toPx()
                             val arcSize = Size(arcWidth, arcHeight)
-                            val startAngle = 202f
-                            val sweepAngle = 136f
+                            val startAngle = 198f
+                            val sweepAngle = 144f
 
                             drawArc(
-                                color = Color.White.copy(alpha = 0.34f),
+                                color = Color.White.copy(alpha = 0.28f),
                                 startAngle = startAngle,
                                 sweepAngle = sweepAngle,
                                 useCenter = false,
@@ -941,12 +941,12 @@ fun NowPlayingScreen(
                             )
                             drawCircle(
                                 color = Color.White.copy(alpha = 0.24f),
-                                radius = 8.dp.toPx(),
+                                radius = 10.dp.toPx(),
                                 center = thumb
                             )
                             drawCircle(
                                 color = Color.White,
-                                radius = 4.5.dp.toPx(),
+                                radius = 5.dp.toPx(),
                                 center = thumb
                             )
                         }
@@ -975,16 +975,16 @@ fun NowPlayingScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 6.dp, start = 46.dp, end = 46.dp),
+                        .padding(top = 2.dp, start = 54.dp, end = 54.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(50.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.12f))
-                            .border(1.dp, Color.White.copy(alpha = 0.30f), CircleShape)
+                            .border(1.dp, Color.White.copy(alpha = 0.36f), CircleShape)
                             .clickable(onClick = viewModel::toggleShuffle),
                         contentAlignment = Alignment.Center
                     ) {
@@ -997,10 +997,10 @@ fun NowPlayingScreen(
                     }
                     Box(
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(50.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.12f))
-                            .border(1.dp, Color.White.copy(alpha = 0.30f), CircleShape)
+                            .border(1.dp, Color.White.copy(alpha = 0.36f), CircleShape)
                             .clickable(onClick = viewModel::cycleRepeatMode),
                         contentAlignment = Alignment.Center
                     ) {
@@ -1025,13 +1025,13 @@ fun NowPlayingScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(74.dp),
+                            .height(78.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(74.dp)
+                                .height(78.dp)
                                 .clip(
                                     RoundedCornerShape(
                                         topStart = 36.dp,
@@ -1040,10 +1040,10 @@ fun NowPlayingScreen(
                                         bottomStart = 36.dp
                                     )
                                 )
-                                .background(Color.White.copy(alpha = 0.16f))
+                                .background(Color.White.copy(alpha = 0.14f))
                                 .border(
                                     1.dp,
-                                    Color.White.copy(alpha = 0.34f),
+                                    Color.White.copy(alpha = 0.42f),
                                     RoundedCornerShape(
                                         topStart = 36.dp,
                                         topEnd = 38.dp,
@@ -1062,12 +1062,12 @@ fun NowPlayingScreen(
                             )
                         }
 
-                        Box(modifier = Modifier.size(18.dp))
+                        Box(modifier = Modifier.size(0.dp))
 
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(74.dp)
+                                .height(78.dp)
                                 .clip(
                                     RoundedCornerShape(
                                         topStart = 38.dp,
@@ -1076,10 +1076,10 @@ fun NowPlayingScreen(
                                         bottomStart = 38.dp
                                     )
                                 )
-                                .background(Color.White.copy(alpha = 0.16f))
+                                .background(Color.White.copy(alpha = 0.14f))
                                 .border(
                                     1.dp,
-                                    Color.White.copy(alpha = 0.34f),
+                                    Color.White.copy(alpha = 0.42f),
                                     RoundedCornerShape(
                                         topStart = 38.dp,
                                         topEnd = 36.dp,
@@ -1101,17 +1101,31 @@ fun NowPlayingScreen(
 
                     Box(
                         modifier = Modifier
-                            .size(120.dp)
+                            .size(136.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.13f))
-                            .border(1.dp, Color.White.copy(alpha = 0.30f), CircleShape)
+                            .background(Color.White.copy(alpha = 0.055f))
+                            .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(122.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.09f))
+                            .border(2.dp, Color.White.copy(alpha = 0.42f), CircleShape)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(104.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.12f))
+                            .border(1.dp, Color.White.copy(alpha = 0.34f), CircleShape)
                     )
                     Box(
                         modifier = Modifier
                             .size(88.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.96f))
-                            .border(6.dp, Color.White.copy(alpha = 0.23f), CircleShape)
+                            .background(Color.White.copy(alpha = 0.98f))
+                            .border(5.dp, Color.White.copy(alpha = 0.34f), CircleShape)
                             .clickable(enabled = !state.isBuffering, onClick = viewModel::playPause),
                         contentAlignment = Alignment.Center
                     ) {

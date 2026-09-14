@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Glass playback controls now use Saturn-style orbital rings and a deeper curved song timeline",
     "Glass Now Playing refined again for full-screen artwork, lower reference layout, and truly connected liquid transport controls",
     "Refined Glass Now Playing to closely match the reference: cleaner artwork, centered metadata, compact arc timeline, organic liquid transport, and minimal controls",
     "Fixed the curved glass seek timeline gesture build issue",
