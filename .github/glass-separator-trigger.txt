@@ -1,0 +1,1 @@
+Apply curved separator and circular horizontally scrollable Up Next layout.
