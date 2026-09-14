@@ -36,7 +36,7 @@ jobs:
       - name: Write local.properties
         run: |
           echo "sdk.dir=${ANDROID_HOME}" > local.properties
-          if [ -n "$JIOSAAVN_BASE_URL" ]; then echo "JIOSAAVN_BASE_URL=${JIOSAAVN_BASE_URL" >> local.properties; fi
+          if [ -n "$JIOSAAVN_BASE_URL" ]; then echo "JIOSAAVN_BASE_URL=${JIOSAAVN_BASE_URL}" >> local.properties; fi
         env:
           JIOSAAVN_BASE_URL: ${{ secrets.JIOSAAVN_BASE_URL }}
       - name: Grant execute permission
