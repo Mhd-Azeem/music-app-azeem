@@ -354,6 +354,22 @@ fun SettingsScreen(
                             }
                         }
                     }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "Background opacity: ${(settings.backgroundOpacity * 100).roundToInt()}%",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Slider(
+                            value = settings.backgroundOpacity,
+                            onValueChange = viewModel::setBackgroundOpacity,
+                            valueRange = 0f..1f
+                        )
+                    }
                 }
             }
 

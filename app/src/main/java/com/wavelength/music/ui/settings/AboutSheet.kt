@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Background opacity slider restored with live 0–100% control",
     "Simplified appearance selector with Solid and Liquid modes using one variable accent color",
     "New album-art styles: Depth Float, Bass Zoom, Spatial Float, Parallax, and Vinyl",
     "Album-art style now defaults to Off",
