@@ -1,0 +1,39 @@
+name: Apply Default Settings
+
+on:
+  push:
+    branches:
+      - feature/email-activation-access
+    paths:
+      - .github/scripts/set_default_album_upnext.py
+      - .github/workflows/apply-defaults.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/email-activation-access
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Apply default setting changes
+        run: python .github/scripts/set_default_album_upnext.py
+      - name: Verify defaults
+        run: |
+          grep -F 'val expandUpNextOnScroll: Boolean = true,' app/src/main/java/com/wavelength/music/data/repository/SettingsRepository.kt
+          grep -F 'expandUpNextOnScroll = prefs.getBoolean(KEY_EXPAND_UP_NEXT, true),' app/src/main/java/com/wavelength/music/data/repository/SettingsRepository.kt
+          grep -F 'val albumArtStyle: AlbumArtStyle = AlbumArtStyle.OFF,' app/src/main/java/com/wavelength/music/data/repository/SettingsRepository.kt
+      - name: Commit app change and clean helper files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/scripts/set_default_album_upnext.py .github/workflows/apply-defaults.yml
+          git add app/src/main/java/com/wavelength/music/data/repository/SettingsRepository.kt
+          git commit -m "feat: default album art off and up next expansion on"
+          git push origin HEAD:feature/email-activation-access
