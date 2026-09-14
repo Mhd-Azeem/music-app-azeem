@@ -29,19 +29,25 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -862,7 +868,57 @@ fun NowPlayingScreen(
             }
 
             if (glassmorphismNowPlaying) {
-                Box(modifier = Modifier.weight(1f))
+                val glassUpcoming = state.queue.drop(state.currentIndex + 1).take(12)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    if (glassUpcoming.isNotEmpty()) {
+                        LazyRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(118.dp),
+                            contentPadding = PaddingValues(horizontal = 96.dp),
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            itemsIndexed(glassUpcoming, key = { _, entry -> entry.instanceId }) { index, entry ->
+                                val arcOffset = when (index % 5) {
+                                    0, 4 -> 28.dp
+                                    1, 3 -> 12.dp
+                                    else -> 0.dp
+                                }
+                                Column(
+                                    modifier = Modifier
+                                        .width(92.dp)
+                                        .offset(y = arcOffset)
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .background(Color.White.copy(alpha = 0.08f))
+                                        .border(1.dp, Color.White.copy(alpha = 0.22f), RoundedCornerShape(18.dp))
+                                        .clickable { viewModel.playQueueItem(state.currentIndex + 1 + index) }
+                                        .padding(horizontal = 8.dp, vertical = 10.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "%02d".format(index + 1),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color.White.copy(alpha = 0.70f)
+                                    )
+                                    Text(
+                                        text = entry.track.name,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = Color.White.copy(alpha = 0.92f),
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             if (glassmorphismNowPlaying) {
@@ -886,8 +942,8 @@ fun NowPlayingScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(112.dp)
-                            .padding(horizontal = 10.dp)
+                            .height(132.dp)
+                            .padding(horizontal = 2.dp)
                             .pointerInput(state.durationMs) {
                                 detectTapGestures { offset -> seekFromX(offset.x, size.width.toFloat()) }
                             }
@@ -901,15 +957,15 @@ fun NowPlayingScreen(
                             }
                     ) {
                         Canvas(modifier = Modifier.fillMaxSize()) {
-                            val stroke = 3.0.dp.toPx()
-                            val arcLeft = 6.dp.toPx()
-                            val arcRight = size.width - 6.dp.toPx()
+                            val stroke = 3.4.dp.toPx()
+                            val arcLeft = 0.dp.toPx()
+                            val arcRight = size.width
                             val arcWidth = arcRight - arcLeft
-                            val arcHeight = 138.dp.toPx()
-                            val top = 8.dp.toPx()
+                            val arcHeight = 214.dp.toPx()
+                            val top = 10.dp.toPx()
                             val arcSize = Size(arcWidth, arcHeight)
-                            val startAngle = 198f
-                            val sweepAngle = 144f
+                            val startAngle = 202f
+                            val sweepAngle = 136f
 
                             drawArc(
                                 color = Color.White.copy(alpha = 0.28f),
@@ -1013,119 +1069,88 @@ fun NowPlayingScreen(
                     }
                 }
 
-                // Organic three-part liquid transport: left and right lobes curve into the raised
-                // center well instead of looking like a normal rectangular Material pill.
+                // One continuous reference-style Saturn control. The outer glass border is a
+                // single organic silhouette shared by Previous, Play/Pause and Next.
+                val saturnTransportShape = remember {
+                    GenericShape { size, _ ->
+                        val w = size.width
+                        val h = size.height
+                        moveTo(0f, h * 0.50f)
+                        cubicTo(0f, h * 0.34f, w * 0.04f, h * 0.28f, w * 0.10f, h * 0.28f)
+                        lineTo(w * 0.28f, h * 0.28f)
+                        cubicTo(w * 0.34f, h * 0.28f, w * 0.34f, h * 0.08f, w * 0.42f, h * 0.03f)
+                        cubicTo(w * 0.47f, 0f, w * 0.53f, 0f, w * 0.58f, h * 0.03f)
+                        cubicTo(w * 0.66f, h * 0.08f, w * 0.66f, h * 0.28f, w * 0.72f, h * 0.28f)
+                        lineTo(w * 0.90f, h * 0.28f)
+                        cubicTo(w * 0.96f, h * 0.28f, w, h * 0.34f, w, h * 0.50f)
+                        cubicTo(w, h * 0.66f, w * 0.96f, h * 0.72f, w * 0.90f, h * 0.72f)
+                        lineTo(w * 0.72f, h * 0.72f)
+                        cubicTo(w * 0.66f, h * 0.72f, w * 0.66f, h * 0.92f, w * 0.58f, h * 0.97f)
+                        cubicTo(w * 0.53f, h, w * 0.47f, h, w * 0.42f, h * 0.97f)
+                        cubicTo(w * 0.34f, h * 0.92f, w * 0.34f, h * 0.72f, w * 0.28f, h * 0.72f)
+                        lineTo(w * 0.10f, h * 0.72f)
+                        cubicTo(w * 0.04f, h * 0.72f, 0f, h * 0.66f, 0f, h * 0.50f)
+                        close()
+                    }
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(132.dp)
-                        .padding(horizontal = 24.dp),
+                        .padding(horizontal = 18.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Row(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(78.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .height(116.dp)
+                            .clip(saturnTransportShape)
+                            .background(Color.White.copy(alpha = 0.13f))
+                            .border(1.6.dp, Color.White.copy(alpha = 0.68f), saturnTransportShape)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(78.dp)
-                                .clip(
-                                    RoundedCornerShape(
-                                        topStart = 36.dp,
-                                        topEnd = 38.dp,
-                                        bottomEnd = 38.dp,
-                                        bottomStart = 36.dp
-                                    )
+                        Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .clickable(onClick = viewModel::skipPrevious),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Filled.SkipPrevious,
+                                    contentDescription = "Previous",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(30.dp)
                                 )
-                                .background(Color.White.copy(alpha = 0.14f))
-                                .border(
-                                    1.dp,
-                                    Color.White.copy(alpha = 0.42f),
-                                    RoundedCornerShape(
-                                        topStart = 36.dp,
-                                        topEnd = 38.dp,
-                                        bottomEnd = 38.dp,
-                                        bottomStart = 36.dp
-                                    )
+                            }
+                            Box(modifier = Modifier.width(112.dp).fillMaxHeight())
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .clickable(onClick = viewModel::skipNext),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Filled.SkipNext,
+                                    contentDescription = "Next",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(30.dp)
                                 )
-                                .clickable(onClick = viewModel::skipPrevious),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Filled.SkipPrevious,
-                                contentDescription = "Previous",
-                                tint = Color.White,
-                                modifier = Modifier.size(31.dp)
-                            )
-                        }
-
-                        Box(modifier = Modifier.size(0.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(78.dp)
-                                .clip(
-                                    RoundedCornerShape(
-                                        topStart = 38.dp,
-                                        topEnd = 36.dp,
-                                        bottomEnd = 36.dp,
-                                        bottomStart = 38.dp
-                                    )
-                                )
-                                .background(Color.White.copy(alpha = 0.14f))
-                                .border(
-                                    1.dp,
-                                    Color.White.copy(alpha = 0.42f),
-                                    RoundedCornerShape(
-                                        topStart = 38.dp,
-                                        topEnd = 36.dp,
-                                        bottomEnd = 36.dp,
-                                        bottomStart = 38.dp
-                                    )
-                                )
-                                .clickable(onClick = viewModel::skipNext),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Filled.SkipNext,
-                                contentDescription = "Next",
-                                tint = Color.White,
-                                modifier = Modifier.size(31.dp)
-                            )
+                            }
                         }
                     }
-
                     Box(
                         modifier = Modifier
-                            .size(136.dp)
+                            .size(108.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.055f))
-                            .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(122.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.09f))
-                            .border(2.dp, Color.White.copy(alpha = 0.42f), CircleShape)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(104.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.12f))
-                            .border(1.dp, Color.White.copy(alpha = 0.34f), CircleShape)
+                            .background(Color.White.copy(alpha = 0.10f))
                     )
                     Box(
                         modifier = Modifier
                             .size(88.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.98f))
-                            .border(5.dp, Color.White.copy(alpha = 0.34f), CircleShape)
                             .clickable(enabled = !state.isBuffering, onClick = viewModel::playPause),
                         contentAlignment = Alignment.Center
                     ) {

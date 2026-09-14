@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Glassmorphism is now a full-app theme with a continuous Saturn transport border, deeper curved seek arc, and scrollable arced Up Next cards",
     "Glass playback controls now use Saturn-style orbital rings and a deeper curved song timeline",
     "Glass Now Playing refined again for full-screen artwork, lower reference layout, and truly connected liquid transport controls",
     "Refined Glass Now Playing to closely match the reference: cleaner artwork, centered metadata, compact arc timeline, organic liquid transport, and minimal controls",
@@ -76,7 +77,7 @@ private val featureGroups = listOf(
     ),
     "Personalization" to listOf(
         "Single variable accent color shared by Solid and Liquid appearance modes",
-        "Optional Glassmorphism Now Playing interface with frosted album-art backdrop",
+        "Optional full-app Glassmorphism theme with frosted translucent surfaces and reference-style playback controls",
         "Solid or Liquid appearance selection",
         "Multiple app icon presets",
         "Custom background photo, plus a gallery of favorite wallpapers",

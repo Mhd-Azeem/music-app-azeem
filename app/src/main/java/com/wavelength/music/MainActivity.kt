@@ -31,6 +31,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -85,11 +86,25 @@ class MainActivity : ComponentActivity() {
 
             WavelengthTheme(
                 theme = settings.theme,
-                customLiquidAccent = Color(settings.customAccentArgb)
+                customLiquidAccent = Color(settings.customAccentArgb),
+                glassmorphismEnabled = settings.glassmorphismNowPlaying
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     OfflineBanner()
-                    Box(modifier = Modifier.fillMaxWidth().weight(1f).background(Color.Black)) {
+                    val appSurface = if (settings.glassmorphismNowPlaying) {
+                        Modifier.background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color(settings.customAccentArgb).copy(alpha = 0.24f),
+                                    Color(0xFF0A1628),
+                                    Color(0xFF111827)
+                                )
+                            )
+                        )
+                    } else {
+                        Modifier.background(Color.Black)
+                    }
+                    Box(modifier = Modifier.fillMaxWidth().weight(1f).then(appSurface)) {
                         WavelengthNavHost()
                     }
                 }

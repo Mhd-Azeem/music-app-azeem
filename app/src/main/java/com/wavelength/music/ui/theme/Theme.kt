@@ -130,10 +130,29 @@ fun AppTheme.swatchColor(): Color = when (this) {
 fun WavelengthTheme(
     theme: AppTheme = AppTheme.CLASSIC,
     customLiquidAccent: Color? = null,
+    glassmorphismEnabled: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    val baseScheme = schemeFor(theme, customLiquidAccent)
+    val appScheme = if (glassmorphismEnabled) {
+        baseScheme.copy(
+            background = Color.Transparent,
+            surface = Color.White.copy(alpha = 0.10f),
+            surfaceVariant = Color.White.copy(alpha = 0.16f),
+            surfaceContainer = Color.White.copy(alpha = 0.09f),
+            surfaceContainerLow = Color.White.copy(alpha = 0.07f),
+            surfaceContainerHigh = Color.White.copy(alpha = 0.14f),
+            outline = Color.White.copy(alpha = 0.34f),
+            outlineVariant = Color.White.copy(alpha = 0.20f),
+            onBackground = Color.White,
+            onSurface = Color.White,
+            onSurfaceVariant = Color.White.copy(alpha = 0.78f)
+        )
+    } else {
+        baseScheme
+    }
     MaterialTheme(
-        colorScheme = schemeFor(theme, customLiquidAccent),
+        colorScheme = appScheme,
         typography = WavelengthTypography,
         content = content
     )

@@ -784,18 +784,18 @@ fun SettingsScreen(
             }
 
             item {
-                SettingsSection(title = "Now Playing Style") {
+                SettingsSection(title = "Glassmorphism Theme") {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Glassmorphism Now Playing")
+                            Text("Full App Glassmorphism")
                             Text(
                                 text = if (settings.glassmorphismNowPlaying) {
-                                    "On • frosted glass with a blurred album-art backdrop"
+                                    "On • frosted liquid-glass styling across the entire app"
                                 } else {
-                                    "Off • use the standard Now Playing layout"
+                                    "Off • use the standard AzMusic interface"
                                 },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -807,7 +807,7 @@ fun SettingsScreen(
                         )
                     }
                     Text(
-                        text = "Transforms the entire Now Playing screen into a translucent frosted-glass interface while keeping playback controls, lyrics, volume and Up Next fully usable.",
+                        text = "Applies the translucent frosted-glass theme to Home, Search, Library, Settings, dialogs, cards and Now Playing. The player also uses the reference-style curved queue, seek arc and connected transport control.",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
