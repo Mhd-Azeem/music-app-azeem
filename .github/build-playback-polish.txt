@@ -1,1 +1,1 @@
-Build reference-style glass playback controls commit 0187932d8f52943927cd1089253e61098bb5216c.
+Build exact glass Now Playing reference commit 8e2d196368f7d82b5df17685664ef2fd0ac63aac.
