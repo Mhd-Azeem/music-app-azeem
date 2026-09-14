@@ -933,9 +933,9 @@ fun NowPlayingScreen(
                     if (glassUpcoming.isNotEmpty()) {
                         LazyRow(
                             state = fanState,
-                            modifier = Modifier.fillMaxWidth().height(184.dp),
+                            modifier = Modifier.fillMaxWidth().height(196.dp),
                             contentPadding = PaddingValues(horizontal = 0.dp),
-                            horizontalArrangement = Arrangement.spacedBy((-7).dp),
+                            horizontalArrangement = Arrangement.spacedBy((-22).dp),
                             verticalAlignment = Alignment.Bottom
                         ) {
                             itemsIndexed(glassUpcoming, key = { _, entry -> entry.instanceId }) { index, entry ->
@@ -943,16 +943,16 @@ fun NowPlayingScreen(
                                 val delta = (index - centerIndex).coerceIn(-4, 4)
                                 val distance = kotlin.math.abs(delta)
                                 val lift = when (distance) {
-                                    0 -> 10.dp
-                                    1 -> 16.dp
-                                    2 -> 28.dp
-                                    3 -> 45.dp
-                                    else -> 64.dp
+                                    0 -> 0.dp
+                                    1 -> 5.dp
+                                    2 -> 14.dp
+                                    3 -> 28.dp
+                                    else -> 46.dp
                                 }
                                 Box(
                                     modifier = Modifier
-                                        .width(68.dp)
-                                        .height(150.dp)
+                                        .width(82.dp)
+                                        .height(158.dp)
                                         .offset(y = lift)
                                         .graphicsLayer { rotationZ = delta * 10f }
                                         .clip(RoundedCornerShape(11.dp))
@@ -998,9 +998,9 @@ fun NowPlayingScreen(
                 } else 0f
                 val lowerGlassShape = remember {
                     GenericShape { size, _ ->
-                        moveTo(0f, size.height * 0.17f)
-                        cubicTo(size.width * 0.18f, size.height * 0.01f, size.width * 0.34f, 0f, size.width * 0.50f, 0f)
-                        cubicTo(size.width * 0.66f, 0f, size.width * 0.82f, size.height * 0.01f, size.width, size.height * 0.17f)
+                        moveTo(0f, size.height * 0.12f)
+                        cubicTo(size.width * 0.16f, 0f, size.width * 0.34f, 0f, size.width * 0.50f, 0f)
+                        cubicTo(size.width * 0.66f, 0f, size.width * 0.84f, 0f, size.width, size.height * 0.12f)
                         lineTo(size.width, size.height)
                         lineTo(0f, size.height)
                         close()
@@ -1018,13 +1018,14 @@ fun NowPlayingScreen(
                         .border(1.5.dp, Color.White.copy(alpha = 0.78f), lowerGlassShape)
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxSize().padding(top = 52.dp, start = 28.dp, end = 28.dp, bottom = 20.dp),
+                        modifier = Modifier.fillMaxSize().padding(top = 40.dp, start = 0.dp, end = 0.dp, bottom = 0.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         // Single curved seek line inside the panel.
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .padding(horizontal = 0.dp)
                                 .height(92.dp)
                                 .pointerInput(state.durationMs) {
                                     detectTapGestures { offset ->
