@@ -1,1 +1,0 @@
-Run once, apply continuous circular queue motion, self-clean.
