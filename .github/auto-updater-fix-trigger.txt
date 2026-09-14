@@ -1,0 +1,1 @@
+Repair production APK auto-update detection and release build metadata.
