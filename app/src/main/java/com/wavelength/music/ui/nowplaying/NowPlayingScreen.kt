@@ -879,9 +879,9 @@ fun NowPlayingScreen(
                         LazyRow(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(118.dp),
-                            contentPadding = PaddingValues(horizontal = 96.dp),
-                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                .height(92.dp),
+                            contentPadding = PaddingValues(horizontal = 54.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             itemsIndexed(glassUpcoming, key = { _, entry -> entry.instanceId }) { index, entry ->
@@ -889,28 +889,28 @@ fun NowPlayingScreen(
                                 // vertical title along one shallow, smooth visual curve.
                                 val curveStep = index % 7
                                 val arcOffset = when (curveStep) {
-                                    0, 6 -> 18.dp
-                                    1, 5 -> 10.dp
-                                    2, 4 -> 4.dp
+                                    0, 6 -> 12.dp
+                                    1, 5 -> 7.dp
+                                    2, 4 -> 3.dp
                                     else -> 0.dp
                                 }
                                 Box(
                                     modifier = Modifier
-                                        .width(62.dp)
-                                        .height(100.dp)
+                                        .width(46.dp)
+                                        .height(82.dp)
                                         .offset(y = arcOffset)
                                         .clickable { viewModel.playQueueItem(state.currentIndex + 1 + index) }
-                                        .padding(vertical = 5.dp),
+                                        .padding(vertical = 2.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = "%02d   ${entry.track.name}",
+                                        text = entry.track.name,
                                         style = MaterialTheme.typography.labelSmall,
                                         color = Color.White.copy(alpha = 0.94f),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier
-                                            .width(94.dp)
+                                            .width(78.dp)
                                             .graphicsLayer { rotationZ = -90f },
                                         textAlign = TextAlign.Center
                                     )
