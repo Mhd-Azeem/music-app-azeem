@@ -552,6 +552,58 @@ fun NowPlayingScreen(
                     .background(Color.White.copy(alpha = 0.055f))
             )
         }
+        if (glassmorphismNowPlaying && !track?.albumArtUrl.isNullOrBlank()) {
+            // The lower playback zone is deliberately more frosted than the artwork/queue zone.
+            // Clip a second copy of the same artwork to the lower 43% so the split feels like
+            // one continuous image rather than a different background.
+            AsyncImage(
+                model = track?.albumArtUrl,
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        clip = true
+                        shape = GenericShape { size, _ ->
+                            moveTo(0f, size.height * 0.57f)
+                            lineTo(size.width, size.height * 0.57f)
+                            lineTo(size.width, size.height)
+                            lineTo(0f, size.height)
+                            close()
+                        }
+                    }
+                    .blur(17.dp)
+                    .alpha(0.88f),
+                contentScale = ContentScale.Crop
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.00f to Color.Transparent,
+                                0.56f to Color.Transparent,
+                                0.59f to Color.Black.copy(alpha = 0.04f),
+                                1.00f to Color.Black.copy(alpha = 0.14f)
+                            )
+                        )
+                    )
+            )
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val y = size.height * 0.585f
+                val inset = 18.dp.toPx()
+                val path = Path().apply {
+                    moveTo(inset, y + 8.dp.toPx())
+                    quadraticBezierTo(size.width / 2f, y - 22.dp.toPx(), size.width - inset, y + 8.dp.toPx())
+                }
+                drawPath(
+                    path = path,
+                    color = Color.White.copy(alpha = 0.58f),
+                    style = Stroke(width = 1.35.dp.toPx())
+                )
+            }
+        }
+
         if (isLiquid && liquidAlbumArtBackground && !track?.albumArtUrl.isNullOrBlank()) {
             AsyncImage(
                 model = track?.albumArtUrl,
@@ -868,7 +920,7 @@ fun NowPlayingScreen(
             }
 
             if (glassmorphismNowPlaying) {
-                val glassUpcoming = state.queue.drop(state.currentIndex + 1).take(12)
+                val glassUpcoming = state.queue.drop(state.currentIndex + 1)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -887,12 +939,27 @@ fun NowPlayingScreen(
                             itemsIndexed(glassUpcoming, key = { _, entry -> entry.instanceId }) { index, entry ->
                                 // Keep the queue horizontally scrollable while arranging each
                                 // vertical title along one shallow, smooth visual curve.
-                                val curveStep = index % 7
+                                // Fan the upcoming titles around a shallow circular arc. The
+                                // LazyRow still scrolls horizontally, while each visible item is
+                                // angled like a spoke instead of staying parallel.
+                                val curveStep = index % 9
                                 val arcOffset = when (curveStep) {
-                                    0, 6 -> 12.dp
-                                    1, 5 -> 7.dp
-                                    2, 4 -> 3.dp
+                                    0, 8 -> 18.dp
+                                    1, 7 -> 12.dp
+                                    2, 6 -> 7.dp
+                                    3, 5 -> 3.dp
                                     else -> 0.dp
+                                }
+                                val spokeRotation = when (curveStep) {
+                                    0 -> -30f
+                                    1 -> -22f
+                                    2 -> -14f
+                                    3 -> -7f
+                                    4 -> 0f
+                                    5 -> 7f
+                                    6 -> 14f
+                                    7 -> 22f
+                                    else -> 30f
                                 }
                                 Box(
                                     modifier = Modifier
@@ -911,7 +978,7 @@ fun NowPlayingScreen(
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier
                                             .width(78.dp)
-                                            .graphicsLayer { rotationZ = -90f },
+                                            .graphicsLayer { rotationZ = -90f + spokeRotation },
                                         textAlign = TextAlign.Center
                                     )
                                 }
