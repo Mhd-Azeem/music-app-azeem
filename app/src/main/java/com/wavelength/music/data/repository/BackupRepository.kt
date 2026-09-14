@@ -56,7 +56,8 @@ class BackupRepository @Inject constructor(
                 backgroundOpacity = settingsState.backgroundOpacity,
                 expandUpNextOnScroll = settingsState.expandUpNextOnScroll,
                 dynamicThemeFromAlbumArt = settingsState.dynamicThemeFromAlbumArt,
-                vinylStyleAlbumArt = settingsState.vinylStyleAlbumArt,
+                albumArtStyle = settingsState.albumArtStyle.name,
+                vinylStyleAlbumArt = settingsState.albumArtStyle == AlbumArtStyle.VINYL,
                 aiDjEnabled = settingsState.aiDjEnabled,
                 crossfadeDurationMs = settingsState.crossfadeDurationMs,
                 audioVisualizerEnabled = settingsState.audioVisualizerEnabled,
@@ -130,7 +131,10 @@ class BackupRepository @Inject constructor(
         settingsRepository.setBackgroundOpacity(settings.backgroundOpacity)
         settingsRepository.setExpandUpNextOnScroll(settings.expandUpNextOnScroll)
         settingsRepository.setDynamicThemeFromAlbumArt(settings.dynamicThemeFromAlbumArt)
-        settingsRepository.setVinylStyleAlbumArt(settings.vinylStyleAlbumArt)
+        val restoredStyle = settings.albumArtStyle
+            ?.let { runCatching { AlbumArtStyle.valueOf(it) }.getOrNull() }
+            ?: if (settings.vinylStyleAlbumArt) AlbumArtStyle.VINYL else AlbumArtStyle.OFF
+        settingsRepository.setAlbumArtStyle(restoredStyle)
         settingsRepository.setAiDjEnabled(settings.aiDjEnabled)
         settingsRepository.setCrossfadeDurationMs(settings.crossfadeDurationMs)
         settingsRepository.setAudioVisualizerEnabled(settings.audioVisualizerEnabled)

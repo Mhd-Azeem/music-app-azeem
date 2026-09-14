@@ -32,6 +32,8 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -82,6 +84,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
+import com.wavelength.music.data.repository.AlbumArtStyle
 import com.wavelength.music.data.repository.BuiltInWallpaper
 import com.wavelength.music.ui.components.wallpaperBrush
 
@@ -97,6 +100,7 @@ fun SettingsScreen(
     val usageState by viewModel.usageState.collectAsStateWithLifecycle()
     var showClearDownloadsConfirm by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
+    var showAlbumArtStyleMenu by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     val eqSupported by equalizerViewModel.isSupported.collectAsStateWithLifecycle()
@@ -633,44 +637,62 @@ fun SettingsScreen(
                             onCheckedChange = { viewModel.setDynamicThemeFromAlbumArt(it) }
                         )
                     }
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            text = "Spinning vinyl-style album art",
-                            modifier = Modifier.weight(1f)
+                            text = "Album art style",
+                            style = MaterialTheme.typography.bodyLarge
                         )
-                        Switch(
-                            checked = settings.vinylStyleAlbumArt,
-                            onCheckedChange = { viewModel.setVinylStyleAlbumArt(it) }
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
                         Text(
-                            text = "Parallax album art",
-                            modifier = Modifier.weight(1f)
+                            text = settings.albumArtStyle.description,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
                         )
-                        Switch(
-                            checked = settings.parallaxAlbumArt,
-                            onCheckedChange = { viewModel.setParallaxAlbumArt(it) }
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Beat bounce album art",
-                            modifier = Modifier.weight(1f)
-                        )
-                        Switch(
-                            checked = settings.beatBounceAlbumArt,
-                            onCheckedChange = { viewModel.setBeatBounceAlbumArt(it) }
-                        )
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            OutlinedButton(
+                                onClick = { showAlbumArtStyleMenu = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = settings.albumArtStyle.label,
+                                    modifier = Modifier.weight(1f),
+                                    textAlign = TextAlign.Start
+                                )
+                                Icon(Icons.Filled.ExpandMore, contentDescription = "Choose album art style")
+                            }
+                            DropdownMenu(
+                                expanded = showAlbumArtStyleMenu,
+                                onDismissRequest = { showAlbumArtStyleMenu = false }
+                            ) {
+                                AlbumArtStyle.entries.forEach { style ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Column {
+                                                Text(style.label)
+                                                Text(
+                                                    style.description,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        },
+                                        onClick = {
+                                            viewModel.setAlbumArtStyle(style)
+                                            showAlbumArtStyleMenu = false
+                                        },
+                                        trailingIcon = {
+                                            if (settings.albumArtStyle == style) {
+                                                Icon(Icons.Filled.Check, contentDescription = null)
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),

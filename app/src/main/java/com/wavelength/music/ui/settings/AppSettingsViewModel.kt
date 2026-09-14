@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wavelength.music.data.backup.ImportSummary
 import com.wavelength.music.data.model.DownloadsSummary
+import com.wavelength.music.data.repository.AlbumArtStyle
 import com.wavelength.music.data.repository.AppSettingsState
 import com.wavelength.music.data.repository.BackupRepository
 import com.wavelength.music.data.repository.BuiltInWallpaper
@@ -104,11 +105,7 @@ class AppSettingsViewModel @Inject constructor(
 
     fun setDynamicThemeFromAlbumArt(enabled: Boolean) = settingsRepository.setDynamicThemeFromAlbumArt(enabled)
 
-    fun setVinylStyleAlbumArt(enabled: Boolean) = settingsRepository.setVinylStyleAlbumArt(enabled)
-
-    fun setParallaxAlbumArt(enabled: Boolean) = settingsRepository.setParallaxAlbumArt(enabled)
-
-    fun setBeatBounceAlbumArt(enabled: Boolean) = settingsRepository.setBeatBounceAlbumArt(enabled)
+    fun setAlbumArtStyle(style: AlbumArtStyle) = settingsRepository.setAlbumArtStyle(style)
 
     fun setAiDjEnabled(enabled: Boolean) = settingsRepository.setAiDjEnabled(enabled)
 

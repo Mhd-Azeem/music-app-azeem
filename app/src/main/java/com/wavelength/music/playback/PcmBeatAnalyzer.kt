@@ -33,6 +33,9 @@ class PcmBeatAnalyzer @Inject constructor() : TeeAudioProcessor.AudioBufferSink 
     private val _beatPulse = MutableStateFlow(BeatPulse())
     val beatPulse: StateFlow<BeatPulse> = _beatPulse.asStateFlow()
 
+    private val _bassLevel = MutableStateFlow(0f)
+    val bassLevel: StateFlow<Float> = _bassLevel.asStateFlow()
+
     private var sampleRateHz = 44_100
     private var channelCount = 2
     private var encoding = C.ENCODING_PCM_16BIT
@@ -76,6 +79,7 @@ class PcmBeatAnalyzer @Inject constructor() : TeeAudioProcessor.AudioBufferSink 
         previousBass = 0f
         previousFull = 0f
         lastBeatAtMs = 0L
+        _bassLevel.value = 0f
     }
 
     private fun onePoleAlpha(cutoffHz: Float): Float =
@@ -155,6 +159,16 @@ class PcmBeatAnalyzer @Inject constructor() : TeeAudioProcessor.AudioBufferSink 
         val bassRise = (bassRms - previousBass).coerceAtLeast(0f)
         val fullRise = (fullRms - previousFull).coerceAtLeast(0f)
         val now = SystemClock.elapsedRealtime()
+
+        // Continuous 0..1 bass intensity for Bass Zoom. Relative energy handles quiet masters;
+        // absolute energy prevents a tiny amount of bass from looking huge merely because the
+        // whole song is quiet. Smooth attack/release avoids jitter while preserving real dynamics.
+        val relativeBass = ((bassRatio - 0.82f) / 0.95f).coerceIn(0f, 1f)
+        val absoluteBass = ((bassRms - 0.006f) / 0.085f).coerceIn(0f, 1f)
+        val measuredBass = (relativeBass * 0.68f + absoluteBass * 0.32f).coerceIn(0f, 1f)
+        val previousLevel = _bassLevel.value
+        val smoothing = if (measuredBass > previousLevel) 0.38f else 0.16f
+        _bassLevel.value = previousLevel + (measuredBass - previousLevel) * smoothing
 
         // Measure how bass-heavy this instant really is, not just whether some transient happened.
         // This prevents light vocals/snare/quiet bass from producing the same visual jump as a kick.

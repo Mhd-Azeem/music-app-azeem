@@ -45,6 +45,7 @@ class PlayerViewModel @Inject constructor(
     val visualizerFft: StateFlow<ByteArray?> = visualizerController.fft
     val visualizerSamplingRateHz: StateFlow<Int> = visualizerController.samplingRateHz
     val pcmBeatPulse: StateFlow<PcmBeatAnalyzer.BeatPulse> = pcmBeatAnalyzer.beatPulse
+    val pcmBassLevel: StateFlow<Float> = pcmBeatAnalyzer.bassLevel
     val systemVolume: StateFlow<Float> = systemVolumeController.volume
 
     private val _lyrics = MutableStateFlow<ScreenState<List<LyricLine>>>(ScreenState.Empty)

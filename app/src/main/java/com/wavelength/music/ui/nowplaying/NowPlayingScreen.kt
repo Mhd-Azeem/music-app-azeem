@@ -13,6 +13,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
@@ -110,6 +111,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.wavelength.music.data.model.LyricLine
+import com.wavelength.music.data.repository.AlbumArtStyle
 import com.wavelength.music.playback.RepeatMode
 import com.wavelength.music.ui.components.EmptyView
 import com.wavelength.music.ui.components.LoadingView
@@ -144,9 +146,7 @@ fun NowPlayingScreen(
     glassStyle: HazeStyle = HazeStyle.Unspecified,
     expandUpNextOnScroll: Boolean = false,
     dynamicThemeFromAlbumArt: Boolean = false,
-    vinylStyleAlbumArt: Boolean = false,
-    parallaxAlbumArt: Boolean = false,
-    beatBounceAlbumArt: Boolean = false,
+    albumArtStyle: AlbumArtStyle = AlbumArtStyle.OFF,
     audioVisualizerEnabled: Boolean = false,
     trackTransitionEnabled: Boolean = true,
     trackTransitionDurationMs: Int = 300,
@@ -158,6 +158,12 @@ fun NowPlayingScreen(
     } else {
         snap()
     }
+    val vinylStyleAlbumArt = albumArtStyle == AlbumArtStyle.VINYL
+    val parallaxAlbumArt = albumArtStyle == AlbumArtStyle.PARALLAX
+    val depthFloatAlbumArt = albumArtStyle == AlbumArtStyle.DEPTH_FLOAT
+    val bassZoomAlbumArt = albumArtStyle == AlbumArtStyle.BASS_ZOOM
+    val spatialFloatAlbumArt = albumArtStyle == AlbumArtStyle.SPATIAL_FLOAT
+    val sensorMotionEnabled = parallaxAlbumArt || spatialFloatAlbumArt
     val hazeState = remember { HazeState() }
     val pillShape = RoundedCornerShape(28.dp)
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -212,7 +218,7 @@ fun NowPlayingScreen(
     var sensorTiltY by remember { mutableFloatStateOf(0f) }
     var sensorGyroX by remember { mutableFloatStateOf(0f) }
     var sensorGyroY by remember { mutableFloatStateOf(0f) }
-    DisposableEffect(parallaxAlbumArt, context) {
+    DisposableEffect(sensorMotionEnabled, spatialFloatAlbumArt, context) {
         val sensorManager = context.getSystemService(android.content.Context.SENSOR_SERVICE) as SensorManager
         val rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)
             ?: sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
@@ -243,7 +249,7 @@ fun NowPlayingScreen(
             }
 
             override fun onSensorChanged(event: SensorEvent) {
-                if (!parallaxAlbumArt) return
+                if (!sensorMotionEnabled) return
 
                 if (event.sensor.type == Sensor.TYPE_GYROSCOPE && event.values.size >= 2) {
                     // Angular velocity gives the artwork a responsive inertial nudge while the
@@ -299,10 +305,10 @@ fun NowPlayingScreen(
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
         }
 
-        if (parallaxAlbumArt && motionSensor != null) {
+        if (sensorMotionEnabled && motionSensor != null) {
             sensorManager.registerListener(listener, motionSensor, SensorManager.SENSOR_DELAY_GAME)
         }
-        if (parallaxAlbumArt && gyroSensor != null) {
+        if (spatialFloatAlbumArt && gyroSensor != null) {
             sensorManager.registerListener(listener, gyroSensor, SensorManager.SENSOR_DELAY_GAME)
         }
         onDispose {
@@ -314,44 +320,35 @@ fun NowPlayingScreen(
         }
     }
 
-    // Beat Bounce is driven directly by decoded PCM from ExoPlayer's audio processor chain.
-    // No Visualizer callback, microphone permission, fixed timer or synthetic BPM clock is used.
-    val beatBounceScale = remember { Animatable(1f) }
-    val pcmBeatPulse by viewModel.pcmBeatPulse.collectAsStateWithLifecycle()
-    var lastHandledPcmBeat by remember { mutableStateOf(0L) }
-
-    LaunchedEffect(beatBounceAlbumArt) {
-        if (beatBounceAlbumArt) {
-            // Do not replay an old beat merely because the user just enabled the effect.
-            lastHandledPcmBeat = pcmBeatPulse.sequence
+    // Depth Float is intentionally ambient rather than beat-driven: a slow forward/backward
+    // movement gives the artwork a calm floating-card feel.
+    val depthFloatPhase = remember { Animatable(0f) }
+    LaunchedEffect(depthFloatAlbumArt, state.isPlaying) {
+        if (depthFloatAlbumArt && state.isPlaying) {
+            while (true) {
+                depthFloatPhase.animateTo(1f, animationSpec = tween(2400, easing = LinearEasing))
+                depthFloatPhase.animateTo(-1f, animationSpec = tween(2400, easing = LinearEasing))
+            }
         } else {
-            beatBounceScale.animateTo(1f, animationSpec = tween(120))
+            depthFloatPhase.animateTo(0f, animationSpec = tween(280))
         }
     }
 
-    LaunchedEffect(pcmBeatPulse.sequence, beatBounceAlbumArt, state.isPlaying) {
-        if (
-            beatBounceAlbumArt &&
-            state.isPlaying &&
-            pcmBeatPulse.sequence > lastHandledPcmBeat
-        ) {
-            lastHandledPcmBeat = pcmBeatPulse.sequence
-            val amount = pcmBeatPulse.strength.coerceIn(0.055f, 0.16f)
-            beatBounceScale.stop()
-            beatBounceScale.snapTo(1f)
-            beatBounceScale.animateTo(
-                1f + amount,
-                animationSpec = tween(durationMillis = 58, easing = LinearEasing)
-            )
-            beatBounceScale.animateTo(
-                1f,
-                animationSpec = spring(
-                    dampingRatio = 0.52f,
-                    stiffness = Spring.StiffnessHigh
-                )
-            )
-        }
-    }
+    // Bass Zoom uses the continuous decoded-PCM bass level, not the old Beat Bounce onset event.
+    // Quiet/low-bass sections therefore stay almost still while strong bass smoothly zooms in.
+    val pcmBassLevel by viewModel.pcmBassLevel.collectAsStateWithLifecycle()
+    val bassZoomScale by animateFloatAsState(
+        targetValue = if (bassZoomAlbumArt && state.isPlaying) {
+            1f + pcmBassLevel.coerceIn(0f, 1f) * 0.115f
+        } else {
+            1f
+        },
+        animationSpec = spring(
+            dampingRatio = 0.74f,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "bassZoomScale"
+    )
 
     // RECORD_AUDIO is now needed only for the optional waveform visualizer UI. Beat Bounce no
     // longer depends on Android's Visualizer API or any runtime audio-recording permission.
@@ -619,20 +616,37 @@ fun NowPlayingScreen(
                                             .fillMaxSize()
                                             .graphicsLayer {
                                                 rotationZ = if (vinylStyleAlbumArt) vinylAngle.value else 0f
-                                                val spatialX = (sensorTiltX + sensorGyroX * 0.45f).coerceIn(-1.35f, 1.35f)
-                                                val spatialY = (sensorTiltY + sensorGyroY * 0.45f).coerceIn(-1.35f, 1.35f)
-                                                rotationX = if (parallaxAlbumArt) spatialY * 11f else 0f
-                                                rotationY = if (parallaxAlbumArt) -spatialX * 14f else 0f
-                                                translationX = if (parallaxAlbumArt) spatialX * 28f else 0f
-                                                translationY = if (parallaxAlbumArt) spatialY * 22f else 0f
+                                                val spatialX = (sensorTiltX + sensorGyroX * 0.58f).coerceIn(-1.4f, 1.4f)
+                                                val spatialY = (sensorTiltY + sensorGyroY * 0.58f).coerceIn(-1.4f, 1.4f)
+                                                when {
+                                                    spatialFloatAlbumArt -> {
+                                                        rotationX = spatialY * 12f
+                                                        rotationY = -spatialX * 15f
+                                                        translationX = spatialX * 30f
+                                                        translationY = spatialY * 24f
+                                                    }
+                                                    parallaxAlbumArt -> {
+                                                        rotationX = sensorTiltY * 7.5f
+                                                        rotationY = -sensorTiltX * 9.5f
+                                                        translationX = sensorTiltX * 18f
+                                                        translationY = sensorTiltY * 14f
+                                                    }
+                                                    depthFloatAlbumArt -> {
+                                                        rotationX = depthFloatPhase.value * 1.4f
+                                                        translationY = -depthFloatPhase.value * 9f
+                                                        shadowElevation = 14f + depthFloatPhase.value * 4f
+                                                    }
+                                                }
                                                 val motionScale = when {
-                                                    beatBounceAlbumArt -> beatBounceScale.value
-                                                    parallaxAlbumArt -> 0.90f
+                                                    bassZoomAlbumArt -> bassZoomScale
+                                                    depthFloatAlbumArt -> 1f + depthFloatPhase.value * 0.018f
+                                                    spatialFloatAlbumArt -> 0.88f
+                                                    parallaxAlbumArt -> 0.93f
                                                     else -> 1f
                                                 }
                                                 scaleX = motionScale
                                                 scaleY = motionScale
-                                                cameraDistance = 24f
+                                                cameraDistance = if (spatialFloatAlbumArt) 18f else 24f
                                             }
                                             .clip(if (vinylStyleAlbumArt) CircleShape else RoundedCornerShape(22.dp))
                                             .border(2.dp, Color.White.copy(alpha = 0.3f), CircleShape)
@@ -656,20 +670,37 @@ fun NowPlayingScreen(
                                         .fillMaxWidth()
                                         .aspectRatio(1f)
                                         .graphicsLayer {
-                                            val spatialX = (sensorTiltX + sensorGyroX * 0.45f).coerceIn(-1.35f, 1.35f)
-                                            val spatialY = (sensorTiltY + sensorGyroY * 0.45f).coerceIn(-1.35f, 1.35f)
-                                            rotationX = if (parallaxAlbumArt) spatialY * 11f else 0f
-                                            rotationY = if (parallaxAlbumArt) -spatialX * 14f else 0f
-                                            translationX = if (parallaxAlbumArt) spatialX * 28f else 0f
-                                            translationY = if (parallaxAlbumArt) spatialY * 22f else 0f
+                                            val spatialX = (sensorTiltX + sensorGyroX * 0.58f).coerceIn(-1.4f, 1.4f)
+                                            val spatialY = (sensorTiltY + sensorGyroY * 0.58f).coerceIn(-1.4f, 1.4f)
+                                            when {
+                                                spatialFloatAlbumArt -> {
+                                                    rotationX = spatialY * 12f
+                                                    rotationY = -spatialX * 15f
+                                                    translationX = spatialX * 30f
+                                                    translationY = spatialY * 24f
+                                                }
+                                                parallaxAlbumArt -> {
+                                                    rotationX = sensorTiltY * 7.5f
+                                                    rotationY = -sensorTiltX * 9.5f
+                                                    translationX = sensorTiltX * 18f
+                                                    translationY = sensorTiltY * 14f
+                                                }
+                                                depthFloatAlbumArt -> {
+                                                    rotationX = depthFloatPhase.value * 1.4f
+                                                    translationY = -depthFloatPhase.value * 9f
+                                                    shadowElevation = 14f + depthFloatPhase.value * 4f
+                                                }
+                                            }
                                             val motionScale = when {
-                                                beatBounceAlbumArt -> beatBounceScale.value
-                                                parallaxAlbumArt -> 0.90f
+                                                bassZoomAlbumArt -> bassZoomScale
+                                                depthFloatAlbumArt -> 1f + depthFloatPhase.value * 0.018f
+                                                spatialFloatAlbumArt -> 0.88f
+                                                parallaxAlbumArt -> 0.93f
                                                 else -> 1f
                                             }
                                             scaleX = motionScale
                                             scaleY = motionScale
-                                            cameraDistance = 24f
+                                            cameraDistance = if (spatialFloatAlbumArt) 18f else 24f
                                         }
                                         .clip(RoundedCornerShape(12.dp))
                                         .background(MaterialTheme.colorScheme.surfaceVariant)
