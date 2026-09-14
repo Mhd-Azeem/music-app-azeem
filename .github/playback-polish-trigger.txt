@@ -1,1 +1,1 @@
-Apply smart queue, gapless playback, crossfade polish, and verify swipe-down Now Playing.
+Retry playback polish patch after workflow fix.
