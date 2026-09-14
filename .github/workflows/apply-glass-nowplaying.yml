@@ -1,0 +1,31 @@
+name: Apply Glass Now Playing
+
+on:
+  push:
+    branches:
+      - feature/email-activation-access
+    paths:
+      - .github/workflows/apply-glass-nowplaying.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/email-activation-access
+          fetch-depth: 0
+      - name: Apply patch
+        run: python .github/scripts/apply_glass_nowplaying.py
+      - name: Commit source changes and clean helper files
+        run: |
+          rm .github/scripts/apply_glass_nowplaying.py
+          rm .github/workflows/apply-glass-nowplaying.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: add glassmorphism Now Playing mode"
+          git push origin feature/email-activation-access
