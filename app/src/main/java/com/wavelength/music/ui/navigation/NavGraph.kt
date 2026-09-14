@@ -26,7 +26,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -280,18 +279,11 @@ composable(
                     )
                 }
                 composable(Screen.Settings.route) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        SettingsScreen(
-                            onBack = { navController.popBackStack() },
-                            onStatisticsClick = { navController.navigate(Screen.Statistics.route) }
-                        )
-                        Button(
-                            onClick = { navController.navigate(Screen.Activation.route) },
-                            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
-                        ) {
-                            Text("Email Activation")
-                        }
-                    }
+                    SettingsScreen(
+                        onBack = { navController.popBackStack() },
+                        onStatisticsClick = { navController.navigate(Screen.Statistics.route) },
+                        onEmailActivationClick = { navController.navigate(Screen.Activation.route) }
+                    )
                 }
                 composable(Screen.Activation.route) {
                     ActivationScreen(

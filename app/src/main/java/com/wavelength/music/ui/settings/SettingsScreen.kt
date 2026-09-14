@@ -92,6 +92,7 @@ import com.wavelength.music.ui.components.wallpaperBrush
 fun SettingsScreen(
     onBack: () -> Unit,
     onStatisticsClick: () -> Unit = {},
+    onEmailActivationClick: () -> Unit = {},
     viewModel: AppSettingsViewModel = hiltViewModel(),
     equalizerViewModel: EqualizerViewModel = hiltViewModel()
 ) {
@@ -1099,6 +1100,20 @@ fun SettingsScreen(
                             }
                         }
                     }
+                }
+            }
+
+            item {
+                Button(
+                    onClick = onEmailActivationClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                ) {
+                    Text(
+                        text = "Email Activation",
+                        modifier = Modifier.padding(vertical = 6.dp)
+                    )
                 }
             }
 
