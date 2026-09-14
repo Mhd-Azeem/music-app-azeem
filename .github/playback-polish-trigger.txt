@@ -1,0 +1,1 @@
+Apply smart queue, gapless playback, crossfade polish, and verify swipe-down Now Playing.
