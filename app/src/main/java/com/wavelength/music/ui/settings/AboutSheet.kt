@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Rebuilt Glass playback controls to match the supplied liquid-glass reference: organic four-lobed body, upper Shuffle/Repeat orbs, white side transport icons, and luminous center Play/Pause disc",
     "Removed the Glass lower-player outline and Up Next card outlines for a seamless borderless blur",
     "Restored the normal seek bar, time labels, Shuffle, Previous, Play/Pause, Next and Repeat controls when Glass mode is off",
     "Removed the remaining invisible gap between the Glass Up Next fan and the frosted player curve",
