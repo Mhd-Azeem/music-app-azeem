@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Fixed Smart Queue in Glass Now Playing, removed the hard blur seam, replaced the blue player fill with real frosted blur, and strengthened the timeline accent",
     "Removed the white Glass separator line, lengthened Up Next cards, and added a clear gap above the player panel",
     "Removed the extra Up Next/player separation, matched the Glass panel crown to the timeline arc, switched Up Next to frosted glass, and increased card spacing",
     "Refined Glass Now Playing spacing: separated Up Next cards and controls, plus safe margins for timeline, time, shuffle and repeat",

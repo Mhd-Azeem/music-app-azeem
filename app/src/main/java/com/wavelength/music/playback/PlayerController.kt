@@ -385,6 +385,17 @@ class PlayerController @Inject constructor(
         _state.update { it.copy(queue = currentQueue) }
     }
 
+    fun ensureSmartQueue() {
+        val c = controller ?: return
+        if (!settingsRepository.state.value.aiDjEnabled) return
+        val index = c.currentMediaItemIndex
+        val track = currentQueue.getOrNull(index)?.track ?: return
+        val remaining = currentQueue.size - index - 1
+        if (remaining <= 2) {
+            extendQueueWithAiDj(track)
+        }
+    }
+
     private fun extendQueueWithAiDj(justPlayed: Track) {
         if (aiDjExtendJob?.isActive == true) return
         aiDjExtendJob = controllerScope.launch {

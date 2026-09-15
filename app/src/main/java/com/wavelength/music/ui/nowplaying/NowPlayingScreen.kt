@@ -205,6 +205,12 @@ fun NowPlayingScreen(
     }
     val accentColor = dynamicAccent ?: MaterialTheme.colorScheme.primary
 
+    LaunchedEffect(glassmorphismNowPlaying, state.currentIndex, state.queue.size, state.currentTrack?.id) {
+        if (glassmorphismNowPlaying) {
+            viewModel.ensureSmartQueue()
+        }
+    }
+
     // Driven manually (not rememberInfiniteTransition) so pausing genuinely stops the clock rather
     // than just freezing what's displayed: cancelling this coroutine leaves the Animatable sitting
     // at its exact current value, so resuming continues smoothly from there with no jump. Gated
@@ -541,7 +547,8 @@ fun NowPlayingScreen(
                         scaleY = 1.00f
                     }
                     .blur(5.dp)
-                    .alpha(1.00f),
+                    .alpha(1.00f)
+                    .haze(state = hazeState),
                 contentScale = ContentScale.Crop
             )
             Box(
@@ -555,56 +562,7 @@ fun NowPlayingScreen(
                     .background(Color.White.copy(alpha = 0.055f))
             )
         }
-        if (glassmorphismNowPlaying && !track?.albumArtUrl.isNullOrBlank()) {
-            // The lower playback zone is deliberately more frosted than the artwork/queue zone.
-            // Clip a second copy of the same artwork to the lower 43% so the split feels like
-            // one continuous image rather than a different background.
-            AsyncImage(
-                model = track?.albumArtUrl,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        clip = true
-                        shape = GenericShape { size, _ ->
-                            moveTo(0f, size.height * 0.57f)
-                            lineTo(size.width, size.height * 0.57f)
-                            lineTo(size.width, size.height)
-                            lineTo(0f, size.height)
-                            close()
-                        }
-                    }
-                    .blur(17.dp)
-                    .alpha(0.88f),
-                contentScale = ContentScale.Crop
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops = arrayOf(
-                                0.00f to Color.Transparent,
-                                0.56f to Color.Transparent,
-                                0.59f to Color.Black.copy(alpha = 0.04f),
-                                1.00f to Color.Black.copy(alpha = 0.14f)
-                            )
-                        )
-                    )
-            )
-        }
 
-        if (isLiquid && liquidAlbumArtBackground && !track?.albumArtUrl.isNullOrBlank()) {
-            AsyncImage(
-                model = track?.albumArtUrl,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .alpha(1f)
-                    .haze(state = hazeState),
-                contentScale = ContentScale.Crop
-            )
-        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -1016,8 +974,8 @@ fun NowPlayingScreen(
                         .height(356.dp)
                         .offset(y = (-2).dp)
                         .clip(lowerGlassShape)
-                        .background(Color(0xFFD7ECFF).copy(alpha = 0.82f))
-                        .border(1.5.dp, Color.White.copy(alpha = 0.78f), lowerGlassShape)
+                        .hazeChild(state = hazeState, style = glassStyle) { inputScale = HazeInputScale.Auto }
+                        .border(1.5.dp, Color.White.copy(alpha = 0.82f), lowerGlassShape)
                 ) {
                     Column(
                         modifier = Modifier.fillMaxSize().padding(top = 40.dp, start = 0.dp, end = 0.dp, bottom = 0.dp),
@@ -1044,13 +1002,13 @@ fun NowPlayingScreen(
                                 val arcSize = Size(size.width, 176.dp.toPx())
                                 val top = -5.dp.toPx()
                                 drawArc(
-                                    color = Color(0xFF087EAE),
+                                    color = Color(0xFF00A9D6),
                                     startAngle = startAngle,
                                     sweepAngle = sweepAngle,
                                     useCenter = false,
                                     topLeft = Offset(0f, top),
                                     size = arcSize,
-                                    style = Stroke(width = 2.4.dp.toPx())
+                                    style = Stroke(width = 3.2.dp.toPx())
                                 )
                                 val angle = Math.toRadians((startAngle + sweepAngle * progressFraction).toDouble())
                                 val cx = size.width / 2f
@@ -1059,7 +1017,7 @@ fun NowPlayingScreen(
                                     cx + (arcSize.width / 2f * kotlin.math.cos(angle)).toFloat(),
                                     cy + (arcSize.height / 2f * kotlin.math.sin(angle)).toFloat()
                                 )
-                                drawCircle(Color(0xFF087EAE), 7.dp.toPx(), thumb)
+                                drawCircle(Color(0xFF00A9D6), 7.dp.toPx(), thumb)
                             }
                             Text(
                                 text = formatMillis(state.positionMs),
