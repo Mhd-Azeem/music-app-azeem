@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Removed the white Glass separator line, lengthened Up Next cards, and added a clear gap above the player panel",
     "Removed the extra Up Next/player separation, matched the Glass panel crown to the timeline arc, switched Up Next to frosted glass, and increased card spacing",
     "Refined Glass Now Playing spacing: separated Up Next cards and controls, plus safe margins for timeline, time, shuffle and repeat",
     "Up Next now scrolls continuously along the curved player timeline with live circular position and tangent rotation",

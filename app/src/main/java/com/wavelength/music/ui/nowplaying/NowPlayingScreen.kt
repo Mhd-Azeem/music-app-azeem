@@ -592,19 +592,6 @@ fun NowPlayingScreen(
                         )
                     )
             )
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val y = size.height * 0.585f
-                val inset = 18.dp.toPx()
-                val path = Path().apply {
-                    moveTo(inset, y + 8.dp.toPx())
-                    quadraticBezierTo(size.width / 2f, y - 22.dp.toPx(), size.width - inset, y + 8.dp.toPx())
-                }
-                drawPath(
-                    path = path,
-                    color = Color.White.copy(alpha = 0.58f),
-                    style = Stroke(width = 1.35.dp.toPx())
-                )
-            }
         }
 
         if (isLiquid && liquidAlbumArtBackground && !track?.albumArtUrl.isNullOrBlank()) {
@@ -938,7 +925,7 @@ fun NowPlayingScreen(
                     if (glassUpcoming.isNotEmpty()) {
                         LazyRow(
                             state = fanState,
-                            modifier = Modifier.fillMaxWidth().height(196.dp),
+                            modifier = Modifier.fillMaxWidth().height(214.dp),
                             contentPadding = PaddingValues(horizontal = 0.dp),
                             horizontalArrangement = Arrangement.spacedBy(22.dp),
                             verticalAlignment = Alignment.Bottom
@@ -961,7 +948,7 @@ fun NowPlayingScreen(
                                 Box(
                                     modifier = Modifier
                                         .width(82.dp)
-                                        .height(158.dp)
+                                        .height(176.dp)
                                         .offset(y = lift)
                                         .graphicsLayer { rotationZ = tangentAngle }
                                         .clip(RoundedCornerShape(11.dp))
@@ -977,12 +964,12 @@ fun NowPlayingScreen(
                                             contentDescription = entry.track.name,
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .height(54.dp)
+                                                .height(60.dp)
                                                 .clip(RoundedCornerShape(7.dp)),
                                             contentScale = ContentScale.Crop
                                         )
                                         Box(
-                                            modifier = Modifier.fillMaxWidth().height(78.dp),
+                                            modifier = Modifier.fillMaxWidth().height(94.dp),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
@@ -1002,6 +989,7 @@ fun NowPlayingScreen(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(22.dp))
 
                 val progressFraction = if (state.durationMs > 0L) {
                     (state.positionMs.toFloat() / state.durationMs.toFloat()).coerceIn(0f, 1f)
