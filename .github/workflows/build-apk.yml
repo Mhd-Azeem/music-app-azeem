@@ -98,6 +98,9 @@ jobs:
           git add app/src/main/java/com/wavelength/music/ui/nowplaying/NowPlayingScreen.kt \
                   app/src/main/java/com/wavelength/music/ui/nowplaying/PlayerViewModel.kt \
                   app/src/main/java/com/wavelength/music/playback/PlayerController.kt \
-                  app/src/main/java/com/wavelength/music/ui/settings/AboutSheet.kt
-          git commit -m 'feat: refine Glass Now Playing playback and blur'
+                  app/src/main/java/com/wavelength/music/ui/settings/AboutSheet.kt \
+                  app/src/main/java/com/wavelength/music/ui/home/HomeScreen.kt \
+                  app/src/main/java/com/wavelength/music/ui/components/MiniPlayerBar.kt \
+                  app/src/main/java/com/wavelength/music/ui/design/UiDesignConfig.kt
+          git commit -m 'feat: bind UI designer settings to Compose'
           git push origin HEAD:feature/email-activation-access
