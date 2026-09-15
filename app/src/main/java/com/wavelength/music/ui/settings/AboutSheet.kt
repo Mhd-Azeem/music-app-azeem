@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Restored the normal seek bar, time labels, Shuffle, Previous, Play/Pause, Next and Repeat controls when Glass mode is off",
     "Removed the remaining invisible gap between the Glass Up Next fan and the frosted player curve",
     "Fixed Smart Queue in Glass Now Playing, removed the hard blur seam, replaced the blue player fill with real frosted blur, and strengthened the timeline accent",
     "Removed the white Glass separator line, lengthened Up Next cards, and added a clear gap above the player panel",
