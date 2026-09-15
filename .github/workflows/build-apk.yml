@@ -92,6 +92,9 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git rm .github/scripts/pending_patch.py
-          git add app/src/main/java/com/wavelength/music/ui/nowplaying/NowPlayingScreen.kt app/src/main/java/com/wavelength/music/ui/settings/AboutSheet.kt
-          git commit -m 'feat: refine Now Playing separator and transport geometry'
+          git add app/src/main/java/com/wavelength/music/ui/nowplaying/NowPlayingScreen.kt \
+                  app/src/main/java/com/wavelength/music/ui/nowplaying/PlayerViewModel.kt \
+                  app/src/main/java/com/wavelength/music/playback/PlayerController.kt \
+                  app/src/main/java/com/wavelength/music/ui/settings/AboutSheet.kt
+          git commit -m 'feat: refine Glass Now Playing playback and blur'
           git push origin HEAD:feature/email-activation-access
