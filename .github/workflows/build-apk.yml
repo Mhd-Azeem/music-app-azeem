@@ -103,4 +103,6 @@ jobs:
                   app/src/main/java/com/wavelength/music/ui/components/MiniPlayerBar.kt \
                   app/src/main/java/com/wavelength/music/ui/design/UiDesignConfig.kt
           git commit -m 'feat: bind UI designer settings to Compose'
+          git fetch origin feature/email-activation-access
+          git rebase origin/feature/email-activation-access
           git push origin HEAD:feature/email-activation-access
