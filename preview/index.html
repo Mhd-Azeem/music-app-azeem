@@ -6,23 +6,30 @@
 <meta name="theme-color" content="#07101c">
 <title>AzMusic UI Designer</title>
 <style>
-:root{--accent:#22d3ee;--bg:#07101c;--panel:#0d1726;--panel2:#111f32;--text:#f4f7fb;--muted:#8fa0b5;--line:rgba(255,255,255,.10);--card:rgba(255,255,255,.075);--quick-h:58px;--quick-r:6px;--playlist-r:8px;--mini-h:64px;--mini-r:28px;--mini-art:44px;--mini-art-r:6px;--mini-pad:12px;--mini-gap:12px}
+:root{
+  --accent:#22d3ee;--bg:#07101c;--panel:#0d1726;--text:#f4f7fb;--muted:#8fa0b5;--line:rgba(255,255,255,.10);
+  --quick-h:58px;--quick-r:6px;--playlist-r:8px;--mini-h:64px;--mini-r:28px;--mini-art:44px;--mini-art-r:6px;--mini-pad:12px;--mini-gap:12px;
+  --gq-area:214px;--gq-gap:22px;--gq-card-w:82px;--gq-card-h:176px;--gq-card-r:11px;--gq-depth:58px;
+  --gl-panel-h:356px;--gl-panel-top:40px;--gl-seek-pad:18px;--gl-seek-stroke:3.2px;--gl-seek-thumb:7px;
+  --gl-frame-w:322px;--gl-frame-h:184px;--gl-body-w:292px;--gl-body-h:142px;--gl-orb:56px;--gl-side:68px;--gl-play-out:120px;--gl-play-in:94px
+}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}button,input{font:inherit}button{cursor:pointer}
-.shell{min-height:100vh;display:grid;grid-template-columns:minmax(340px,1fr) minmax(320px,420px);gap:22px;padding:22px}
-.stage{display:grid;place-items:center;min-height:calc(100vh - 44px);background:radial-gradient(circle at 20% 10%,rgba(34,211,238,.13),transparent 30%),radial-gradient(circle at 80% 85%,rgba(138,92,246,.13),transparent 30%);border:1px solid var(--line);border-radius:26px;position:sticky;top:22px}
+.shell{min-height:100vh;display:grid;grid-template-columns:minmax(340px,1fr) minmax(340px,440px);gap:22px;padding:22px}
+.stage{display:grid;place-items:center;min-height:calc(100vh - 44px);background:radial-gradient(circle at 20% 10%,rgba(34,211,238,.13),transparent 30%),radial-gradient(circle at 80% 85%,rgba(138,92,246,.13),transparent 30%);border:1px solid var(--line);border-radius:26px;position:sticky;top:22px;padding:16px}
 .phone{width:min(420px,92vw);height:min(840px,88vh);min-height:650px;border-radius:38px;border:1px solid rgba(255,255,255,.15);overflow:hidden;position:relative;background:linear-gradient(145deg,#071a2b,#10243d 55%,#241b3a);box-shadow:0 30px 80px rgba(0,0,0,.5)}
-.phone:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 75% 15%,color-mix(in srgb,var(--accent) 30%,transparent),transparent 25%);pointer-events:none}
-.status{height:28px;display:flex;align-items:end;justify-content:space-between;padding:0 18px 6px;font-size:11px;font-weight:800}
-.content{position:absolute;inset:28px 0 132px;overflow:auto;padding-bottom:26px;scrollbar-width:none}.content::-webkit-scrollbar{display:none}
-.appbar{height:58px;display:flex;align-items:center;padding:0 16px;gap:8px;position:sticky;top:0;background:linear-gradient(to bottom,rgba(7,20,35,.92),rgba(7,20,35,.60),transparent);backdrop-filter:blur(12px);z-index:2}.appbar h1{font-size:23px;margin:0;flex:1}.icon{border:0;background:transparent;color:#fff;font-size:18px}
-.chips{display:flex;gap:8px;overflow:hidden;padding:4px 16px 12px}.chip{border:1px solid var(--line);background:rgba(0,0,0,.15);color:#fff;border-radius:20px;padding:7px 12px;font-size:12px}.chip.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}
-.section{font-size:18px;font-weight:850;margin:17px 16px 10px}.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 16px}.quick{height:var(--quick-h);border-radius:var(--quick-r);overflow:hidden;display:flex;align-items:center;background:rgba(255,255,255,.11);border:1px solid rgba(255,255,255,.05)}.art{height:100%;aspect-ratio:1;background:linear-gradient(145deg,#e06a7d,#73306f);display:grid;place-items:center;font-weight:900}.quick:nth-child(2) .art{background:linear-gradient(145deg,#226c74,#33c7b1)}.quick:nth-child(3) .art{background:linear-gradient(145deg,#e28b46,#7a2d25)}.quick:nth-child(4) .art{background:linear-gradient(145deg,#3955a1,#712ea0)}.quick b{font-size:12px;padding:0 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rail{display:flex;gap:12px;overflow:hidden;padding:0 16px}.album{width:136px;flex:0 0 auto}.album .cover{height:136px;border-radius:12px;background:linear-gradient(145deg,#7f5af0,#2cb67d);display:grid;place-items:center;font-size:36px;font-weight:900}.album b,.album small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.album b{font-size:13px;margin-top:7px}.album small{font-size:11px;color:var(--muted)}
-.playlists{display:flex;gap:10px;padding:0 16px}.playlist{width:140px;padding:14px;border-radius:var(--playlist-r);background:rgba(255,255,255,.09);border:1px solid var(--line)}.playlist strong{display:block;margin-top:10px;font-size:13px}.playlist small{color:var(--muted);font-size:11px}
-.mini{position:absolute;left:10px;right:10px;bottom:72px;height:var(--mini-h);border-radius:var(--mini-r);background:rgba(12,26,43,.72);backdrop-filter:blur(22px);border:1px solid rgba(255,255,255,.22);display:flex;align-items:center;gap:var(--mini-gap);padding:0 var(--mini-pad);z-index:4}.mini-art{width:var(--mini-art);height:var(--mini-art);border-radius:var(--mini-art-r);background:linear-gradient(145deg,#e06a7d,#493078);display:grid;place-items:center;font-size:12px;font-weight:900;flex:0 0 auto}.mini-meta{min-width:0;flex:1}.mini-meta b,.mini-meta small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mini-meta b{font-size:13px}.mini-meta small{font-size:11px;color:var(--muted)}.mini button{border:0;background:transparent;color:#fff;font-size:20px;padding:7px}
-.bottom{position:absolute;left:0;right:0;bottom:0;height:72px;background:rgba(7,18,31,.82);backdrop-filter:blur(20px);display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line)}.nav{border:0;background:transparent;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px}.nav span{font-size:19px}.nav.on{color:#fff}.nav.on span{color:var(--accent)}
-.panel{border:1px solid var(--line);border-radius:24px;background:linear-gradient(180deg,var(--panel),#0a1320);padding:18px;align-self:start;max-height:calc(100vh - 44px);overflow:auto;position:sticky;top:22px}.panel h1{font-size:23px;margin:0}.sub{color:var(--muted);font-size:13px;line-height:1.45;margin:6px 0 18px}.group{border:1px solid var(--line);background:rgba(255,255,255,.035);border-radius:17px;padding:14px;margin:12px 0}.group h2{font-size:13px;text-transform:uppercase;letter-spacing:.7px;color:#b9c6d7;margin:0 0 12px}.control{margin:12px 0}.control label{display:flex;justify-content:space-between;gap:12px;font-size:13px;margin-bottom:7px}.control output{color:var(--accent);font-weight:800}.control input[type=range]{width:100%;accent-color:var(--accent)}.row{display:flex;gap:9px}.btn{border:1px solid var(--line);background:rgba(255,255,255,.07);color:#fff;border-radius:12px;padding:10px 12px;font-weight:750}.btn.primary{background:var(--accent);color:#00151d;border-color:transparent}.btn.danger{color:#ffadb5}.row .btn{flex:1}.token{width:100%;border:1px solid var(--line);background:#08111e;color:#fff;border-radius:12px;padding:11px;outline:0}.token:focus{border-color:var(--accent)}.statusbox{margin-top:10px;padding:10px 11px;border-radius:12px;background:#08111e;color:#9fb0c4;font-size:12px;line-height:1.45;min-height:40px}.ok{color:#8ef0ba}.bad{color:#ff9ba5}.tiny{font-size:11px;color:#7f90a4;line-height:1.45}.badge{display:inline-flex;border:1px solid rgba(34,211,238,.28);background:rgba(34,211,238,.08);color:#8cebf7;border-radius:13px;padding:6px 9px;font-size:11px;font-weight:800;margin-bottom:10px}
-@media(max-width:900px){.shell{grid-template-columns:1fr;padding:12px}.stage{position:relative;top:0;min-height:auto;padding:14px}.panel{position:relative;top:0;max-height:none}.phone{height:720px}.stage{order:1}.panel{order:2}}
+.phone:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 75% 15%,color-mix(in srgb,var(--accent) 30%,transparent),transparent 25%),radial-gradient(circle at 18% 80%,rgba(158,113,255,.14),transparent 30%);pointer-events:none}.status{height:28px;display:flex;align-items:end;justify-content:space-between;padding:0 18px 6px;font-size:11px;font-weight:800;position:relative;z-index:20}
+.screen{position:absolute;inset:28px 0 0}.hidden{display:none!important}
+/* Home preview */
+.home-content{position:absolute;inset:0 0 104px;overflow:auto;padding-bottom:26px;scrollbar-width:none}.home-content::-webkit-scrollbar{display:none}.appbar{height:58px;display:flex;align-items:center;padding:0 16px;gap:8px;position:sticky;top:0;background:linear-gradient(to bottom,rgba(7,20,35,.92),rgba(7,20,35,.60),transparent);backdrop-filter:blur(12px);z-index:2}.appbar h1{font-size:23px;margin:0;flex:1}.icon{border:0;background:transparent;color:#fff;font-size:18px}.chips{display:flex;gap:8px;overflow:hidden;padding:4px 16px 12px}.chip{border:1px solid var(--line);background:rgba(0,0,0,.15);color:#fff;border-radius:20px;padding:7px 12px;font-size:12px}.chip.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}.section{font-size:18px;font-weight:850;margin:17px 16px 10px}.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 16px}.quick{height:var(--quick-h);border-radius:var(--quick-r);overflow:hidden;display:flex;align-items:center;background:rgba(255,255,255,.11);border:1px solid rgba(255,255,255,.05)}.art{height:100%;aspect-ratio:1;background:linear-gradient(145deg,#e06a7d,#73306f);display:grid;place-items:center;font-weight:900}.quick:nth-child(2) .art{background:linear-gradient(145deg,#226c74,#33c7b1)}.quick:nth-child(3) .art{background:linear-gradient(145deg,#e28b46,#7a2d25)}.quick:nth-child(4) .art{background:linear-gradient(145deg,#3955a1,#712ea0)}.quick b{font-size:12px;padding:0 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rail{display:flex;gap:12px;overflow:hidden;padding:0 16px}.album{width:136px;flex:0 0 auto}.album .cover{height:136px;border-radius:12px;background:linear-gradient(145deg,#7f5af0,#2cb67d);display:grid;place-items:center;font-size:36px;font-weight:900}.album b,.album small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.album b{font-size:13px;margin-top:7px}.album small{font-size:11px;color:var(--muted)}.playlists{display:flex;gap:10px;padding:0 16px}.playlist{width:140px;padding:14px;border-radius:var(--playlist-r);background:rgba(255,255,255,.09);border:1px solid var(--line)}.playlist strong{display:block;margin-top:10px;font-size:13px}.playlist small{color:var(--muted);font-size:11px}.mini{position:absolute;left:10px;right:10px;bottom:72px;height:var(--mini-h);border-radius:var(--mini-r);background:rgba(12,26,43,.72);backdrop-filter:blur(22px);border:1px solid rgba(255,255,255,.22);display:flex;align-items:center;gap:var(--mini-gap);padding:0 var(--mini-pad);z-index:4}.mini-art{width:var(--mini-art);height:var(--mini-art);border-radius:var(--mini-art-r);background:linear-gradient(145deg,#e06a7d,#493078);display:grid;place-items:center;font-size:12px;font-weight:900;flex:0 0 auto}.mini-meta{min-width:0;flex:1}.mini-meta b,.mini-meta small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mini-meta b{font-size:13px}.mini-meta small{font-size:11px;color:var(--muted)}.mini button{border:0;background:transparent;color:#fff;font-size:20px;padding:7px}.bottom{position:absolute;left:0;right:0;bottom:0;height:72px;background:rgba(7,18,31,.82);backdrop-filter:blur(20px);display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line)}.nav{border:0;background:transparent;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px}.nav span{font-size:19px}.nav.on{color:#fff}.nav.on span{color:var(--accent)}
+/* Glass Now Playing preview */
+.glass-screen{overflow:hidden;background:linear-gradient(165deg,rgba(9,34,54,.45),rgba(22,52,83,.35) 55%,rgba(52,36,82,.40));}.glass-head{height:54px;display:grid;grid-template-columns:52px 1fr 52px;align-items:center;padding:0 10px;position:relative;z-index:6}.glass-head b{text-align:center;font-size:14px}.glass-head button{border:0;background:transparent;color:#fff;font-size:22px}.glass-song{position:absolute;top:54px;left:18px;right:18px;text-align:center;z-index:3}.glass-song strong{display:block;font-size:18px}.glass-song small{display:block;color:rgba(255,255,255,.72);margin-top:3px}
+.glass-queue{position:absolute;left:0;right:0;bottom:calc(var(--gl-panel-h) - 6px);height:var(--gq-area);display:flex;align-items:flex-end;justify-content:center;gap:var(--gq-gap);overflow:hidden;padding:0 0 6px;z-index:2}.fan-card{flex:0 0 var(--gq-card-w);width:var(--gq-card-w);height:var(--gq-card-h);border-radius:var(--gq-card-r);background:rgba(215,236,255,.52);border:1px solid rgba(255,255,255,.25);padding:5px;transform-origin:50% 100%;box-shadow:0 12px 30px rgba(0,0,0,.12)}.fan-card:nth-child(1){transform:translateY(calc(var(--gq-depth)*.58)) rotate(-15deg)}.fan-card:nth-child(2){transform:translateY(calc(var(--gq-depth)*.14)) rotate(-6deg)}.fan-card:nth-child(3){transform:translateY(0) rotate(0)}.fan-card:nth-child(4){transform:translateY(calc(var(--gq-depth)*.14)) rotate(6deg)}.fan-card:nth-child(5){transform:translateY(calc(var(--gq-depth)*.58)) rotate(15deg)}.fan-art{height:60px;border-radius:7px;background:linear-gradient(145deg,#f47f9f,#725ed8);display:grid;place-items:center;font-weight:900}.fan-card:nth-child(2) .fan-art{background:linear-gradient(145deg,#32b6a8,#306e9c)}.fan-card:nth-child(3) .fan-art{background:linear-gradient(145deg,#f2aa55,#7b3d78)}.fan-card:nth-child(4) .fan-art{background:linear-gradient(145deg,#4a74d1,#7a53b8)}.fan-card:nth-child(5) .fan-art{background:linear-gradient(145deg,#6ab26a,#34644e)}.fan-name{height:calc(100% - 70px);display:grid;place-items:center;color:#08283a;font-size:10px;font-weight:800;writing-mode:vertical-rl;transform:rotate(180deg);margin:auto}
+.glass-lower{position:absolute;left:0;right:0;bottom:0;height:var(--gl-panel-h);background:linear-gradient(180deg,rgba(234,247,255,.38),rgba(166,205,236,.28) 42%,rgba(112,163,208,.22));backdrop-filter:blur(28px) saturate(140%);border-top:1px solid rgba(255,255,255,.34);border-radius:50% 50% 0 0 / 12% 12% 0 0;padding-top:var(--gl-panel-top);z-index:4;box-shadow:0 -14px 46px rgba(0,0,0,.10)}
+.seek-wrap{height:92px;margin:0 var(--gl-seek-pad);position:relative}.seek-svg{width:100%;height:84px;overflow:visible}.seek-path{fill:none;stroke:#00a9d6;stroke-width:var(--gl-seek-stroke);stroke-linecap:round}.seek-thumb{fill:#00a9d6}.seek-time{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;color:#08283a;font-size:11px;font-weight:700}
+.transport-zone{position:absolute;left:0;right:0;bottom:8px;top:132px;display:grid;place-items:center}.transport-frame{width:var(--gl-frame-w);height:var(--gl-frame-h);position:relative;max-width:95%}.transport-body{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:var(--gl-body-w);height:var(--gl-body-h);max-width:94%;border-radius:42% 42% 38% 38% / 30% 30% 48% 48%;background:linear-gradient(180deg,rgba(243,250,255,.42),rgba(187,217,243,.38),rgba(127,174,219,.30));border:1.5px solid rgba(255,255,255,.46);backdrop-filter:blur(20px)}.glass-orb{position:absolute;top:4px;width:var(--gl-orb);height:var(--gl-orb);border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,rgba(255,255,255,.30),rgba(167,201,234,.30));border:1px solid rgba(255,255,255,.34);font-size:22px;z-index:3}.orb-left{left:29px}.orb-right{right:29px}.side-control{position:absolute;top:58%;transform:translateY(-50%);width:var(--gl-side);height:var(--gl-side);display:grid;place-items:center;font-size:34px;z-index:3}.side-left{left:20px}.side-right{right:20px}.play-outer{position:absolute;left:50%;bottom:11px;transform:translateX(-50%);width:var(--gl-play-out);height:var(--gl-play-out);border-radius:50%;display:grid;place-items:center;background:conic-gradient(#69d8ffc7,#b695ffb8,#ffa9d58f,#66e7e0ad,#69d8ffc7);border:1.5px solid rgba(255,255,255,.62);z-index:4}.play-inner{width:var(--gl-play-in);height:var(--gl-play-in);border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.96);color:#08111e;font-size:46px;padding-left:4px}
+/* Designer panel */
+.panel{border:1px solid var(--line);border-radius:24px;background:linear-gradient(180deg,var(--panel),#0a1320);padding:18px;align-self:start;max-height:calc(100vh - 44px);overflow:auto;position:sticky;top:22px}.panel h1{font-size:23px;margin:0}.sub{color:var(--muted);font-size:13px;line-height:1.45;margin:6px 0 14px}.mode-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 16px}.mode{border:1px solid var(--line);background:rgba(255,255,255,.05);color:#cbd7e6;padding:10px;border-radius:12px;font-weight:800}.mode.on{background:color-mix(in srgb,var(--accent) 16%,rgba(255,255,255,.04));border-color:color-mix(in srgb,var(--accent) 52%,transparent);color:#fff}.group{border:1px solid var(--line);background:rgba(255,255,255,.035);border-radius:17px;padding:14px;margin:12px 0}.group h2{font-size:13px;text-transform:uppercase;letter-spacing:.7px;color:#b9c6d7;margin:0 0 12px}.control{margin:12px 0}.control label{display:flex;justify-content:space-between;gap:12px;font-size:13px;margin-bottom:7px}.control output{color:var(--accent);font-weight:800}.control input[type=range]{width:100%;accent-color:var(--accent)}.row{display:flex;gap:9px}.btn{border:1px solid var(--line);background:rgba(255,255,255,.07);color:#fff;border-radius:12px;padding:10px 12px;font-weight:750}.btn.primary{background:var(--accent);color:#00151d;border-color:transparent}.btn.danger{color:#ffadb5}.row .btn{flex:1}.token{width:100%;border:1px solid var(--line);background:#08111e;color:#fff;border-radius:12px;padding:11px;outline:0}.token:focus{border-color:var(--accent)}.statusbox{margin-top:10px;padding:10px 11px;border-radius:12px;background:#08111e;color:#9fb0c4;font-size:12px;line-height:1.45;min-height:40px}.ok{color:#8ef0ba}.bad{color:#ff9ba5}.tiny{font-size:11px;color:#7f90a4;line-height:1.45}.badge{display:inline-flex;border:1px solid rgba(34,211,238,.28);background:rgba(34,211,238,.08);color:#8cebf7;border-radius:13px;padding:6px 9px;font-size:11px;font-weight:800;margin-bottom:10px}.glass-only,.home-only{display:block}
+@media(max-width:900px){.shell{grid-template-columns:1fr;padding:12px}.stage{position:relative;top:0;min-height:auto}.panel{position:relative;top:0;max-height:none}.phone{height:720px}.stage{order:1}.panel{order:2}}
 </style>
 </head>
 <body>
@@ -30,160 +37,68 @@
   <section class="stage">
     <div class="phone" aria-label="AzMusic live design preview">
       <div class="status"><span>11:45</span><span>4G ▰ 82%</span></div>
-      <main class="content">
-        <div class="appbar"><h1>AzMusic</h1><button class="icon">Stats</button><button class="icon">⚙</button></div>
-        <div class="chips"><button class="chip on">✓ All</button><button class="chip">Tamil</button><button class="chip">Hindi</button><button class="chip">English</button></div>
-        <h2 class="section">Quick picks</h2>
-        <div class="quick-grid">
-          <div class="quick"><div class="art">A</div><b>Golden Hour</b></div>
-          <div class="quick"><div class="art">V</div><b>Vaseegara</b></div>
-          <div class="quick"><div class="art">N</div><b>New York Nagaram</b></div>
-          <div class="quick"><div class="art">R</div><b>Roja</b></div>
+      <section id="homeScreen" class="screen">
+        <main class="home-content">
+          <div class="appbar"><h1>AzMusic</h1><button class="icon">Stats</button><button class="icon">⚙</button></div>
+          <div class="chips"><button class="chip on">✓ All</button><button class="chip">Tamil</button><button class="chip">Hindi</button><button class="chip">English</button></div>
+          <h2 class="section">Quick picks</h2>
+          <div class="quick-grid"><div class="quick"><div class="art">A</div><b>Golden Hour</b></div><div class="quick"><div class="art">V</div><b>Vaseegara</b></div><div class="quick"><div class="art">N</div><b>New York Nagaram</b></div><div class="quick"><div class="art">R</div><b>Roja</b></div></div>
+          <h2 class="section">To get you started</h2><div class="rail"><div class="album"><div class="cover">♪</div><b>Midnight Drive</b><small>AzMusic Mix</small></div><div class="album"><div class="cover">♫</div><b>Tamil Favourites</b><small>Daily mix</small></div><div class="album"><div class="cover">♬</div><b>Focus</b><small>Recommended</small></div></div>
+          <h2 class="section">Your playlists</h2><div class="playlists"><div class="playlist"><div>▤</div><strong>Road Trip</strong><small>24 tracks</small></div><div class="playlist"><div>▤</div><strong>Favourites</strong><small>41 tracks</small></div></div>
+        </main>
+        <div class="mini"><div class="mini-art">AZ</div><div class="mini-meta"><b>Golden Hour</b><small>JVKE • Preview data</small></div><button>▶</button><button>⏭</button></div>
+        <nav class="bottom"><button class="nav on"><span>⌂</span>Home</button><button class="nav"><span>⌕</span>Search</button><button class="nav"><span>▤</span>Library</button></nav>
+      </section>
+      <section id="glassScreen" class="screen glass-screen hidden">
+        <div class="glass-head"><button>⌄</button><b>Music</b><button>⋮</button></div>
+        <div class="glass-song"><strong>Golden Hour</strong><small>JVKE</small></div>
+        <div class="glass-queue">
+          <div class="fan-card"><div class="fan-art">A</div><div class="fan-name">Night Changes</div></div><div class="fan-card"><div class="fan-art">V</div><div class="fan-name">Vaseegara</div></div><div class="fan-card"><div class="fan-art">N</div><div class="fan-name">New York</div></div><div class="fan-card"><div class="fan-art">R</div><div class="fan-name">Roja</div></div><div class="fan-card"><div class="fan-art">D</div><div class="fan-name">Daylight</div></div>
         </div>
-        <h2 class="section">To get you started</h2>
-        <div class="rail">
-          <div class="album"><div class="cover">♪</div><b>Midnight Drive</b><small>AzMusic Mix</small></div>
-          <div class="album"><div class="cover">♫</div><b>Tamil Favourites</b><small>Daily mix</small></div>
-          <div class="album"><div class="cover">♬</div><b>Focus</b><small>Recommended</small></div>
+        <div class="glass-lower">
+          <div class="seek-wrap">
+            <svg class="seek-svg" viewBox="0 0 360 90" preserveAspectRatio="none"><path class="seek-path" d="M 8 74 Q 180 -10 352 74"/><circle id="seekThumb" class="seek-thumb" cx="195" cy="30" r="7"/></svg>
+            <div class="seek-time"><span>1:24</span><span>3:48</span></div>
+          </div>
+          <div class="transport-zone"><div class="transport-frame"><div class="transport-body"></div><div class="glass-orb orb-left">⤨</div><div class="glass-orb orb-right">↻</div><div class="side-control side-left">⏮</div><div class="side-control side-right">⏭</div><div class="play-outer"><div class="play-inner">▶</div></div></div></div>
         </div>
-        <h2 class="section">Your playlists</h2>
-        <div class="playlists">
-          <div class="playlist"><div>▤</div><strong>Road Trip</strong><small>24 tracks</small></div>
-          <div class="playlist"><div>▤</div><strong>Favourites</strong><small>41 tracks</small></div>
-        </div>
-      </main>
-      <div class="mini">
-        <div class="mini-art">AZ</div>
-        <div class="mini-meta"><b>Golden Hour</b><small>JVKE • Preview data</small></div>
-        <button>▶</button><button>⏭</button>
-      </div>
-      <nav class="bottom"><button class="nav on"><span>⌂</span>Home</button><button class="nav"><span>⌕</span>Search</button><button class="nav"><span>▤</span>Library</button></nav>
+      </section>
     </div>
   </section>
 
   <aside class="panel">
-    <div class="badge">UI DESIGNER • ANDROID-LINKED</div>
-    <h1>AzMusic Designer</h1>
-    <p class="sub">Adjust the controls below. The phone updates instantly. “Apply & Build APK” commits the same values into the Compose app.</p>
+    <div class="badge">UI DESIGNER • ANDROID-LINKED</div><h1>AzMusic Designer</h1><p class="sub">Design the Home UI or the real Glass Mode Now Playing dimensions. The phone updates instantly; Apply commits the same values into Compose and starts the APK build.</p>
+    <div class="mode-row"><button id="modeHome" class="mode on">Home</button><button id="modeGlass" class="mode">Glass Now Playing</button></div>
 
-    <div class="group">
-      <h2>Quick picks</h2>
-      <div class="control"><label>Tile height <output id="o_quickHeight"></output></label><input id="quickHeight" type="range" min="50" max="78" value="58"></div>
-      <div class="control"><label>Tile corner radius <output id="o_quickRadius"></output></label><input id="quickRadius" type="range" min="0" max="24" value="6"></div>
-      <div class="control"><label>Playlist card radius <output id="o_playlistRadius"></output></label><input id="playlistRadius" type="range" min="0" max="30" value="8"></div>
-    </div>
+    <div class="group home-only"><h2>Quick picks</h2><div class="control"><label>Tile height <output id="o_quickHeight"></output></label><input id="quickHeight" type="range" min="50" max="78" value="58"></div><div class="control"><label>Tile corner radius <output id="o_quickRadius"></output></label><input id="quickRadius" type="range" min="0" max="24" value="6"></div><div class="control"><label>Playlist card radius <output id="o_playlistRadius"></output></label><input id="playlistRadius" type="range" min="0" max="30" value="8"></div></div>
+    <div class="group home-only"><h2>Mini player</h2><div class="control"><label>Height <output id="o_miniHeight"></output></label><input id="miniHeight" type="range" min="54" max="88" value="64"></div><div class="control"><label>Corner radius <output id="o_miniRadius"></output></label><input id="miniRadius" type="range" min="0" max="36" value="28"></div><div class="control"><label>Album art size <output id="o_miniArt"></output></label><input id="miniArt" type="range" min="34" max="64" value="44"></div><div class="control"><label>Album art radius <output id="o_miniArtRadius"></output></label><input id="miniArtRadius" type="range" min="0" max="22" value="6"></div><div class="control"><label>Horizontal padding <output id="o_miniPad"></output></label><input id="miniPad" type="range" min="4" max="24" value="12"></div><div class="control"><label>Item gap <output id="o_miniGap"></output></label><input id="miniGap" type="range" min="4" max="22" value="12"></div></div>
 
-    <div class="group">
-      <h2>Mini player</h2>
-      <div class="control"><label>Height <output id="o_miniHeight"></output></label><input id="miniHeight" type="range" min="54" max="88" value="64"></div>
-      <div class="control"><label>Corner radius <output id="o_miniRadius"></output></label><input id="miniRadius" type="range" min="0" max="36" value="28"></div>
-      <div class="control"><label>Album art size <output id="o_miniArt"></output></label><input id="miniArt" type="range" min="34" max="64" value="44"></div>
-      <div class="control"><label>Album art radius <output id="o_miniArtRadius"></output></label><input id="miniArtRadius" type="range" min="0" max="22" value="6"></div>
-      <div class="control"><label>Horizontal padding <output id="o_miniPad"></output></label><input id="miniPad" type="range" min="4" max="24" value="12"></div>
-      <div class="control"><label>Item gap <output id="o_miniGap"></output></label><input id="miniGap" type="range" min="4" max="22" value="12"></div>
-    </div>
+    <div class="group glass-only hidden"><h2>Glass • Up Next fan</h2><div class="control"><label>Queue area height <output id="o_glassQueueArea"></output></label><input id="glassQueueArea" type="range" min="160" max="280" value="214"></div><div class="control"><label>Card gap <output id="o_glassQueueGap"></output></label><input id="glassQueueGap" type="range" min="0" max="40" value="22"></div><div class="control"><label>Card width <output id="o_glassQueueCardWidth"></output></label><input id="glassQueueCardWidth" type="range" min="60" max="110" value="82"></div><div class="control"><label>Card height <output id="o_glassQueueCardHeight"></output></label><input id="glassQueueCardHeight" type="range" min="130" max="220" value="176"></div><div class="control"><label>Card radius <output id="o_glassQueueCardRadius"></output></label><input id="glassQueueCardRadius" type="range" min="0" max="28" value="11"></div><div class="control"><label>Fan curve depth <output id="o_glassQueueArcDepth"></output></label><input id="glassQueueArcDepth" type="range" min="0" max="100" value="58"></div></div>
+    <div class="group glass-only hidden"><h2>Glass • Lower panel & seek</h2><div class="control"><label>Panel height <output id="o_glassPanelHeight"></output></label><input id="glassPanelHeight" type="range" min="300" max="440" value="356"></div><div class="control"><label>Panel top padding <output id="o_glassPanelTop"></output></label><input id="glassPanelTop" type="range" min="18" max="72" value="40"></div><div class="control"><label>Seek side padding <output id="o_glassSeekPad"></output></label><input id="glassSeekPad" type="range" min="0" max="42" value="18"></div><div class="control"><label>Seek stroke <output id="o_glassSeekStroke"></output></label><input id="glassSeekStroke" type="range" min="1" max="8" step="0.2" value="3.2"></div><div class="control"><label>Seek thumb radius <output id="o_glassSeekThumb"></output></label><input id="glassSeekThumb" type="range" min="3" max="14" value="7"></div></div>
+    <div class="group glass-only hidden"><h2>Glass • Transport controls</h2><div class="control"><label>Transport frame width <output id="o_glassFrameWidth"></output></label><input id="glassFrameWidth" type="range" min="250" max="360" value="322"></div><div class="control"><label>Transport frame height <output id="o_glassFrameHeight"></output></label><input id="glassFrameHeight" type="range" min="150" max="230" value="184"></div><div class="control"><label>Glass body width <output id="o_glassBodyWidth"></output></label><input id="glassBodyWidth" type="range" min="220" max="340" value="292"></div><div class="control"><label>Glass body height <output id="o_glassBodyHeight"></output></label><input id="glassBodyHeight" type="range" min="100" max="190" value="142"></div><div class="control"><label>Shuffle / Repeat orb <output id="o_glassOrbSize"></output></label><input id="glassOrbSize" type="range" min="38" max="76" value="56"></div><div class="control"><label>Previous / Next touch size <output id="o_glassSideSize"></output></label><input id="glassSideSize" type="range" min="48" max="90" value="68"></div><div class="control"><label>Play outer disc <output id="o_glassPlayOuter"></output></label><input id="glassPlayOuter" type="range" min="90" max="150" value="120"></div><div class="control"><label>Play inner disc <output id="o_glassPlayInner"></output></label><input id="glassPlayInner" type="range" min="68" max="125" value="94"></div></div>
 
-    <div class="group">
-      <h2>Preview controls</h2>
-      <div class="row"><button class="btn" id="saveLocal">Save locally</button><button class="btn danger" id="reset">Reset</button></div>
-      <p class="tiny">Local save affects only this browser. It does not change the Android project.</p>
-    </div>
-
-    <div class="group">
-      <h2>Apply to GitHub & build</h2>
-      <input id="token" class="token" type="password" autocomplete="off" placeholder="Fine-grained GitHub token">
-      <p class="tiny">Required permission: Contents → Read and write for <b>music-app-azeem</b>. The token is kept only in this page memory and is not saved to localStorage.</p>
-      <button class="btn primary" id="applyBuild" style="width:100%;margin-top:8px">Apply Design & Build APK</button>
-      <div id="pushStatus" class="statusbox">Ready. No repository changes have been made.</div>
-    </div>
-
-    <div class="group">
-      <h2>Config</h2>
-      <div class="row"><button class="btn" id="copyConfig">Copy Kotlin config</button><button class="btn" id="loadRepo">Reload repo design</button></div>
-    </div>
+    <div class="group"><h2>Preview controls</h2><div class="row"><button class="btn" id="saveLocal">Save locally</button><button class="btn danger" id="reset">Reset</button></div><p class="tiny">Local save affects only this browser. It does not change the Android project.</p></div>
+    <div class="group"><h2>Apply to GitHub & build</h2><input id="token" class="token" type="password" autocomplete="off" placeholder="Fine-grained GitHub token"><p class="tiny">Required permission: Contents → Read and write for <b>music-app-azeem</b>. The token stays only in page memory.</p><button class="btn primary" id="applyBuild" style="width:100%;margin-top:8px">Apply Design & Build APK</button><div id="pushStatus" class="statusbox">Ready. No repository changes have been made.</div></div>
+    <div class="group"><h2>Config</h2><div class="row"><button class="btn" id="copyConfig">Copy Kotlin config</button><button class="btn" id="loadRepo">Reload repo design</button></div></div>
   </aside>
 </div>
 <script>
-const REPO='Mhd-Azeem/music-app-azeem';
-const BRANCH='feature/email-activation-access';
-const CONFIG_PATH='app/src/main/java/com/wavelength/music/ui/design/UiDesignConfig.kt';
-const defaults={quickHeight:58,quickRadius:6,playlistRadius:8,miniHeight:64,miniRadius:28,miniArt:44,miniArtRadius:6,miniPad:12,miniGap:12};
-const ids=Object.keys(defaults);
-const root=document.documentElement;
+const REPO='Mhd-Azeem/music-app-azeem',BRANCH='feature/email-activation-access',CONFIG_PATH='app/src/main/java/com/wavelength/music/ui/design/UiDesignConfig.kt';
+const defaults={quickHeight:58,quickRadius:6,playlistRadius:8,miniHeight:64,miniRadius:28,miniArt:44,miniArtRadius:6,miniPad:12,miniGap:12,glassQueueArea:214,glassQueueGap:22,glassQueueCardWidth:82,glassQueueCardHeight:176,glassQueueCardRadius:11,glassQueueArcDepth:58,glassPanelHeight:356,glassPanelTop:40,glassSeekPad:18,glassSeekStroke:3.2,glassSeekThumb:7,glassFrameWidth:322,glassFrameHeight:184,glassBodyWidth:292,glassBodyHeight:142,glassOrbSize:56,glassSideSize:68,glassPlayOuter:120,glassPlayInner:94};
+const ids=Object.keys(defaults),root=document.documentElement;
 function read(){const o={};ids.forEach(k=>o[k]=Number(document.getElementById(k).value));return o}
-function apply(v){
-  ids.forEach(k=>{if(v[k]!=null)document.getElementById(k).value=v[k]});
-  const d=read();
-  root.style.setProperty('--quick-h',d.quickHeight+'px');
-  root.style.setProperty('--quick-r',d.quickRadius+'px');
-  root.style.setProperty('--playlist-r',d.playlistRadius+'px');
-  root.style.setProperty('--mini-h',d.miniHeight+'px');
-  root.style.setProperty('--mini-r',d.miniRadius+'px');
-  root.style.setProperty('--mini-art',d.miniArt+'px');
-  root.style.setProperty('--mini-art-r',d.miniArtRadius+'px');
-  root.style.setProperty('--mini-pad',d.miniPad+'px');
-  root.style.setProperty('--mini-gap',d.miniGap+'px');
-  ids.forEach(k=>document.getElementById('o_'+k).textContent=d[k]+' dp');
-}
+function apply(v){ids.forEach(k=>{if(v[k]!=null)document.getElementById(k).value=v[k]});const d=read();const css={quickHeight:'--quick-h',quickRadius:'--quick-r',playlistRadius:'--playlist-r',miniHeight:'--mini-h',miniRadius:'--mini-r',miniArt:'--mini-art',miniArtRadius:'--mini-art-r',miniPad:'--mini-pad',miniGap:'--mini-gap',glassQueueArea:'--gq-area',glassQueueGap:'--gq-gap',glassQueueCardWidth:'--gq-card-w',glassQueueCardHeight:'--gq-card-h',glassQueueCardRadius:'--gq-card-r',glassQueueArcDepth:'--gq-depth',glassPanelHeight:'--gl-panel-h',glassPanelTop:'--gl-panel-top',glassSeekPad:'--gl-seek-pad',glassSeekStroke:'--gl-seek-stroke',glassFrameWidth:'--gl-frame-w',glassFrameHeight:'--gl-frame-h',glassBodyWidth:'--gl-body-w',glassBodyHeight:'--gl-body-h',glassOrbSize:'--gl-orb',glassSideSize:'--gl-side',glassPlayOuter:'--gl-play-out',glassPlayInner:'--gl-play-in'};Object.entries(css).forEach(([k,p])=>root.style.setProperty(p,d[k]+'px'));document.getElementById('seekThumb').setAttribute('r',d.glassSeekThumb);ids.forEach(k=>document.getElementById('o_'+k).textContent=d[k]+' dp')}
 ids.forEach(k=>document.getElementById(k).addEventListener('input',()=>apply(read())));
-function kotlin(d=read()){return `package com.wavelength.music.ui.design
-
-/**
- * Generated by the AzMusic GitHub Pages UI Designer.
- * These values are deliberately limited to stable visual dimensions used by Compose.
- */
-object UiDesignConfig {
-    const val QUICK_TILE_HEIGHT_DP = ${d.quickHeight}f
-    const val QUICK_TILE_RADIUS_DP = ${d.quickRadius}f
-    const val PLAYLIST_CARD_RADIUS_DP = ${d.playlistRadius}f
-
-    const val MINI_PLAYER_HEIGHT_DP = ${d.miniHeight}f
-    const val MINI_PLAYER_RADIUS_DP = ${d.miniRadius}f
-    const val MINI_PLAYER_ART_SIZE_DP = ${d.miniArt}f
-    const val MINI_PLAYER_ART_RADIUS_DP = ${d.miniArtRadius}f
-    const val MINI_PLAYER_HORIZONTAL_PADDING_DP = ${d.miniPad}f
-    const val MINI_PLAYER_ITEM_GAP_DP = ${d.miniGap}f
-}
-`}
-function decode64(s){const bin=atob(s.replace(/\n/g,''));const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));return new TextDecoder().decode(bytes)}
-function encode64(s){const bytes=new TextEncoder().encode(s);let bin='';bytes.forEach(b=>bin+=String.fromCharCode(b));return btoa(bin)}
-function parseKotlin(t){
-  const map={quickHeight:'QUICK_TILE_HEIGHT_DP',quickRadius:'QUICK_TILE_RADIUS_DP',playlistRadius:'PLAYLIST_CARD_RADIUS_DP',miniHeight:'MINI_PLAYER_HEIGHT_DP',miniRadius:'MINI_PLAYER_RADIUS_DP',miniArt:'MINI_PLAYER_ART_SIZE_DP',miniArtRadius:'MINI_PLAYER_ART_RADIUS_DP',miniPad:'MINI_PLAYER_HORIZONTAL_PADDING_DP',miniGap:'MINI_PLAYER_ITEM_GAP_DP'};
-  const out={}; for(const [k,n] of Object.entries(map)){const m=t.match(new RegExp(n+'\\s*=\\s*([0-9.]+)f'));if(m)out[k]=Number(m[1])} return out;
-}
-async function repoFile(token=''){
-  const url=`https://api.github.com/repos/${REPO}/contents/${CONFIG_PATH}?ref=${encodeURIComponent(BRANCH)}`;
-  const headers={'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
-  if(token)headers.Authorization='Bearer '+token;
-  const r=await fetch(url,{headers});if(!r.ok)throw new Error(`GitHub read failed (${r.status})`);
-  return r.json();
-}
-async function loadRepo(){
-  const box=document.getElementById('pushStatus');box.textContent='Loading current Android design…';
-  try{const f=await repoFile();const parsed=parseKotlin(decode64(f.content));apply({...defaults,...parsed});box.innerHTML='<span class="ok">Loaded the current Android design from GitHub.</span>'}
-  catch(e){box.innerHTML='<span class="bad">'+e.message+'</span>'}
-}
-document.getElementById('saveLocal').onclick=()=>{localStorage.setItem('azmusicDesigner',JSON.stringify(read()));document.getElementById('pushStatus').innerHTML='<span class="ok">Saved in this browser.</span>'};
-document.getElementById('reset').onclick=()=>{localStorage.removeItem('azmusicDesigner');apply(defaults);document.getElementById('pushStatus').textContent='Reset to default dimensions.'};
-document.getElementById('copyConfig').onclick=async()=>{await navigator.clipboard.writeText(kotlin());document.getElementById('pushStatus').innerHTML='<span class="ok">Kotlin config copied.</span>'};
-document.getElementById('loadRepo').onclick=loadRepo;
-document.getElementById('applyBuild').onclick=async()=>{
-  const token=document.getElementById('token').value.trim(),box=document.getElementById('pushStatus'),btn=document.getElementById('applyBuild');
-  if(!token){box.innerHTML='<span class="bad">Enter a fine-grained GitHub token first.</span>';return}
-  btn.disabled=true;box.textContent='Reading current config from GitHub…';
-  try{
-    const f=await repoFile(token);
-    box.textContent='Committing your design…';
-    const api=`https://api.github.com/repos/${REPO}/contents/${CONFIG_PATH}`;
-    const r=await fetch(api,{method:'PUT',headers:{'Accept':'application/vnd.github+json','Content-Type':'application/json','Authorization':'Bearer '+token,'X-GitHub-Api-Version':'2022-11-28'},body:JSON.stringify({message:'design: apply AzMusic UI designer settings',content:encode64(kotlin()),sha:f.sha,branch:BRANCH})});
-    const j=await r.json(); if(!r.ok)throw new Error(j.message||`GitHub write failed (${r.status})`);
-    const sha=j.commit?.sha||'';
-    const commitUrl=j.commit?.html_url||`https://github.com/${REPO}/commits/${BRANCH}`;
-    const actions=`https://github.com/${REPO}/actions/workflows/build-apk.yml`;
-    box.innerHTML=`<span class="ok">Design committed${sha?' ('+sha.slice(0,7)+')':''}. APK build should start automatically.</span><br><a href="${commitUrl}" target="_blank" style="color:#8cebf7">Open commit</a> · <a href="${actions}" target="_blank" style="color:#8cebf7">Open build</a>`;
-  }catch(e){box.innerHTML='<span class="bad">'+e.message+'</span>'}finally{btn.disabled=false}
-};
-const local=localStorage.getItem('azmusicDesigner');apply(local?{...defaults,...JSON.parse(local)}:defaults);loadRepo();
+function setMode(mode){const g=mode==='glass';document.getElementById('homeScreen').classList.toggle('hidden',g);document.getElementById('glassScreen').classList.toggle('hidden',!g);document.getElementById('modeHome').classList.toggle('on',!g);document.getElementById('modeGlass').classList.toggle('on',g);document.querySelectorAll('.home-only').forEach(e=>e.classList.toggle('hidden',g));document.querySelectorAll('.glass-only').forEach(e=>e.classList.toggle('hidden',!g));localStorage.setItem('azmusicDesignerMode',mode)}
+document.getElementById('modeHome').onclick=()=>setMode('home');document.getElementById('modeGlass').onclick=()=>setMode('glass');
+function kotlin(d=read()){return `package com.wavelength.music.ui.design\n\n/** Generated by the AzMusic GitHub Pages UI Designer. */\nobject UiDesignConfig {\n    const val QUICK_TILE_HEIGHT_DP = ${d.quickHeight}f\n    const val QUICK_TILE_RADIUS_DP = ${d.quickRadius}f\n    const val PLAYLIST_CARD_RADIUS_DP = ${d.playlistRadius}f\n\n    const val MINI_PLAYER_HEIGHT_DP = ${d.miniHeight}f\n    const val MINI_PLAYER_RADIUS_DP = ${d.miniRadius}f\n    const val MINI_PLAYER_ART_SIZE_DP = ${d.miniArt}f\n    const val MINI_PLAYER_ART_RADIUS_DP = ${d.miniArtRadius}f\n    const val MINI_PLAYER_HORIZONTAL_PADDING_DP = ${d.miniPad}f\n    const val MINI_PLAYER_ITEM_GAP_DP = ${d.miniGap}f\n\n    const val GLASS_QUEUE_AREA_HEIGHT_DP = ${d.glassQueueArea}f\n    const val GLASS_QUEUE_GAP_DP = ${d.glassQueueGap}f\n    const val GLASS_QUEUE_CARD_WIDTH_DP = ${d.glassQueueCardWidth}f\n    const val GLASS_QUEUE_CARD_HEIGHT_DP = ${d.glassQueueCardHeight}f\n    const val GLASS_QUEUE_CARD_RADIUS_DP = ${d.glassQueueCardRadius}f\n    const val GLASS_QUEUE_ARC_DEPTH_DP = ${d.glassQueueArcDepth}f\n    const val GLASS_LOWER_PANEL_HEIGHT_DP = ${d.glassPanelHeight}f\n    const val GLASS_LOWER_PANEL_TOP_PADDING_DP = ${d.glassPanelTop}f\n    const val GLASS_SEEK_HORIZONTAL_PADDING_DP = ${d.glassSeekPad}f\n    const val GLASS_SEEK_STROKE_DP = ${d.glassSeekStroke}f\n    const val GLASS_SEEK_THUMB_RADIUS_DP = ${d.glassSeekThumb}f\n    const val GLASS_TRANSPORT_FRAME_WIDTH_DP = ${d.glassFrameWidth}f\n    const val GLASS_TRANSPORT_FRAME_HEIGHT_DP = ${d.glassFrameHeight}f\n    const val GLASS_TRANSPORT_BODY_WIDTH_DP = ${d.glassBodyWidth}f\n    const val GLASS_TRANSPORT_BODY_HEIGHT_DP = ${d.glassBodyHeight}f\n    const val GLASS_ORB_SIZE_DP = ${d.glassOrbSize}f\n    const val GLASS_SIDE_CONTROL_SIZE_DP = ${d.glassSideSize}f\n    const val GLASS_PLAY_OUTER_SIZE_DP = ${d.glassPlayOuter}f\n    const val GLASS_PLAY_INNER_SIZE_DP = ${d.glassPlayInner}f\n}\n`}
+function decode64(s){const bin=atob(s.replace(/\n/g,''));const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));return new TextDecoder().decode(bytes)}function encode64(s){const bytes=new TextEncoder().encode(s);let bin='';bytes.forEach(b=>bin+=String.fromCharCode(b));return btoa(bin)}
+function parseKotlin(t){const map={quickHeight:'QUICK_TILE_HEIGHT_DP',quickRadius:'QUICK_TILE_RADIUS_DP',playlistRadius:'PLAYLIST_CARD_RADIUS_DP',miniHeight:'MINI_PLAYER_HEIGHT_DP',miniRadius:'MINI_PLAYER_RADIUS_DP',miniArt:'MINI_PLAYER_ART_SIZE_DP',miniArtRadius:'MINI_PLAYER_ART_RADIUS_DP',miniPad:'MINI_PLAYER_HORIZONTAL_PADDING_DP',miniGap:'MINI_PLAYER_ITEM_GAP_DP',glassQueueArea:'GLASS_QUEUE_AREA_HEIGHT_DP',glassQueueGap:'GLASS_QUEUE_GAP_DP',glassQueueCardWidth:'GLASS_QUEUE_CARD_WIDTH_DP',glassQueueCardHeight:'GLASS_QUEUE_CARD_HEIGHT_DP',glassQueueCardRadius:'GLASS_QUEUE_CARD_RADIUS_DP',glassQueueArcDepth:'GLASS_QUEUE_ARC_DEPTH_DP',glassPanelHeight:'GLASS_LOWER_PANEL_HEIGHT_DP',glassPanelTop:'GLASS_LOWER_PANEL_TOP_PADDING_DP',glassSeekPad:'GLASS_SEEK_HORIZONTAL_PADDING_DP',glassSeekStroke:'GLASS_SEEK_STROKE_DP',glassSeekThumb:'GLASS_SEEK_THUMB_RADIUS_DP',glassFrameWidth:'GLASS_TRANSPORT_FRAME_WIDTH_DP',glassFrameHeight:'GLASS_TRANSPORT_FRAME_HEIGHT_DP',glassBodyWidth:'GLASS_TRANSPORT_BODY_WIDTH_DP',glassBodyHeight:'GLASS_TRANSPORT_BODY_HEIGHT_DP',glassOrbSize:'GLASS_ORB_SIZE_DP',glassSideSize:'GLASS_SIDE_CONTROL_SIZE_DP',glassPlayOuter:'GLASS_PLAY_OUTER_SIZE_DP',glassPlayInner:'GLASS_PLAY_INNER_SIZE_DP'};const out={};for(const [k,n] of Object.entries(map)){const m=t.match(new RegExp(n+'\\s*=\\s*([0-9.]+)f'));if(m)out[k]=Number(m[1])}return out}
+async function repoFile(token=''){const url=`https://api.github.com/repos/${REPO}/contents/${CONFIG_PATH}?ref=${encodeURIComponent(BRANCH)}`;const headers={'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};if(token)headers.Authorization='Bearer '+token;const r=await fetch(url,{headers});if(!r.ok)throw new Error(`GitHub read failed (${r.status})`);return r.json()}
+async function loadRepo(){const box=document.getElementById('pushStatus');box.textContent='Loading current Android design…';try{const f=await repoFile();apply({...defaults,...parseKotlin(decode64(f.content))});box.innerHTML='<span class="ok">Loaded the current Android design from GitHub.</span>'}catch(e){box.innerHTML='<span class="bad">'+e.message+'</span>'}}
+document.getElementById('saveLocal').onclick=()=>{localStorage.setItem('azmusicDesigner',JSON.stringify(read()));document.getElementById('pushStatus').innerHTML='<span class="ok">Saved in this browser.</span>'};document.getElementById('reset').onclick=()=>{localStorage.removeItem('azmusicDesigner');apply(defaults);document.getElementById('pushStatus').textContent='Reset to default dimensions.'};document.getElementById('copyConfig').onclick=async()=>{await navigator.clipboard.writeText(kotlin());document.getElementById('pushStatus').innerHTML='<span class="ok">Kotlin config copied.</span>'};document.getElementById('loadRepo').onclick=loadRepo;
+document.getElementById('applyBuild').onclick=async()=>{const token=document.getElementById('token').value.trim(),box=document.getElementById('pushStatus'),btn=document.getElementById('applyBuild');if(!token){box.innerHTML='<span class="bad">Enter a fine-grained GitHub token first.</span>';return}btn.disabled=true;box.textContent='Reading current config from GitHub…';try{const f=await repoFile(token);box.textContent='Committing your design…';const api=`https://api.github.com/repos/${REPO}/contents/${CONFIG_PATH}`;const r=await fetch(api,{method:'PUT',headers:{'Accept':'application/vnd.github+json','Content-Type':'application/json','Authorization':'Bearer '+token,'X-GitHub-Api-Version':'2022-11-28'},body:JSON.stringify({message:'design: apply AzMusic UI designer settings',content:encode64(kotlin()),sha:f.sha,branch:BRANCH})});const j=await r.json();if(!r.ok)throw new Error(j.message||`GitHub write failed (${r.status})`);const sha=j.commit?.sha||'',commitUrl=j.commit?.html_url||`https://github.com/${REPO}/commits/${BRANCH}`,actions=`https://github.com/${REPO}/actions/workflows/build-apk.yml`;box.innerHTML=`<span class="ok">Design committed${sha?' ('+sha.slice(0,7)+')':''}. APK build started automatically.</span><br><a href="${commitUrl}" target="_blank" style="color:#8cebf7">Open commit</a> · <a href="${actions}" target="_blank" style="color:#8cebf7">Open build</a>`}catch(e){box.innerHTML='<span class="bad">'+e.message+'</span>'}finally{btn.disabled=false}};
+const local=localStorage.getItem('azmusicDesigner');apply(local?{...defaults,...JSON.parse(local)}:defaults);setMode(localStorage.getItem('azmusicDesignerMode')||'glass');loadRepo();
 </script>
 </body>
 </html>
