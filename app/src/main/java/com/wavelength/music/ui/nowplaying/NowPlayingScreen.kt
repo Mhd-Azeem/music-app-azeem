@@ -135,6 +135,7 @@ import com.wavelength.music.ui.components.dragDropItemOffset
 import com.wavelength.music.ui.components.dragHandle
 import com.wavelength.music.ui.components.rememberDragDropListState
 import com.wavelength.music.ui.components.swipeHorizontal
+import com.wavelength.music.ui.design.UiDesignConfig
 import com.wavelength.music.ui.playlist.AddToPlaylistDialog
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInputScale
@@ -883,9 +884,9 @@ fun NowPlayingScreen(
                     if (glassUpcoming.isNotEmpty()) {
                         LazyRow(
                             state = fanState,
-                            modifier = Modifier.fillMaxWidth().height(214.dp),
+                            modifier = Modifier.fillMaxWidth().height(UiDesignConfig.GLASS_QUEUE_AREA_HEIGHT_DP.dp),
                             contentPadding = PaddingValues(horizontal = 0.dp),
-                            horizontalArrangement = Arrangement.spacedBy(22.dp),
+                            horizontalArrangement = Arrangement.spacedBy(UiDesignConfig.GLASS_QUEUE_GAP_DP.dp),
                             verticalAlignment = Alignment.Bottom
                         ) {
                             itemsIndexed(glassUpcoming, key = { _, entry -> entry.instanceId }) { index, entry ->
@@ -901,15 +902,15 @@ fun NowPlayingScreen(
                                 // Same shallow crown geometry as the lower timeline/player curve:
                                 // center is highest; cards descend smoothly toward both screen edges.
                                 val circleY = 1f - kotlin.math.sqrt((1f - x * x).coerceAtLeast(0f))
-                                val lift = with(LocalDensity.current) { (circleY * 58f).dp }
+                                val lift = with(LocalDensity.current) { (circleY * UiDesignConfig.GLASS_QUEUE_ARC_DEPTH_DP).dp }
                                 val tangentAngle = Math.toDegrees(kotlin.math.asin(x.toDouble())).toFloat() * 0.42f
                                 Box(
                                     modifier = Modifier
-                                        .width(82.dp)
-                                        .height(176.dp)
+                                        .width(UiDesignConfig.GLASS_QUEUE_CARD_WIDTH_DP.dp)
+                                        .height(UiDesignConfig.GLASS_QUEUE_CARD_HEIGHT_DP.dp)
                                         .offset(y = lift)
                                         .graphicsLayer { rotationZ = tangentAngle }
-                                        .clip(RoundedCornerShape(11.dp))
+                                        .clip(RoundedCornerShape(UiDesignConfig.GLASS_QUEUE_CARD_RADIUS_DP.dp))
                                         .background(Color(0xFFD7ECFF).copy(alpha = 0.52f))
                                         .clickable { viewModel.playQueueItem(state.currentIndex + 1 + index) }
                                         .padding(5.dp),
@@ -968,20 +969,20 @@ fun NowPlayingScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(356.dp)
+                        .height(UiDesignConfig.GLASS_LOWER_PANEL_HEIGHT_DP.dp)
                         .offset(y = (-2).dp)
                         .clip(lowerGlassShape)
                         .hazeChild(state = hazeState, style = glassStyle) { inputScale = HazeInputScale.Auto }
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxSize().padding(top = 40.dp, start = 0.dp, end = 0.dp, bottom = 0.dp),
+                        modifier = Modifier.fillMaxSize().padding(top = UiDesignConfig.GLASS_LOWER_PANEL_TOP_PADDING_DP.dp, start = 0.dp, end = 0.dp, bottom = 0.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         // Single curved seek line inside the panel.
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 18.dp)
+                                .padding(horizontal = UiDesignConfig.GLASS_SEEK_HORIZONTAL_PADDING_DP.dp)
                                 .height(92.dp)
                                 .pointerInput(state.durationMs) {
                                     detectTapGestures { offset ->
@@ -1004,7 +1005,7 @@ fun NowPlayingScreen(
                                     useCenter = false,
                                     topLeft = Offset(0f, top),
                                     size = arcSize,
-                                    style = Stroke(width = 3.2.dp.toPx())
+                                    style = Stroke(width = UiDesignConfig.GLASS_SEEK_STROKE_DP.dp.toPx())
                                 )
                                 val angle = Math.toRadians((startAngle + sweepAngle * progressFraction).toDouble())
                                 val cx = size.width / 2f
@@ -1013,7 +1014,7 @@ fun NowPlayingScreen(
                                     cx + (arcSize.width / 2f * kotlin.math.cos(angle)).toFloat(),
                                     cy + (arcSize.height / 2f * kotlin.math.sin(angle)).toFloat()
                                 )
-                                drawCircle(Color(0xFF00A9D6), 7.dp.toPx(), thumb)
+                                drawCircle(Color(0xFF00A9D6), UiDesignConfig.GLASS_SEEK_THUMB_RADIUS_DP.dp.toPx(), thumb)
                             }
                             Text(
                                 text = formatMillis(state.positionMs),
@@ -1064,14 +1065,14 @@ fun NowPlayingScreen(
 
                             Box(
                                 modifier = Modifier
-                                    .width(322.dp)
-                                    .height(184.dp)
+                                    .width(UiDesignConfig.GLASS_TRANSPORT_FRAME_WIDTH_DP.dp)
+                                    .height(UiDesignConfig.GLASS_TRANSPORT_FRAME_HEIGHT_DP.dp)
                             ) {
                                 Box(
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
-                                        .width(292.dp)
-                                        .height(142.dp)
+                                        .width(UiDesignConfig.GLASS_TRANSPORT_BODY_WIDTH_DP.dp)
+                                        .height(UiDesignConfig.GLASS_TRANSPORT_BODY_HEIGHT_DP.dp)
                                         .clip(transportShape)
                                         .background(
                                             Brush.verticalGradient(
@@ -1089,7 +1090,7 @@ fun NowPlayingScreen(
                                     modifier = Modifier
                                         .align(Alignment.TopStart)
                                         .padding(start = 29.dp, top = 4.dp)
-                                        .size(56.dp)
+                                        .size(UiDesignConfig.GLASS_ORB_SIZE_DP.dp)
                                         .clip(CircleShape)
                                         .background(
                                             Brush.radialGradient(
@@ -1115,7 +1116,7 @@ fun NowPlayingScreen(
                                     modifier = Modifier
                                         .align(Alignment.TopEnd)
                                         .padding(end = 29.dp, top = 4.dp)
-                                        .size(56.dp)
+                                        .size(UiDesignConfig.GLASS_ORB_SIZE_DP.dp)
                                         .clip(CircleShape)
                                         .background(
                                             Brush.radialGradient(
@@ -1142,7 +1143,7 @@ fun NowPlayingScreen(
                                         .align(Alignment.CenterStart)
                                         .padding(start = 31.dp)
                                         .offset(y = 18.dp)
-                                        .size(68.dp)
+                                        .size(UiDesignConfig.GLASS_SIDE_CONTROL_SIZE_DP.dp)
                                         .clickable(onClick = viewModel::skipPrevious),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -1159,7 +1160,7 @@ fun NowPlayingScreen(
                                         .align(Alignment.CenterEnd)
                                         .padding(end = 31.dp)
                                         .offset(y = 18.dp)
-                                        .size(68.dp)
+                                        .size(UiDesignConfig.GLASS_SIDE_CONTROL_SIZE_DP.dp)
                                         .clickable(onClick = viewModel::skipNext),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -1175,7 +1176,7 @@ fun NowPlayingScreen(
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
                                         .padding(bottom = 11.dp)
-                                        .size(120.dp)
+                                        .size(UiDesignConfig.GLASS_PLAY_OUTER_SIZE_DP.dp)
                                         .clip(CircleShape)
                                         .background(
                                             Brush.sweepGradient(
@@ -1193,7 +1194,7 @@ fun NowPlayingScreen(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(94.dp)
+                                            .size(UiDesignConfig.GLASS_PLAY_INNER_SIZE_DP.dp)
                                             .clip(CircleShape)
                                             .background(Color.White.copy(alpha = 0.96f))
                                             .clickable(enabled = !state.isBuffering, onClick = viewModel::playPause),
