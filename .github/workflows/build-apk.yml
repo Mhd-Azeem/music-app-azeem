@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - "feature/email-activation-access"
+    paths-ignore:
+      - "preview/**"
+      - ".github/workflows/deploy-ui-preview.yml"
   workflow_dispatch: {}
 
 concurrency:
