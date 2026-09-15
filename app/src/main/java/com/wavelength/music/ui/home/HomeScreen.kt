@@ -64,6 +64,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.wavelength.music.ui.components.TrackRow
+import com.wavelength.music.ui.design.UiDesignConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -488,7 +489,7 @@ private fun PlaylistCard(playlist: PlaylistSummary, onClick: () -> Unit) {
         modifier = Modifier
             .width(140.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(UiDesignConfig.PLAYLIST_CARD_RADIUS_DP.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -518,9 +519,9 @@ private fun QuickTrackTile(
 ) {
     Card(
         modifier = modifier
-            .height(58.dp)
+            .height(UiDesignConfig.QUICK_TILE_HEIGHT_DP.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(6.dp),
+        shape = RoundedCornerShape(UiDesignConfig.QUICK_TILE_RADIUS_DP.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.88f)
         )
@@ -533,7 +534,7 @@ private fun QuickTrackTile(
                 model = track.albumArtUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.size(58.dp)
+                modifier = Modifier.size(UiDesignConfig.QUICK_TILE_HEIGHT_DP.dp)
             )
             Column(
                 modifier = Modifier.weight(1f).padding(horizontal = 9.dp),

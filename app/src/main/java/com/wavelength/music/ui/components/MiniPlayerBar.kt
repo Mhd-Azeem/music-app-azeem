@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.wavelength.music.playback.PlaybackUiState
+import com.wavelength.music.ui.design.UiDesignConfig
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
@@ -65,18 +66,18 @@ fun MiniPlayerBar(
     val expandThresholdPx = with(density) { 40.dp.toPx() }
     val skipThresholdPx = with(density) { 56.dp.toPx() }
     val isLiquid = hazeState != null
-    val shape = RoundedCornerShape(28.dp)
+    val shape = RoundedCornerShape(UiDesignConfig.MINI_PLAYER_RADIUS_DP.dp)
 
     var barModifier = modifier.fillMaxWidth()
     if (isLiquid) {
         barModifier = barModifier
             .padding(horizontal = 12.dp, vertical = 8.dp)
-            .height(64.dp)
+            .height(UiDesignConfig.MINI_PLAYER_HEIGHT_DP.dp)
             .clip(shape)
             .hazeChild(state = hazeState!!, style = glassStyle) { inputScale = HazeInputScale.Auto }
             .border(1.dp, Color.White.copy(alpha = 0.25f), shape)
     } else {
-        barModifier = barModifier.height(64.dp)
+        barModifier = barModifier.height(UiDesignConfig.MINI_PLAYER_HEIGHT_DP.dp)
     }
     barModifier = barModifier
         .clickable(onClick = onClick)
@@ -91,17 +92,17 @@ fun MiniPlayerBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp),
+                .padding(horizontal = UiDesignConfig.MINI_PLAYER_HORIZONTAL_PADDING_DP.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(UiDesignConfig.MINI_PLAYER_ITEM_GAP_DP.dp)
         ) {
             Crossfade(targetState = track, animationSpec = trackTransitionSpec, label = "miniPlayerArt") { t ->
                 AsyncImage(
                     model = t.albumArtUrl,
                     contentDescription = t.name,
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(6.dp))
+                        .size(UiDesignConfig.MINI_PLAYER_ART_SIZE_DP.dp)
+                        .clip(RoundedCornerShape(UiDesignConfig.MINI_PLAYER_ART_RADIUS_DP.dp))
                         .background(MaterialTheme.colorScheme.surface)
                 )
             }
