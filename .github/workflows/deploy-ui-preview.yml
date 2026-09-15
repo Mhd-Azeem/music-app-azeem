@@ -1,0 +1,63 @@
+name: Deploy UI Preview
+
+on:
+  push:
+    branches:
+      - feature/email-activation-access
+    paths:
+      - 'preview/**'
+      - '.github/workflows/deploy-ui-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Prepare static preview
+        shell: bash
+        run: |
+          rm -rf _site
+          mkdir -p _site/preview
+          cp -R preview/. _site/preview/
+          touch _site/.nojekyll
+          cat > _site/index.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <meta http-equiv="refresh" content="0; url=./preview/">
+            <title>AzMusic UI Preview</title>
+          </head>
+          <body>
+            <p><a href="./preview/">Open AzMusic UI Preview</a></p>
+          </body>
+          </html>
+          EOF
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
