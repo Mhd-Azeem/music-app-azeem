@@ -911,7 +911,6 @@ fun NowPlayingScreen(
                                         .graphicsLayer { rotationZ = tangentAngle }
                                         .clip(RoundedCornerShape(11.dp))
                                         .background(Color(0xFFD7ECFF).copy(alpha = 0.52f))
-                                        .border(1.dp, Color.White.copy(alpha = 0.82f), RoundedCornerShape(11.dp))
                                         .clickable { viewModel.playQueueItem(state.currentIndex + 1 + index) }
                                         .padding(5.dp),
                                     contentAlignment = Alignment.TopCenter
@@ -973,7 +972,6 @@ fun NowPlayingScreen(
                         .offset(y = (-2).dp)
                         .clip(lowerGlassShape)
                         .hazeChild(state = hazeState, style = glassStyle) { inputScale = HazeInputScale.Auto }
-                        .border(1.5.dp, Color.White.copy(alpha = 0.82f), lowerGlassShape)
                 ) {
                     Column(
                         modifier = Modifier.fillMaxSize().padding(top = 40.dp, start = 0.dp, end = 0.dp, bottom = 0.dp),
