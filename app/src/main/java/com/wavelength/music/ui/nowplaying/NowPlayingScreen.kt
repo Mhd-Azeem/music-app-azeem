@@ -947,8 +947,6 @@ fun NowPlayingScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(22.dp))
-
                 val progressFraction = if (state.durationMs > 0L) {
                     (state.positionMs.toFloat() / state.durationMs.toFloat()).coerceIn(0f, 1f)
                 } else 0f
