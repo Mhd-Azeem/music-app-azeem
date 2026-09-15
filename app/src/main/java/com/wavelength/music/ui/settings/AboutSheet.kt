@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Refined the Glass transport silhouette to the reference with tighter shoulders, compact side lobes, a higher smaller center disc, and a softer outer rim",
     "Refined the Glass transport outer contour and luminous rim to more closely match the supplied liquid-glass reference",
     "Rebuilt Glass playback controls to match the supplied liquid-glass reference: organic four-lobed body, upper Shuffle/Repeat orbs, white side transport icons, and luminous center Play/Pause disc",
     "Removed the Glass lower-player outline and Up Next card outlines for a seamless borderless blur",

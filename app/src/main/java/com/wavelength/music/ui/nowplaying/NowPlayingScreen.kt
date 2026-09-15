@@ -1039,21 +1039,25 @@ fun NowPlayingScreen(
                                 GenericShape { size, _ ->
                                     val w = size.width
                                     val h = size.height
-                                    // Tighter reference-style liquid outline: a large circular crown around
-                                    // Play/Pause, narrow necks, rounded side pods, then a smooth lower bowl.
+                                    // Reference contour: tighter center crown, pronounced inward shoulders,
+                                    // compact round side lobes and a restrained lower bowl around Play/Pause.
                                     moveTo(w * 0.50f, 0f)
-                                    cubicTo(w * 0.60f, 0f, w * 0.64f, h * 0.08f, w * 0.67f, h * 0.21f)
-                                    cubicTo(w * 0.70f, h * 0.32f, w * 0.75f, h * 0.35f, w * 0.81f, h * 0.31f)
-                                    cubicTo(w * 0.90f, h * 0.25f, w * 0.98f, h * 0.32f, w, h * 0.46f)
-                                    cubicTo(w * 1.01f, h * 0.59f, w * 0.94f, h * 0.68f, w * 0.84f, h * 0.65f)
-                                    cubicTo(w * 0.76f, h * 0.62f, w * 0.71f, h * 0.68f, w * 0.67f, h * 0.79f)
-                                    cubicTo(w * 0.63f, h * 0.92f, w * 0.58f, h, w * 0.50f, h)
-                                    cubicTo(w * 0.42f, h, w * 0.37f, h * 0.92f, w * 0.33f, h * 0.79f)
-                                    cubicTo(w * 0.29f, h * 0.68f, w * 0.24f, h * 0.62f, w * 0.16f, h * 0.65f)
-                                    cubicTo(w * 0.06f, h * 0.68f, -w * 0.01f, h * 0.59f, 0f, h * 0.46f)
-                                    cubicTo(w * 0.02f, h * 0.32f, w * 0.10f, h * 0.25f, w * 0.19f, h * 0.31f)
-                                    cubicTo(w * 0.25f, h * 0.35f, w * 0.30f, h * 0.32f, w * 0.33f, h * 0.21f)
-                                    cubicTo(w * 0.36f, h * 0.08f, w * 0.40f, 0f, w * 0.50f, 0f)
+                                    cubicTo(w * 0.585f, 0f, w * 0.625f, h * 0.07f, w * 0.650f, h * 0.19f)
+                                    cubicTo(w * 0.670f, h * 0.285f, w * 0.705f, h * 0.345f, w * 0.755f, h * 0.345f)
+                                    cubicTo(w * 0.805f, h * 0.345f, w * 0.830f, h * 0.285f, w * 0.875f, h * 0.285f)
+                                    cubicTo(w * 0.955f, h * 0.285f, w, h * 0.365f, w, h * 0.485f)
+                                    cubicTo(w, h * 0.605f, w * 0.955f, h * 0.685f, w * 0.875f, h * 0.685f)
+                                    cubicTo(w * 0.815f, h * 0.685f, w * 0.790f, h * 0.630f, w * 0.745f, h * 0.630f)
+                                    cubicTo(w * 0.695f, h * 0.630f, w * 0.670f, h * 0.705f, w * 0.645f, h * 0.815f)
+                                    cubicTo(w * 0.615f, h * 0.935f, w * 0.570f, h, w * 0.50f, h)
+                                    cubicTo(w * 0.430f, h, w * 0.385f, h * 0.935f, w * 0.355f, h * 0.815f)
+                                    cubicTo(w * 0.330f, h * 0.705f, w * 0.305f, h * 0.630f, w * 0.255f, h * 0.630f)
+                                    cubicTo(w * 0.210f, h * 0.630f, w * 0.185f, h * 0.685f, w * 0.125f, h * 0.685f)
+                                    cubicTo(w * 0.045f, h * 0.685f, 0f, h * 0.605f, 0f, h * 0.485f)
+                                    cubicTo(0f, h * 0.365f, w * 0.045f, h * 0.285f, w * 0.125f, h * 0.285f)
+                                    cubicTo(w * 0.170f, h * 0.285f, w * 0.195f, h * 0.345f, w * 0.245f, h * 0.345f)
+                                    cubicTo(w * 0.295f, h * 0.345f, w * 0.330f, h * 0.285f, w * 0.350f, h * 0.19f)
+                                    cubicTo(w * 0.375f, h * 0.07f, w * 0.415f, 0f, w * 0.50f, 0f)
                                     close()
                                 }
                             }
@@ -1066,8 +1070,8 @@ fun NowPlayingScreen(
                                 Box(
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
-                                        .width(306.dp)
-                                        .height(150.dp)
+                                        .width(292.dp)
+                                        .height(142.dp)
                                         .clip(transportShape)
                                         .background(
                                             Brush.verticalGradient(
@@ -1078,7 +1082,7 @@ fun NowPlayingScreen(
                                                 )
                                             )
                                         )
-                                        .border(2.2.dp, Color.White.copy(alpha = 0.56f), transportShape)
+                                        .border(1.5.dp, Color.White.copy(alpha = 0.46f), transportShape)
                                 )
 
                                 Box(
@@ -1136,9 +1140,9 @@ fun NowPlayingScreen(
                                 Box(
                                     modifier = Modifier
                                         .align(Alignment.CenterStart)
-                                        .padding(start = 26.dp)
-                                        .offset(y = 23.dp)
-                                        .size(72.dp)
+                                        .padding(start = 31.dp)
+                                        .offset(y = 18.dp)
+                                        .size(68.dp)
                                         .clickable(onClick = viewModel::skipPrevious),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -1153,9 +1157,9 @@ fun NowPlayingScreen(
                                 Box(
                                     modifier = Modifier
                                         .align(Alignment.CenterEnd)
-                                        .padding(end = 26.dp)
-                                        .offset(y = 23.dp)
-                                        .size(72.dp)
+                                        .padding(end = 31.dp)
+                                        .offset(y = 18.dp)
+                                        .size(68.dp)
                                         .clickable(onClick = viewModel::skipNext),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -1170,8 +1174,8 @@ fun NowPlayingScreen(
                                 Box(
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
-                                        .padding(bottom = 5.dp)
-                                        .size(128.dp)
+                                        .padding(bottom = 11.dp)
+                                        .size(120.dp)
                                         .clip(CircleShape)
                                         .background(
                                             Brush.sweepGradient(
@@ -1189,7 +1193,7 @@ fun NowPlayingScreen(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(99.dp)
+                                            .size(94.dp)
                                             .clip(CircleShape)
                                             .background(Color.White.copy(alpha = 0.96f))
                                             .clickable(enabled = !state.isBuffering, onClick = viewModel::playPause),
