@@ -940,7 +940,7 @@ fun NowPlayingScreen(
                             state = fanState,
                             modifier = Modifier.fillMaxWidth().height(196.dp),
                             contentPadding = PaddingValues(horizontal = 0.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(22.dp),
                             verticalAlignment = Alignment.Bottom
                         ) {
                             itemsIndexed(glassUpcoming, key = { _, entry -> entry.instanceId }) { index, entry ->
@@ -965,7 +965,7 @@ fun NowPlayingScreen(
                                         .offset(y = lift)
                                         .graphicsLayer { rotationZ = tangentAngle }
                                         .clip(RoundedCornerShape(11.dp))
-                                        .background(Color(0xFFFFEA28))
+                                        .background(Color(0xFFD7ECFF).copy(alpha = 0.52f))
                                         .border(1.dp, Color.White.copy(alpha = 0.82f), RoundedCornerShape(11.dp))
                                         .clickable { viewModel.playQueueItem(state.currentIndex + 1 + index) }
                                         .padding(5.dp),
@@ -988,7 +988,7 @@ fun NowPlayingScreen(
                                             Text(
                                                 text = entry.track.name,
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = Color(0xFF111111),
+                                                color = Color(0xFF08283A),
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis,
                                                 modifier = Modifier.width(72.dp).graphicsLayer { rotationZ = 90f },
@@ -1002,7 +1002,6 @@ fun NowPlayingScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
 
                 val progressFraction = if (state.durationMs > 0L) {
                     (state.positionMs.toFloat() / state.durationMs.toFloat()).coerceIn(0f, 1f)
@@ -1010,8 +1009,12 @@ fun NowPlayingScreen(
                 val lowerGlassShape = remember {
                     GenericShape { size, _ ->
                         moveTo(0f, size.height * 0.12f)
-                        cubicTo(size.width * 0.16f, 0f, size.width * 0.34f, 0f, size.width * 0.50f, 0f)
-                        cubicTo(size.width * 0.66f, 0f, size.width * 0.84f, 0f, size.width, size.height * 0.12f)
+                        quadraticBezierTo(
+                            size.width * 0.50f,
+                            -size.height * 0.12f,
+                            size.width,
+                            size.height * 0.12f
+                        )
                         lineTo(size.width, size.height)
                         lineTo(0f, size.height)
                         close()
