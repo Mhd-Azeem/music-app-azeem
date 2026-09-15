@@ -32,4 +32,35 @@ object UiDesignConfig {
     const val GLASS_SIDE_CONTROL_SIZE_DP = 68f
     const val GLASS_PLAY_OUTER_SIZE_DP = 120f
     const val GLASS_PLAY_INNER_SIZE_DP = 94f
+
+    // Normalized x,y anchor pairs edited directly in the browser Shape Editor.
+    // Values are relative to the GenericShape bounds (0f..1f).
+    val GLASS_LOWER_PANEL_SHAPE_POINTS = floatArrayOf(
+        0.00f, 0.16f,
+        0.18f, 0.08f,
+        0.50f, 0.00f,
+        0.82f, 0.08f,
+        1.00f, 0.16f,
+        1.00f, 1.00f,
+        0.00f, 1.00f
+    )
+
+    val GLASS_TRANSPORT_SHAPE_POINTS = floatArrayOf(
+        0.50f, 0.00f,
+        0.65f, 0.18f,
+        0.76f, 0.34f,
+        0.88f, 0.28f,
+        1.00f, 0.48f,
+        0.88f, 0.69f,
+        0.74f, 0.63f,
+        0.64f, 0.82f,
+        0.50f, 1.00f,
+        0.36f, 0.82f,
+        0.26f, 0.63f,
+        0.12f, 0.69f,
+        0.00f, 0.48f,
+        0.12f, 0.28f,
+        0.24f, 0.34f,
+        0.35f, 0.18f
+    )
 }
