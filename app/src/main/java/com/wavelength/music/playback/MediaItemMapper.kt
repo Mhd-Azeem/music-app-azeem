@@ -16,6 +16,9 @@ fun Track.toMediaItem(): MediaItem {
     return MediaItem.Builder()
         .setMediaId(id)
         .setUri(audioUrl.toUri())
+        // Keep a stable cache key even if the remote stream URL changes between requests.
+        // That lets a song already heard once reuse the same on-device audio cache later.
+        .setCustomCacheKey("azmusic:$id")
         .setMediaMetadata(metadata)
         .build()
 }
