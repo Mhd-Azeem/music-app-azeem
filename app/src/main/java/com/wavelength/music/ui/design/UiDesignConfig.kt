@@ -26,8 +26,8 @@ object UiDesignConfig {
     const val GLASS_SEEK_THUMB_RADIUS_DP = 7f
     const val GLASS_TRANSPORT_FRAME_WIDTH_DP = 322f
     const val GLASS_TRANSPORT_FRAME_HEIGHT_DP = 184f
-    const val GLASS_TRANSPORT_BODY_WIDTH_DP = 292f
-    const val GLASS_TRANSPORT_BODY_HEIGHT_DP = 142f
+    const val GLASS_TRANSPORT_BODY_WIDTH_DP = 288f
+    const val GLASS_TRANSPORT_BODY_HEIGHT_DP = 140f
     const val GLASS_ORB_SIZE_DP = 56f
     const val GLASS_SIDE_CONTROL_SIZE_DP = 68f
     const val GLASS_PLAY_OUTER_SIZE_DP = 120f
@@ -53,39 +53,50 @@ object UiDesignConfig {
         1.0000f, 0.1875f
     )
 
+    // Fine-polished symmetric Saturn/liquid contour. The denser shoulder points keep
+    // the center ring round while the side pods flow into it without sharp kinks.
     val GLASS_TRANSPORT_SHAPE_POINTS = floatArrayOf(
-        0.6592f, 0.9045f,
-        0.5802f, 0.9755f,
-        0.4925f, 1.0000f,
-        0.4049f, 0.9755f,
-        0.3259f, 0.9045f,
-        0.2848f, 0.8321f,
-        0.2166f, 0.8184f,
-        0.1292f, 0.7750f,
-        0.0599f, 0.7074f,
-        0.0153f, 0.6222f,
-        0.0000f, 0.5278f,
-        0.0153f, 0.4334f,
-        0.0599f, 0.3482f,
-        0.1292f, 0.2806f,
-        0.2166f, 0.2372f,
-        0.2570f, 0.2272f,
-        0.2631f, 0.2061f,
-        0.3259f, 0.0955f,
-        0.4049f, 0.0245f,
-        0.4925f, 0.0000f,
-        0.5802f, 0.0245f,
-        0.6592f, 0.0955f,
-        0.7177f, 0.1959f,
-        0.7834f, 0.2094f,
-        0.8708f, 0.2528f,
-        0.9401f, 0.3204f,
-        0.9847f, 0.4056f,
-        1.0000f, 0.5000f,
-        0.9847f, 0.5944f,
-        0.9401f, 0.6796f,
-        0.8708f, 0.7472f,
-        0.7834f, 0.7906f,
-        0.7177f, 0.8041f
+        0.5000f, 0.0000f,
+        0.5760f, 0.0180f,
+        0.6360f, 0.0700f,
+        0.6770f, 0.1540f,
+        0.6990f, 0.2240f,
+        0.7480f, 0.2380f,
+        0.8080f, 0.2240f,
+        0.8700f, 0.2450f,
+        0.9270f, 0.3000f,
+        0.9700f, 0.3800f,
+        0.9950f, 0.4700f,
+        1.0000f, 0.5350f,
+        0.9840f, 0.6200f,
+        0.9440f, 0.6900f,
+        0.8860f, 0.7350f,
+        0.8200f, 0.7580f,
+        0.7600f, 0.7550f,
+        0.7080f, 0.7900f,
+        0.6740f, 0.8560f,
+        0.6380f, 0.9280f,
+        0.5780f, 0.9800f,
+        0.5000f, 1.0000f,
+        0.4220f, 0.9800f,
+        0.3620f, 0.9280f,
+        0.3260f, 0.8560f,
+        0.2920f, 0.7900f,
+        0.2400f, 0.7550f,
+        0.1800f, 0.7580f,
+        0.1140f, 0.7350f,
+        0.0560f, 0.6900f,
+        0.0160f, 0.6200f,
+        0.0000f, 0.5350f,
+        0.0050f, 0.4700f,
+        0.0300f, 0.3800f,
+        0.0730f, 0.3000f,
+        0.1300f, 0.2450f,
+        0.1920f, 0.2240f,
+        0.2520f, 0.2380f,
+        0.3010f, 0.2240f,
+        0.3230f, 0.1540f,
+        0.3640f, 0.0700f,
+        0.4240f, 0.0180f
     )
 }
