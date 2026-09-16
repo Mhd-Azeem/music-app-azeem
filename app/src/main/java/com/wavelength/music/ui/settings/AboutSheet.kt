@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Added persistent Spotify-style song caching with up to 1 GB of recent streamed audio plus longer read-ahead buffering for smoother playback in weak coverage",
     "Fine-polished the Glass transport edges with smoother symmetric shoulders, cleaner side pods, and a tighter Saturn-style contour",
     "Refined the Glass transport silhouette to the reference with tighter shoulders, compact side lobes, a higher smaller center disc, and a softer outer rim",
     "Refined the Glass transport outer contour and luminous rim to more closely match the supplied liquid-glass reference",
@@ -75,6 +76,7 @@ private val latestUpdates = listOf(
 private val featureGroups = listOf(
     "Playback" to listOf(
         "Stream millions of songs via JioSaavn, plus play files already on your device",
+        "Persistent streamed-song cache for faster replays and smoother playback in weak coverage",
         "Gapless playback with adjustable crossfade between tracks",
         "Adjustable playback speed",
         "Sleep timer — countdown or end-of-track",
