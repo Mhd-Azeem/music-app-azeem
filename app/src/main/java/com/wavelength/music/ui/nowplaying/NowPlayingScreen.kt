@@ -529,6 +529,48 @@ fun NowPlayingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            // In Glass mode the whole Now Playing surface is draggable downward, including
+            // artwork, Up Next and the lower glass controls. This keeps the collapse gesture
+            // available even when a child composable would otherwise consume the touch.
+            .pointerInput(glassmorphismNowPlaying) {
+                if (glassmorphismNowPlaying) {
+                    detectVerticalDragGestures(
+                        onDragEnd = {
+                            if (dragOffset > collapseThresholdPx) {
+                                onCollapse()
+                            } else {
+                                scope.launch {
+                                    settleAnim.snapTo(dragOffset)
+                                    settleAnim.animateTo(
+                                        targetValue = 0f,
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                                            stiffness = Spring.StiffnessMedium
+                                        )
+                                    ) { dragOffset = value }
+                                }
+                            }
+                        },
+                        onDragCancel = {
+                            scope.launch {
+                                settleAnim.snapTo(dragOffset)
+                                settleAnim.animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                        stiffness = Spring.StiffnessMedium
+                                    )
+                                ) { dragOffset = value }
+                            }
+                        }
+                    ) { change, dragAmount ->
+                        if (dragAmount > 0f || dragOffset > 0f) {
+                            change.consume()
+                            dragOffset = (dragOffset + dragAmount).coerceAtLeast(0f)
+                        }
+                    }
+                }
+            }
             .graphicsLayer {
                 // translationY only — no alpha fade here. This Box (and its opaque background
                 // Column below) sits directly above the shared AppBackground that's rendered
@@ -591,18 +633,29 @@ fun NowPlayingScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .pointerInput(Unit) {
-                        detectVerticalDragGestures(
-                            onDragEnd = {
-                                if (dragOffset > collapseThresholdPx) {
-                                    // Leave dragOffset where the drag ended rather than snapping it
-                                    // to 0 first — this composable is about to be popped off the
-                                    // back stack anyway, and resetting the offset here made the
-                                    // screen visibly jump back to its start position for a frame
-                                    // before the nav pop's own slide-out transition took over,
-                                    // producing a jarring double-motion glitch on release.
-                                    onCollapse()
-                                } else {
+                    .pointerInput(glassmorphismNowPlaying) {
+                        // Glass mode handles collapse on the full-screen parent so every visible
+                        // glass surface can start the gesture. Keep this local handler only for
+                        // the standard Now Playing layout.
+                        if (!glassmorphismNowPlaying) {
+                            detectVerticalDragGestures(
+                                onDragEnd = {
+                                    if (dragOffset > collapseThresholdPx) {
+                                        onCollapse()
+                                    } else {
+                                        scope.launch {
+                                            settleAnim.snapTo(dragOffset)
+                                            settleAnim.animateTo(
+                                                targetValue = 0f,
+                                                animationSpec = spring(
+                                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                    stiffness = Spring.StiffnessMedium
+                                                )
+                                            ) { dragOffset = value }
+                                        }
+                                    }
+                                },
+                                onDragCancel = {
                                     scope.launch {
                                         settleAnim.snapTo(dragOffset)
                                         settleAnim.animateTo(
@@ -614,22 +667,10 @@ fun NowPlayingScreen(
                                         ) { dragOffset = value }
                                     }
                                 }
-                            },
-                            onDragCancel = {
-                                scope.launch {
-                                    settleAnim.snapTo(dragOffset)
-                                    settleAnim.animateTo(
-                                        targetValue = 0f,
-                                        animationSpec = spring(
-                                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                                            stiffness = Spring.StiffnessMedium
-                                        )
-                                    ) { dragOffset = value }
-                                }
+                            ) { change, dragAmount ->
+                                change.consume()
+                                dragOffset = (dragOffset + dragAmount).coerceAtLeast(0f)
                             }
-                        ) { change, dragAmount ->
-                            change.consume()
-                            dragOffset = (dragOffset + dragAmount).coerceAtLeast(0f)
                         }
                     }
                     .swipeHorizontal(

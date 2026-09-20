@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Glass Now Playing can now be dragged down from anywhere on the screen to collapse smoothly into the mini player",
     "Added persistent Spotify-style song caching with up to 1 GB of recent streamed audio plus longer read-ahead buffering for smoother playback in weak coverage",
     "Fine-polished the Glass transport edges with smoother symmetric shoulders, cleaner side pods, and a tighter Saturn-style contour",
     "Refined the Glass transport silhouette to the reference with tighter shoulders, compact side lobes, a higher smaller center disc, and a softer outer rim",
