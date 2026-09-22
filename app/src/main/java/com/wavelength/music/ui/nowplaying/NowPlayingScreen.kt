@@ -1019,6 +1019,8 @@ fun NowPlayingScreen(
                                 .fillMaxWidth()
                                 .padding(horizontal = UiDesignConfig.GLASS_SEEK_HORIZONTAL_PADDING_DP.dp)
                                 .height(92.dp)
+                                // Keep tap-to-seek, and also let the thumb follow a finger dragged
+                                // continuously across the curved Glass timeline.
                                 .pointerInput(state.durationMs) {
                                     detectTapGestures { offset ->
                                         if (state.durationMs > 0L) {
@@ -1026,6 +1028,23 @@ fun NowPlayingScreen(
                                             viewModel.seekTo((state.durationMs * p).toLong())
                                         }
                                     }
+                                }
+                                .pointerInput(state.durationMs) {
+                                    detectDragGestures(
+                                        onDragStart = { offset ->
+                                            if (state.durationMs > 0L) {
+                                                val p = (offset.x / size.width.toFloat()).coerceIn(0f, 1f)
+                                                viewModel.seekTo((state.durationMs * p).toLong())
+                                            }
+                                        },
+                                        onDrag = { change, _ ->
+                                            if (state.durationMs > 0L) {
+                                                change.consume()
+                                                val p = (change.position.x / size.width.toFloat()).coerceIn(0f, 1f)
+                                                viewModel.seekTo((state.durationMs * p).toLong())
+                                            }
+                                        }
+                                    )
                                 }
                         ) {
                             Canvas(Modifier.fillMaxSize()) {
