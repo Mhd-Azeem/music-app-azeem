@@ -99,10 +99,14 @@ jobs:
                   app/src/main/java/com/wavelength/music/ui/nowplaying/PlayerViewModel.kt \
                   app/src/main/java/com/wavelength/music/playback/PlayerController.kt \
                   app/src/main/java/com/wavelength/music/ui/settings/AboutSheet.kt \
+                  app/src/main/java/com/wavelength/music/ui/settings/SettingsScreen.kt \
+                  app/src/main/java/com/wavelength/music/ui/settings/AppSettingsViewModel.kt \
+                  app/src/main/java/com/wavelength/music/data/repository/SettingsRepository.kt \
+                  app/src/main/java/com/wavelength/music/ui/navigation/NavGraph.kt \
                   app/src/main/java/com/wavelength/music/ui/home/HomeScreen.kt \
                   app/src/main/java/com/wavelength/music/ui/components/MiniPlayerBar.kt \
                   app/src/main/java/com/wavelength/music/ui/design/UiDesignConfig.kt
-          git commit -m 'feat: bind UI designer settings to Compose'
+          git commit -m 'feat: persist staged AzMusic UI settings update'
           git fetch origin feature/email-activation-access
           git rebase origin/feature/email-activation-access
           git push origin HEAD:feature/email-activation-access
