@@ -124,6 +124,10 @@ class AppSettingsViewModel @Inject constructor(
     fun setGlassmorphismNowPlaying(enabled: Boolean) =
         settingsRepository.setGlassmorphismNowPlaying(enabled)
 
+    fun setGlassTimelineArgb(argb: Int) = settingsRepository.setGlassTimelineArgb(argb)
+
+    fun setGlassPlayedGlowArgb(argb: Int) = settingsRepository.setGlassPlayedGlowArgb(argb)
+
     fun setLiquidAlbumArtBackground(enabled: Boolean) =
         settingsRepository.setLiquidAlbumArtBackground(enabled)
 

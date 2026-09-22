@@ -308,6 +308,8 @@ composable(
                         trackTransitionDurationMs = settings.trackTransitionDurationMs,
                         syncVolumeWithSystem = settings.syncVolumeWithSystem,
                         glassmorphismNowPlaying = settings.glassmorphismNowPlaying,
+                        glassTimelineArgb = settings.glassTimelineArgb,
+                        glassPlayedGlowArgb = settings.glassPlayedGlowArgb,
                         liquidAlbumArtBackground = false
                     )
                 }

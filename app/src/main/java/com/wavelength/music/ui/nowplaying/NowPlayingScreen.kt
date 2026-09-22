@@ -166,6 +166,8 @@ fun NowPlayingScreen(
     trackTransitionDurationMs: Int = 300,
     syncVolumeWithSystem: Boolean = true,
     glassmorphismNowPlaying: Boolean = false,
+    glassTimelineArgb: Int = 0xFF14B8E6.toInt(),
+    glassPlayedGlowArgb: Int = 0xFF54E8FF.toInt(),
     liquidAlbumArtBackground: Boolean = false
 ) {
     val trackTransitionSpec: FiniteAnimationSpec<Float> = if (trackTransitionEnabled) {
@@ -206,6 +208,8 @@ fun NowPlayingScreen(
         }
     }
     val accentColor = dynamicAccent ?: MaterialTheme.colorScheme.primary
+    val glassTimelineColor = Color(glassTimelineArgb)
+    val glassPlayedGlowColor = Color(glassPlayedGlowArgb)
 
     LaunchedEffect(glassmorphismNowPlaying, state.currentIndex, state.queue.size, state.currentTrack?.id) {
         if (glassmorphismNowPlaying) {
@@ -1029,15 +1033,49 @@ fun NowPlayingScreen(
                                 val sweepAngle = 136f
                                 val arcSize = Size(size.width, 176.dp.toPx())
                                 val top = -5.dp.toPx()
+                                val baseStroke = UiDesignConfig.GLASS_SEEK_STROKE_DP.dp.toPx()
+                                // Slightly thicker base timeline.
                                 drawArc(
-                                    color = Color(0xFF00A9D6),
+                                    color = glassTimelineColor.copy(alpha = 0.88f),
                                     startAngle = startAngle,
                                     sweepAngle = sweepAngle,
                                     useCenter = false,
                                     topLeft = Offset(0f, top),
                                     size = arcSize,
-                                    style = Stroke(width = UiDesignConfig.GLASS_SEEK_STROKE_DP.dp.toPx())
+                                    style = Stroke(width = baseStroke)
                                 )
+                                // Spotify-style played portion: soft outer bloom plus a crisp,
+                                // brighter border sitting on top of the base timeline.
+                                val playedSweep = sweepAngle * progressFraction
+                                if (playedSweep > 0.15f) {
+                                    drawArc(
+                                        color = glassPlayedGlowColor.copy(alpha = 0.12f),
+                                        startAngle = startAngle,
+                                        sweepAngle = playedSweep,
+                                        useCenter = false,
+                                        topLeft = Offset(0f, top),
+                                        size = arcSize,
+                                        style = Stroke(width = baseStroke + 11.dp.toPx())
+                                    )
+                                    drawArc(
+                                        color = glassPlayedGlowColor.copy(alpha = 0.24f),
+                                        startAngle = startAngle,
+                                        sweepAngle = playedSweep,
+                                        useCenter = false,
+                                        topLeft = Offset(0f, top),
+                                        size = arcSize,
+                                        style = Stroke(width = baseStroke + 6.dp.toPx())
+                                    )
+                                    drawArc(
+                                        color = glassPlayedGlowColor.copy(alpha = 0.98f),
+                                        startAngle = startAngle,
+                                        sweepAngle = playedSweep,
+                                        useCenter = false,
+                                        topLeft = Offset(0f, top),
+                                        size = arcSize,
+                                        style = Stroke(width = baseStroke + 1.2.dp.toPx())
+                                    )
+                                }
                                 val angle = Math.toRadians((startAngle + sweepAngle * progressFraction).toDouble())
                                 val cx = size.width / 2f
                                 val cy = top + arcSize.height / 2f
@@ -1045,7 +1083,10 @@ fun NowPlayingScreen(
                                     cx + (arcSize.width / 2f * kotlin.math.cos(angle)).toFloat(),
                                     cy + (arcSize.height / 2f * kotlin.math.sin(angle)).toFloat()
                                 )
-                                drawCircle(Color(0xFF00A9D6), UiDesignConfig.GLASS_SEEK_THUMB_RADIUS_DP.dp.toPx(), thumb)
+                                val thumbRadius = UiDesignConfig.GLASS_SEEK_THUMB_RADIUS_DP.dp.toPx()
+                                drawCircle(glassPlayedGlowColor.copy(alpha = 0.14f), thumbRadius + 9.dp.toPx(), thumb)
+                                drawCircle(glassPlayedGlowColor.copy(alpha = 0.28f), thumbRadius + 5.dp.toPx(), thumb)
+                                drawCircle(glassPlayedGlowColor, thumbRadius, thumb)
                             }
                             Text(
                                 text = formatMillis(state.positionMs),

@@ -70,6 +70,10 @@ data class AppSettingsState(
     val syncVolumeWithSystem: Boolean = true,
     /** Frosted-glass Now Playing layout inspired by translucent modern music players. */
     val glassmorphismNowPlaying: Boolean = false,
+    /** Main unplayed Glass seek/timeline color. Editable only while Glass mode is enabled. */
+    val glassTimelineArgb: Int = DEFAULT_GLASS_TIMELINE_ARGB,
+    /** Played seek segment + glow color. Editable only while Glass mode is enabled. */
+    val glassPlayedGlowArgb: Int = DEFAULT_GLASS_PLAYED_GLOW_ARGB,
     /** When enabled in Liquid themes, the current track artwork fills the Now Playing backdrop. */
     val liquidAlbumArtBackground: Boolean = false
 )
@@ -77,6 +81,8 @@ data class AppSettingsState(
 const val DEFAULT_BACKGROUND_OPACITY = 0.25f
 const val DEFAULT_TRACK_TRANSITION_DURATION_MS = 300
 const val DEFAULT_CUSTOM_ACCENT_ARGB: Int = 0xFF22D3EE.toInt()
+const val DEFAULT_GLASS_TIMELINE_ARGB: Int = 0xFF14B8E6.toInt()
+const val DEFAULT_GLASS_PLAYED_GLOW_ARGB: Int = 0xFF54E8FF.toInt()
 
 @Singleton
 class SettingsRepository @Inject constructor(
@@ -122,6 +128,8 @@ class SettingsRepository @Inject constructor(
         trackTransitionDurationMs = prefs.getInt(KEY_TRACK_TRANSITION_DURATION, DEFAULT_TRACK_TRANSITION_DURATION_MS),
         syncVolumeWithSystem = prefs.getBoolean(KEY_SYNC_VOLUME_WITH_SYSTEM, true),
         glassmorphismNowPlaying = prefs.getBoolean(KEY_GLASSMORPHISM_NOW_PLAYING, false),
+        glassTimelineArgb = prefs.getInt(KEY_GLASS_TIMELINE_ARGB, DEFAULT_GLASS_TIMELINE_ARGB),
+        glassPlayedGlowArgb = prefs.getInt(KEY_GLASS_PLAYED_GLOW_ARGB, DEFAULT_GLASS_PLAYED_GLOW_ARGB),
         liquidAlbumArtBackground = false
     )
 
@@ -329,6 +337,18 @@ class SettingsRepository @Inject constructor(
         _state.update { it.copy(glassmorphismNowPlaying = enabled) }
     }
 
+    fun setGlassTimelineArgb(argb: Int) {
+        if (!_state.value.glassmorphismNowPlaying) return
+        prefs.edit { putInt(KEY_GLASS_TIMELINE_ARGB, argb) }
+        _state.update { it.copy(glassTimelineArgb = argb) }
+    }
+
+    fun setGlassPlayedGlowArgb(argb: Int) {
+        if (!_state.value.glassmorphismNowPlaying) return
+        prefs.edit { putInt(KEY_GLASS_PLAYED_GLOW_ARGB, argb) }
+        _state.update { it.copy(glassPlayedGlowArgb = argb) }
+    }
+
     fun setLiquidAlbumArtBackground(enabled: Boolean) {
         prefs.edit { putBoolean(KEY_LIQUID_ALBUM_ART_BACKGROUND, enabled) }
         _state.update { it.copy(liquidAlbumArtBackground = enabled) }
@@ -372,6 +392,8 @@ class SettingsRepository @Inject constructor(
         const val KEY_TRACK_TRANSITION_DURATION = "track_transition_duration_ms"
         const val KEY_SYNC_VOLUME_WITH_SYSTEM = "sync_volume_with_system"
         const val KEY_GLASSMORPHISM_NOW_PLAYING = "glassmorphism_now_playing"
+        const val KEY_GLASS_TIMELINE_ARGB = "glass_timeline_argb"
+        const val KEY_GLASS_PLAYED_GLOW_ARGB = "glass_played_glow_argb"
         const val KEY_LIQUID_ALBUM_ART_BACKGROUND = "liquid_album_art_background"
     }
 }

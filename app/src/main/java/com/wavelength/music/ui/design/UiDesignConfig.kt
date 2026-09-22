@@ -22,7 +22,7 @@ object UiDesignConfig {
     const val GLASS_LOWER_PANEL_HEIGHT_DP = 356f
     const val GLASS_LOWER_PANEL_TOP_PADDING_DP = 40f
     const val GLASS_SEEK_HORIZONTAL_PADDING_DP = 18f
-    const val GLASS_SEEK_STROKE_DP = 3.2f
+    const val GLASS_SEEK_STROKE_DP = 4.8f
     const val GLASS_SEEK_THUMB_RADIUS_DP = 7f
     const val GLASS_TRANSPORT_FRAME_WIDTH_DP = 322f
     const val GLASS_TRANSPORT_FRAME_HEIGHT_DP = 184f

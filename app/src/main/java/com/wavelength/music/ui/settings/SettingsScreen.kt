@@ -104,6 +104,8 @@ fun SettingsScreen(
     var showAbout by remember { mutableStateOf(false) }
     var showAlbumArtStyleMenu by remember { mutableStateOf(false) }
     var showThemeColorPicker by remember { mutableStateOf(false) }
+    var showGlassTimelineColorPicker by remember { mutableStateOf(false) }
+    var showGlassGlowColorPicker by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     val eqSupported by equalizerViewModel.isSupported.collectAsStateWithLifecycle()
@@ -812,6 +814,99 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
+
+                    Text(
+                        text = if (settings.glassmorphismNowPlaying) "Glass timeline colors" else "Glass timeline colors • enable Glassmorphism to edit",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = if (settings.glassmorphismNowPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 4.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = settings.glassmorphismNowPlaying) {
+                                showGlassTimelineColorPicker = !showGlassTimelineColorPicker
+                            }
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(Color(settings.glassTimelineArgb))
+                                .border(1.5.dp, Color.White.copy(alpha = 0.55f), CircleShape)
+                        )
+                        Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+                            Text(
+                                "Timeline color",
+                                color = if (settings.glassmorphismNowPlaying) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                "Base curved seek line",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        TextButton(
+                            enabled = settings.glassmorphismNowPlaying,
+                            onClick = { viewModel.setGlassTimelineArgb(0xFF14B8E6.toInt()) }
+                        ) { Text("Reset") }
+                    }
+                    if (settings.glassmorphismNowPlaying && showGlassTimelineColorPicker) {
+                        LiquidColorPicker(
+                            selectedArgb = settings.glassTimelineArgb,
+                            onColorSelected = viewModel::setGlassTimelineArgb,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp)
+                                .height(160.dp)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = settings.glassmorphismNowPlaying) {
+                                showGlassGlowColorPicker = !showGlassGlowColorPicker
+                            }
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(Color(settings.glassPlayedGlowArgb))
+                                .border(1.5.dp, Color.White.copy(alpha = 0.55f), CircleShape)
+                        )
+                        Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+                            Text(
+                                "Played portion glow",
+                                color = if (settings.glassmorphismNowPlaying) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                "Glow and bright border around the played arc",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        TextButton(
+                            enabled = settings.glassmorphismNowPlaying,
+                            onClick = { viewModel.setGlassPlayedGlowArgb(0xFF54E8FF.toInt()) }
+                        ) { Text("Reset") }
+                    }
+                    if (settings.glassmorphismNowPlaying && showGlassGlowColorPicker) {
+                        LiquidColorPicker(
+                            selectedArgb = settings.glassPlayedGlowArgb,
+                            onColorSelected = viewModel::setGlassPlayedGlowArgb,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp)
+                                .height(160.dp)
+                        )
+                    }
                 }
             }
 
