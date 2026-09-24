@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Organized Settings into expandable Appearance & Interface, Playback, Library & Data, Audio, and System & Account categories",
     "Made Now Playing responsive on short/small phones so artwork, controls and Up Next stay visible; Glass queue/player geometry now scales down automatically",
     "Restyled the floating Home header and bottom navigation as purple translucent glass pills with thin luminous white rims and matching circular controls",
     "Replaced the full-width Home header and bottom navigation bars with compact floating AZ Music, Stats, Settings, Home, Search and Library tiles",

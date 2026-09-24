@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -104,6 +105,7 @@ fun SettingsScreen(
     var showAbout by remember { mutableStateOf(false) }
     var showAlbumArtStyleMenu by remember { mutableStateOf(false) }
     var showThemeColorPicker by remember { mutableStateOf(false) }
+    var expandedSettingsCategory by remember { mutableStateOf<String?>("Appearance & Interface") }
     var showGlassTimelineColorPicker by remember { mutableStateOf(false) }
     var showGlassGlowColorPicker by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -269,6 +271,18 @@ fun SettingsScreen(
         }
     ) { padding ->
         LazyColumn(modifier = Modifier.fillMaxWidth().padding(padding)) {
+            item {
+                SettingsCategoryHeader(
+                    title = "Appearance & Interface",
+                    subtitle = "App icon, backgrounds, colors, Now Playing and Glass theme",
+                    expanded = expandedSettingsCategory == "Appearance & Interface",
+                    onClick = {
+                        expandedSettingsCategory =
+                            if (expandedSettingsCategory == "Appearance & Interface") null else "Appearance & Interface"
+                    }
+                )
+            }
+            if (expandedSettingsCategory == "Appearance & Interface") {
             item {
                 SettingsSection(title = "App icon") {
                     LazyRow(
@@ -910,6 +924,20 @@ fun SettingsScreen(
                 }
             }
 
+            }
+
+            item {
+                SettingsCategoryHeader(
+                    title = "Playback",
+                    subtitle = "Queue behavior, gapless playback, crossfade and visualizer",
+                    expanded = expandedSettingsCategory == "Playback",
+                    onClick = {
+                        expandedSettingsCategory =
+                            if (expandedSettingsCategory == "Playback") null else "Playback"
+                    }
+                )
+            }
+            if (expandedSettingsCategory == "Playback") {
             item {
                 SettingsSection(title = "Smart Queue") {
                     Row(
@@ -1016,6 +1044,20 @@ fun SettingsScreen(
                 }
             }
 
+            }
+
+            item {
+                SettingsCategoryHeader(
+                    title = "Library & Data",
+                    subtitle = "Downloads, listening statistics, backup and restore",
+                    expanded = expandedSettingsCategory == "Library & Data",
+                    onClick = {
+                        expandedSettingsCategory =
+                            if (expandedSettingsCategory == "Library & Data") null else "Library & Data"
+                    }
+                )
+            }
+            if (expandedSettingsCategory == "Library & Data") {
             item {
                 SettingsSection(title = "Downloads") {
                     Row(
@@ -1078,6 +1120,20 @@ fun SettingsScreen(
                 }
             }
 
+            }
+
+            item {
+                SettingsCategoryHeader(
+                    title = "Audio",
+                    subtitle = "Equalizer, bass boost and volume booster",
+                    expanded = expandedSettingsCategory == "Audio",
+                    onClick = {
+                        expandedSettingsCategory =
+                            if (expandedSettingsCategory == "Audio") null else "Audio"
+                    }
+                )
+            }
+            if (expandedSettingsCategory == "Audio") {
             item {
                 SettingsSection(title = "Equalizer") {
                     Row(
@@ -1243,6 +1299,20 @@ fun SettingsScreen(
                 }
             }
 
+            }
+
+            item {
+                SettingsCategoryHeader(
+                    title = "System & Account",
+                    subtitle = "Cloudflare usage, email activation and app information",
+                    expanded = expandedSettingsCategory == "System & Account",
+                    onClick = {
+                        expandedSettingsCategory =
+                            if (expandedSettingsCategory == "System & Account") null else "System & Account"
+                    }
+                )
+            }
+            if (expandedSettingsCategory == "System & Account") {
             item {
                 SettingsSection(title = "Cloudflare Usage") {
                     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
@@ -1353,6 +1423,8 @@ fun SettingsScreen(
                 }
             }
 
+            }
+
             item {
                 Text(
                     text = "CREATED AND DEVELOPED BY MOHAMMED AZEEM©",
@@ -1377,6 +1449,43 @@ private fun formatStorageSize(bytes: Long): String = when {
 }
 
 private fun Int.formatThousands(): String = "%,d".format(this)
+
+@Composable
+private fun SettingsCategoryHeader(
+    title: String,
+    subtitle: String,
+    expanded: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
+        Icon(
+            imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+            contentDescription = if (expanded) "Collapse $title" else "Expand $title",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
 
 @Composable
 private fun SettingsSection(title: String, content: @Composable () -> Unit) {
