@@ -1,0 +1,64 @@
+name: Build MovNet APK
+
+on:
+  push:
+    branches:
+      - movnet-apk-build
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout build branch
+        uses: actions/checkout@v7
+
+      - name: Fetch isolated MovNet source payload
+        run: |
+          git clone --depth 1 --branch movnet-apk-build https://github.com/Mhd-Azeem/Azeem-Mhd.git movnet-source
+          mkdir -p movnet
+          base64 -d movnet-source/movnet-project.b64 > movnet/project.zip
+          unzip -q movnet/project.zip -d movnet
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle 9.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.0"
+
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Build MovNet debug APK
+        run: gradle -p movnet :app:assembleDebug --stacktrace
+
+      - name: Build MovNet release AAB
+        run: gradle -p movnet :app:bundleRelease --stacktrace
+
+      - name: Upload MovNet APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: MovNet-debug-apk
+          path: movnet/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error
+
+      - name: Upload MovNet AAB
+        uses: actions/upload-artifact@v7
+        with:
+          name: MovNet-release-aab
+          path: movnet/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error
