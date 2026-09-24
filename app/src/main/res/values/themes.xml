@@ -7,9 +7,9 @@
     </style>
 
     <style name="Theme.Wavelength.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#140B2D</item>
+        <item name="windowSplashScreenBackground">#090414</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_classic</item>
-        <item name="windowSplashScreenIconBackgroundColor">#5E35B1</item>
+        <item name="windowSplashScreenIconBackgroundColor">#6F45B8</item>
         <item name="postSplashScreenTheme">@style/Theme.Wavelength</item>
     </style>
 </resources>
