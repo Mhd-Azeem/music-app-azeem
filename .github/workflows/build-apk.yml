@@ -104,6 +104,7 @@ jobs:
                   app/src/main/java/com/wavelength/music/data/repository/SettingsRepository.kt \
                   app/src/main/java/com/wavelength/music/ui/navigation/NavGraph.kt \
                   app/src/main/java/com/wavelength/music/ui/home/HomeScreen.kt \
+                  app/src/main/java/com/wavelength/music/ui/navigation/NavGraph.kt \
                   app/src/main/java/com/wavelength/music/ui/components/MiniPlayerBar.kt \
                   app/src/main/java/com/wavelength/music/ui/design/UiDesignConfig.kt
           git commit -m 'feat: persist staged AzMusic UI settings update'
