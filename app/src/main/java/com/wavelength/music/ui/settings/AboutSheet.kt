@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Added a 4-second muted video launch intro using the uploaded video, with tap-anywhere skip and cold-launch-only playback",
     "Added a native AzMusic startup splash screen with the app icon on a purple background",
     "Organized Settings into expandable Appearance & Interface, Playback, Library & Data, Audio, and System & Account categories",
     "Made Now Playing responsive on short/small phones so artwork, controls and Up Next stay visible; Glass queue/player geometry now scales down automatically",
