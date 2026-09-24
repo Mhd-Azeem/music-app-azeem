@@ -34,10 +34,11 @@ jobs:
         with:
           gradle-version: "9.6.0"
 
-      - name: Install Android SDK packages
+      - name: Show Android SDK
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls -la "$ANDROID_HOME/platforms" | tail -20 || true
+          ls -la "$ANDROID_HOME/build-tools" | tail -20 || true
 
       - name: Build MovNet debug APK
         run: gradle -p movnet :app:assembleDebug --stacktrace
