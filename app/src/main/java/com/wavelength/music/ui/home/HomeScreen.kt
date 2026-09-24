@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Settings
@@ -91,20 +92,55 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
-                actions = {
-                    TextButton(
-                        onClick = onStatisticsClick,
-                        modifier = Modifier.alpha(0.55f)
-                    ) {
-                        Text("Stats")
-                    }
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Filled.Settings, contentDescription = "Settings")
-                    }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f)
+                    )
+                ) {
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp)
+                    )
                 }
-            )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Card(
+                    onClick = onStatisticsClick,
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f)
+                    )
+                ) {
+                    Text(
+                        "Stats",
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                    )
+                }
+
+                Card(
+                    onClick = onSettingsClick,
+                    shape = CircleShape,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f)
+                    )
+                ) {
+                    Icon(
+                        Icons.Filled.Settings,
+                        contentDescription = "Settings",
+                        modifier = Modifier.padding(10.dp).size(24.dp)
+                    )
+                }
+            }
         }
     ) { padding ->
         val density = LocalDensity.current
