@@ -23,6 +23,9 @@ jobs:
           base64 -d movnet-source/movnet-project.b64 > movnet/project.zip
           unzip -q movnet/project.zip -d movnet
 
+      - name: Apply API 36 dependency compatibility patch
+        run: sed -i 's/androidx.core:core-ktx:1.19.1/androidx.core:core-ktx:1.16.0/' movnet/app/build.gradle.kts
+
       - name: Set up JDK 17
         uses: actions/setup-java@v6
         with:
