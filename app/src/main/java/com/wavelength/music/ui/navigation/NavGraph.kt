@@ -4,6 +4,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,6 +35,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -147,51 +151,56 @@ fun WavelengthNavHost() {
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        val purpleGlassBrush = Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xCC332060),
+                                Color(0xCC56367F),
+                                Color(0xCC764595)
+                            )
+                        )
                         bottomNavScreens.forEach { screen ->
                             val selected = currentRoute == screen.route
-                            Surface(
-                                onClick = {
-                                    if (!selected) {
-                                        navController.navigate(screen.route) {
-                                            popUpTo(navController.graph.startDestinationId) {
-                                                saveState = true
+                            val tileShape = RoundedCornerShape(24.dp)
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .shadow(if (selected) 15.dp else 10.dp, tileShape)
+                                    .clip(tileShape)
+                                    .background(purpleGlassBrush)
+                                    .border(
+                                        if (selected) 1.6.dp else 1.2.dp,
+                                        Color.White.copy(alpha = if (selected) 0.62f else 0.42f),
+                                        tileShape
+                                    )
+                                    .clickable {
+                                        if (!selected) {
+                                            navController.navigate(screen.route) {
+                                                popUpTo(navController.graph.startDestinationId) {
+                                                    saveState = true
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = true
                                             }
-                                            launchSingleTop = true
-                                            restoreState = true
                                         }
                                     }
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(24.dp),
-                                color = if (selected) {
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.94f)
-                                } else {
-                                    MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f)
-                                },
-                                tonalElevation = if (selected) 8.dp else 4.dp,
-                                shadowElevation = if (selected) 8.dp else 4.dp
                             ) {
-                                Column(
-                                    modifier = Modifier.padding(vertical = 8.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 11.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
                                 ) {
                                     Icon(
                                         iconFor(screen),
                                         contentDescription = navLabelFor(screen),
-                                        tint = if (selected) {
-                                            MaterialTheme.colorScheme.onPrimaryContainer
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                        }
+                                        tint = Color.White
                                     )
                                     Text(
                                         navLabelFor(screen),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = if (selected) {
-                                            MaterialTheme.colorScheme.onPrimaryContainer
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                        }
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(start = 8.dp)
                                     )
                                 }
                             }

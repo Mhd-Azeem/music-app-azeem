@@ -12,6 +12,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
@@ -39,7 +41,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -99,45 +105,63 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f)
+                val purpleGlassBrush = Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xCC332060),
+                        Color(0xCC56367F),
+                        Color(0xCC764595)
                     )
+                )
+                val glassBorder = Color.White.copy(alpha = 0.48f)
+
+                Box(
+                    modifier = Modifier
+                        .shadow(12.dp, RoundedCornerShape(24.dp))
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(purpleGlassBrush)
+                        .border(1.3.dp, glassBorder, RoundedCornerShape(24.dp))
+                        .padding(horizontal = 18.dp, vertical = 11.dp)
                 ) {
                     Text(
                         text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp)
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleLarge
                     )
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                Card(
-                    onClick = onStatisticsClick,
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f)
-                    )
+                Box(
+                    modifier = Modifier
+                        .shadow(12.dp, RoundedCornerShape(23.dp))
+                        .clip(RoundedCornerShape(23.dp))
+                        .background(purpleGlassBrush)
+                        .border(1.3.dp, glassBorder, RoundedCornerShape(23.dp))
+                        .clickable(onClick = onStatisticsClick)
+                        .padding(horizontal = 17.dp, vertical = 11.dp)
                 ) {
                     Text(
                         "Stats",
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 }
 
-                Card(
-                    onClick = onSettingsClick,
-                    shape = CircleShape,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f)
-                    )
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .shadow(12.dp, CircleShape)
+                        .clip(CircleShape)
+                        .background(purpleGlassBrush)
+                        .border(1.3.dp, glassBorder, CircleShape)
+                        .clickable(onClick = onSettingsClick),
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Filled.Settings,
                         contentDescription = "Settings",
-                        modifier = Modifier.padding(10.dp).size(24.dp)
+                        tint = Color.White,
+                        modifier = Modifier.size(25.dp)
                     )
                 }
             }

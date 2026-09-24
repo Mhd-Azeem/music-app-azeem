@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Restyled the floating Home header and bottom navigation as purple translucent glass pills with thin luminous white rims and matching circular controls",
     "Replaced the full-width Home header and bottom navigation bars with compact floating AZ Music, Stats, Settings, Home, Search and Library tiles",
     "Glass timeline now supports continuous swipe/drag seeking as well as tap-to-seek",
     "Glass timeline is now thicker with a glowing played segment, plus Glass-only editable timeline and glow colors in Settings",
