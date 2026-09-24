@@ -31,7 +31,7 @@
             android:name=".MainActivity"
             android:exported="false"
             android:launchMode="singleTop"
-            android:theme="@style/Theme.Wavelength" />
+            android:theme="@style/Theme.Wavelength.Splash" />
 
         <activity-alias
             android:name=".IconClassic"
