@@ -462,6 +462,9 @@ fun NowPlayingScreen(
     }
 
     val density = LocalDensity.current
+    val screenHeightDp = LocalConfiguration.current.screenHeightDp
+    val compactHeightLayout = screenHeightDp < 720
+    val veryCompactHeightLayout = screenHeightDp < 620
     val collapseThresholdPx = with(density) { 80.dp.toPx() }
     val skipThresholdPx = with(density) { 56.dp.toPx() }
 
@@ -709,7 +712,13 @@ fun NowPlayingScreen(
                 AnimatedVisibility(visible = !isUpNextExpanded && !glassmorphismNowPlaying) {
                     Box(modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
                         if (vinylStyleAlbumArt) {
-                            Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f).padding(20.dp)) {
+                            Box(
+                                modifier = if (compactHeightLayout) {
+                                    Modifier.fillMaxWidth().height(if (veryCompactHeightLayout) 180.dp else 220.dp).padding(12.dp)
+                                } else {
+                                    Modifier.fillMaxWidth().aspectRatio(1f).padding(20.dp)
+                                }
+                            ) {
                                 Crossfade(targetState = track, animationSpec = trackTransitionSpec, label = "vinylArt") { t ->
                                     AsyncImage(
                                         model = t?.albumArtUrl,
@@ -769,9 +778,11 @@ fun NowPlayingScreen(
                                 AsyncImage(
                                     model = t?.albumArtUrl,
                                     contentDescription = t?.name,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .aspectRatio(1f)
+                                    modifier = (if (compactHeightLayout) {
+                                        Modifier.fillMaxWidth().height(if (veryCompactHeightLayout) 180.dp else 220.dp)
+                                    } else {
+                                        Modifier.fillMaxWidth().aspectRatio(1f)
+                                    })
                                         .graphicsLayer {
                                             val spatialX = (sensorTiltX + sensorGyroX * 0.58f).coerceIn(-1.4f, 1.4f)
                                             val spatialY = (sensorTiltY + sensorGyroY * 0.58f).coerceIn(-1.4f, 1.4f)
@@ -818,7 +829,7 @@ fun NowPlayingScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 32.dp)
+                        .padding(top = if (compactHeightLayout) 12.dp else 32.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                     Crossfade(
@@ -930,7 +941,13 @@ fun NowPlayingScreen(
                     if (glassUpcoming.isNotEmpty()) {
                         LazyRow(
                             state = fanState,
-                            modifier = Modifier.fillMaxWidth().height(UiDesignConfig.GLASS_QUEUE_AREA_HEIGHT_DP.dp),
+                            modifier = Modifier.fillMaxWidth().height(
+                                when {
+                                    veryCompactHeightLayout -> 126.dp
+                                    compactHeightLayout -> 158.dp
+                                    else -> UiDesignConfig.GLASS_QUEUE_AREA_HEIGHT_DP.dp
+                                }
+                            ),
                             contentPadding = PaddingValues(horizontal = 0.dp),
                             horizontalArrangement = Arrangement.spacedBy(UiDesignConfig.GLASS_QUEUE_GAP_DP.dp),
                             verticalAlignment = Alignment.Bottom
@@ -948,12 +965,19 @@ fun NowPlayingScreen(
                                 // Same shallow crown geometry as the lower timeline/player curve:
                                 // center is highest; cards descend smoothly toward both screen edges.
                                 val circleY = 1f - kotlin.math.sqrt((1f - x * x).coerceAtLeast(0f))
-                                val lift = with(LocalDensity.current) { (circleY * UiDesignConfig.GLASS_QUEUE_ARC_DEPTH_DP).dp }
+                                val queueArcDepth = if (compactHeightLayout) 34f else UiDesignConfig.GLASS_QUEUE_ARC_DEPTH_DP
+                                val lift = with(LocalDensity.current) { (circleY * queueArcDepth).dp }
                                 val tangentAngle = Math.toDegrees(kotlin.math.asin(x.toDouble())).toFloat() * 0.42f
                                 Box(
                                     modifier = Modifier
-                                        .width(UiDesignConfig.GLASS_QUEUE_CARD_WIDTH_DP.dp)
-                                        .height(UiDesignConfig.GLASS_QUEUE_CARD_HEIGHT_DP.dp)
+                                        .width(if (compactHeightLayout) 72.dp else UiDesignConfig.GLASS_QUEUE_CARD_WIDTH_DP.dp)
+                                        .height(
+                                            when {
+                                                veryCompactHeightLayout -> 104.dp
+                                                compactHeightLayout -> 132.dp
+                                                else -> UiDesignConfig.GLASS_QUEUE_CARD_HEIGHT_DP.dp
+                                            }
+                                        )
                                         .offset(y = lift)
                                         .graphicsLayer { rotationZ = tangentAngle }
                                         .clip(RoundedCornerShape(UiDesignConfig.GLASS_QUEUE_CARD_RADIUS_DP.dp))
@@ -968,12 +992,12 @@ fun NowPlayingScreen(
                                             contentDescription = entry.track.name,
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .height(60.dp)
+                                                .height(if (compactHeightLayout) 48.dp else 60.dp)
                                                 .clip(RoundedCornerShape(7.dp)),
                                             contentScale = ContentScale.Crop
                                         )
                                         Box(
-                                            modifier = Modifier.fillMaxWidth().height(94.dp),
+                                            modifier = Modifier.fillMaxWidth().height(if (compactHeightLayout) 66.dp else 94.dp),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
@@ -1004,13 +1028,24 @@ fun NowPlayingScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(UiDesignConfig.GLASS_LOWER_PANEL_HEIGHT_DP.dp)
+                        .height(
+                            when {
+                                veryCompactHeightLayout -> 278.dp
+                                compactHeightLayout -> 310.dp
+                                else -> UiDesignConfig.GLASS_LOWER_PANEL_HEIGHT_DP.dp
+                            }
+                        )
                         .offset(y = (-2).dp)
                         .clip(lowerGlassShape)
                         .hazeChild(state = hazeState, style = glassStyle) { inputScale = HazeInputScale.Auto }
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxSize().padding(top = UiDesignConfig.GLASS_LOWER_PANEL_TOP_PADDING_DP.dp, start = 0.dp, end = 0.dp, bottom = 0.dp),
+                        modifier = Modifier.fillMaxSize().padding(
+                            top = if (compactHeightLayout) 24.dp else UiDesignConfig.GLASS_LOWER_PANEL_TOP_PADDING_DP.dp,
+                            start = 0.dp,
+                            end = 0.dp,
+                            bottom = 0.dp
+                        ),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         // Single curved seek line inside the panel.
@@ -1018,7 +1053,7 @@ fun NowPlayingScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = UiDesignConfig.GLASS_SEEK_HORIZONTAL_PADDING_DP.dp)
-                                .height(92.dp)
+                                .height(if (compactHeightLayout) 74.dp else 92.dp)
                                 // Keep tap-to-seek, and also let the thumb follow a finger dragged
                                 // continuously across the curved Glass timeline.
                                 .pointerInput(state.durationMs) {
@@ -1292,7 +1327,7 @@ fun NowPlayingScreen(
 
             if (!glassmorphismNowPlaying) {
                 // Restore the standard seek/timeline controls when Glass mode is disabled.
-                Column(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
+                Column(modifier = Modifier.fillMaxWidth().padding(top = if (compactHeightLayout) 8.dp else 16.dp)) {
                     Slider(
                         value = state.positionMs.toFloat().coerceIn(0f, state.durationMs.toFloat().coerceAtLeast(1f)),
                         onValueChange = { viewModel.seekTo(it.toLong()) },
@@ -1311,7 +1346,7 @@ fun NowPlayingScreen(
                     }
                 }
 
-                var transportRowModifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+                var transportRowModifier = Modifier.fillMaxWidth().padding(top = if (compactHeightLayout) 8.dp else 16.dp)
                 if (isLiquid) {
                     transportRowModifier = transportRowModifier
                         .clip(pillShape)
@@ -1360,7 +1395,7 @@ fun NowPlayingScreen(
             }
 
             if (!glassmorphismNowPlaying) {
-                var volumeRowModifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+                var volumeRowModifier = Modifier.fillMaxWidth().padding(top = if (compactHeightLayout) 6.dp else 16.dp)
                 if (isLiquid) {
                     volumeRowModifier = volumeRowModifier
                         .clip(pillShape)
@@ -1419,7 +1454,7 @@ fun NowPlayingScreen(
             val upcoming = state.queue.drop(state.currentIndex + 1)
             if (upcoming.isNotEmpty() && !glassmorphismNowPlaying) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = if (compactHeightLayout) 8.dp else 24.dp, bottom = 6.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -1434,9 +1469,14 @@ fun NowPlayingScreen(
                         }
                     }
                 }
-                val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+                val screenHeight = screenHeightDp.dp
+                val collapsedUpNextHeight = when {
+                    veryCompactHeightLayout -> 112.dp
+                    compactHeightLayout -> 150.dp
+                    else -> 220.dp
+                }
                 val upNextHeight by animateDpAsState(
-                    targetValue = if (isUpNextExpanded) screenHeight / 2 else 220.dp,
+                    targetValue = if (isUpNextExpanded) screenHeight / 2 else collapsedUpNextHeight,
                     label = "upNextHeight"
                 )
                 val upNextModifier = if (expandUpNextOnScroll) {
