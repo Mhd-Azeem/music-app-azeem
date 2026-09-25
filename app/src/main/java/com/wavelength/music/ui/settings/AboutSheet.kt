@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Completely redesigned startup with a native dark-purple launch screen and a new animated AZ Music glass splash with glowing logo, waveform bars and smooth handoff into the app",
     "Fixed the launch intro by replacing the broken embedded video asset with the uploaded MP4 in a compact Android-compatible encode",
     "Added a 4-second muted video launch intro using the uploaded video, with tap-anywhere skip and cold-launch-only playback",
     "Added a native AzMusic startup splash screen with the app icon on a purple background",

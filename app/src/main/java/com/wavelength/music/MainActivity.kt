@@ -13,7 +13,6 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import android.widget.Toast
-import android.widget.VideoView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -34,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -43,6 +41,7 @@ import androidx.lifecycle.lifecycleScope
 import com.wavelength.music.ui.components.OfflineBanner
 import com.wavelength.music.ui.navigation.WavelengthNavHost
 import com.wavelength.music.ui.settings.AppSettingsViewModel
+import com.wavelength.music.ui.splash.AzMusicSplashScreen
 import com.wavelength.music.ui.theme.WavelengthTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -73,14 +72,14 @@ class MainActivity : ComponentActivity() {
             val settings by settingsViewModel.state.collectAsStateWithLifecycle()
             var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
             var updateDismissed by remember { mutableStateOf(false) }
-            var showIntroVideo by remember { mutableStateOf(savedInstanceState == null) }
+            var showSplash by remember { mutableStateOf(savedInstanceState == null) }
 
             LaunchedEffect(Unit) {
                 updateInfo = checkForUpdate()
             }
 
-            LaunchedEffect(showIntroVideo) {
-                if (!showIntroVideo && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            LaunchedEffect(showSplash) {
+                if (!showSplash && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     val granted = ContextCompat.checkSelfPermission(
                         this@MainActivity,
                         Manifest.permission.POST_NOTIFICATIONS
@@ -152,36 +151,9 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
-                if (showIntroVideo) {
-                    AndroidView(
-                        factory = { ctx ->
-                            VideoView(ctx).apply {
-                                setVideoURI(
-                                    Uri.parse(
-                                        "android.resource://${ctx.packageName}/${R.raw.azmusic_intro}"
-                                    )
-                                )
-                                setOnPreparedListener { mediaPlayer ->
-                                    mediaPlayer.setVolume(0f, 0f)
-                                    mediaPlayer.isLooping = false
-                                    start()
-                                }
-                                setOnCompletionListener {
-                                    showIntroVideo = false
-                                }
-                                setOnErrorListener { _, _, _ ->
-                                    showIntroVideo = false
-                                    true
-                                }
-                                setOnClickListener {
-                                    stopPlayback()
-                                    showIntroVideo = false
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black)
+                if (showSplash) {
+                    AzMusicSplashScreen(
+                        onFinished = { showSplash = false }
                     )
                 }
                 }
