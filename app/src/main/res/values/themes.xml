@@ -8,8 +8,8 @@
 
     <style name="Theme.Wavelength.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">#090414</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_classic</item>
-        <item name="windowSplashScreenIconBackgroundColor">#6F45B8</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_blank</item>
+        <item name="windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
         <item name="postSplashScreenTheme">@style/Theme.Wavelength</item>
     </style>
 </resources>
