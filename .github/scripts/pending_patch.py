@@ -18,48 +18,17 @@ s = s.replace(
 s = s.replace("LaunchedEffect(showIntroVideo) {", "LaunchedEffect(showSplash) {", 1)
 s = s.replace("if (!showIntroVideo && Build.VERSION.SDK_INT", "if (!showSplash && Build.VERSION.SDK_INT", 1)
 
-old = '''                if (showIntroVideo) {
-                    AndroidView(
-                        factory = { ctx ->
-                            VideoView(ctx).apply {
-                                setVideoURI(
-                                    Uri.parse(
-                                        "android.resource://\${ctx.packageName}/\${R.raw.azmusic_intro}"
-                                    )
-                                )
-                                setOnPreparedListener { mediaPlayer ->
-                                    mediaPlayer.setVolume(0f, 0f)
-                                    mediaPlayer.isLooping = false
-                                    start()
-                                }
-                                setOnCompletionListener {
-                                    showIntroVideo = false
-                                }
-                                setOnErrorListener { _, _, _ ->
-                                    showIntroVideo = false
-                                    true
-                                }
-                                setOnClickListener {
-                                    stopPlayback()
-                                    showIntroVideo = false
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black)
-                    )
-                }
-'''
-new = '''                if (showSplash) {
+old_start = s.index("                if (showIntroVideo) {")
+old_end = s.index("                }\n                }\n            }", old_start)
+old_end += len("                }\n")
+s = s[:old_start] + '''                if (showSplash) {
                     AzMusicSplashScreen(
                         onFinished = { showSplash = false }
                     )
                 }
-'''
-assert old in s, "old intro video block not found"
-s = s.replace(old, new, 1)
+''' + s[old_end:]
 main.write_text(s)
+
 
 about = Path("app/src/main/java/com/wavelength/music/ui/settings/AboutSheet.kt")
 a = about.read_text()
