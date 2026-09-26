@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Changed the bottom navigation liquid selector from a circle to a tile-sized rounded overlay and added direct finger-dragging across Home, Search and Library with snap-to-tab navigation",
     "Added a reference-style liquid selector animation to Home, Search and Library: the selected tile springs larger while a glowing glass lens glides between tabs",
     "Removed the visible Android launcher icon before the custom splash; startup now begins with a clean matching dark-purple system splash and transitions directly into the animated AZ Music splash",
     "Completely redesigned startup with a native dark-purple launch screen and a new animated AZ Music glass splash with glowing logo, waveform bars and smooth handoff into the app",
