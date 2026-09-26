@@ -161,7 +161,7 @@ fun WavelengthNavHost() {
                     BoxWithConstraints(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                            .padding(horizontal = 22.dp, vertical = 10.dp)
                     ) {
                         val navSpacing = 10.dp
                         val itemWidth = (maxWidth - navSpacing * 2) / 3
