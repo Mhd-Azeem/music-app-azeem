@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Added a reference-style liquid selector animation to Home, Search and Library: the selected tile springs larger while a glowing glass lens glides between tabs",
     "Removed the visible Android launcher icon before the custom splash; startup now begins with a clean matching dark-purple system splash and transitions directly into the animated AZ Music splash",
     "Completely redesigned startup with a native dark-purple launch screen and a new animated AZ Music glass splash with glowing logo, waveform bars and smooth handoff into the app",
     "Fixed the launch intro by replacing the broken embedded video asset with the uploaded MP4 in a compact Android-compatible encode",
