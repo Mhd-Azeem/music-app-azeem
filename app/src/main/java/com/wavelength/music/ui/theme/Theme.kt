@@ -131,6 +131,7 @@ fun WavelengthTheme(
     theme: AppTheme = AppTheme.CLASSIC,
     customLiquidAccent: Color? = null,
     glassmorphismEnabled: Boolean = false,
+    neomorphismEnabled: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val baseScheme = schemeFor(theme, customLiquidAccent)
@@ -147,6 +148,22 @@ fun WavelengthTheme(
             onBackground = Color.White,
             onSurface = Color.White,
             onSurfaceVariant = Color.White.copy(alpha = 0.78f)
+        )
+    } else if (neomorphismEnabled) {
+        baseScheme.copy(
+            background = Color.Transparent,
+            surface = Color(0xFF222833),
+            surfaceVariant = Color(0xFF2A313D),
+            surfaceContainerLowest = Color(0xFF171C24),
+            surfaceContainerLow = Color(0xFF1E242E),
+            surfaceContainer = Color(0xFF252C37),
+            surfaceContainerHigh = Color(0xFF2B3340),
+            surfaceContainerHighest = Color(0xFF323B49),
+            outline = Color(0xFF4B5667).copy(alpha = 0.52f),
+            outlineVariant = Color.White.copy(alpha = 0.10f),
+            onBackground = Color(0xFFF1F4F8),
+            onSurface = Color(0xFFF1F4F8),
+            onSurfaceVariant = Color(0xFFBFC8D6)
         )
     } else {
         baseScheme

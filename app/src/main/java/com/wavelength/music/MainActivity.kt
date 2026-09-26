@@ -93,13 +93,14 @@ class MainActivity : ComponentActivity() {
             WavelengthTheme(
                 theme = settings.theme,
                 customLiquidAccent = Color(settings.customAccentArgb),
-                glassmorphismEnabled = settings.glassmorphismNowPlaying
+                glassmorphismEnabled = settings.glassmorphismNowPlaying,
+                neomorphismEnabled = settings.neomorphismEnabled
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     OfflineBanner()
-                    val appSurface = if (settings.glassmorphismNowPlaying) {
-                        Modifier.background(
+                    val appSurface = when {
+                        settings.glassmorphismNowPlaying -> Modifier.background(
                             Brush.verticalGradient(
                                 listOf(
                                     Color(settings.customAccentArgb).copy(alpha = 0.24f),
@@ -108,8 +109,16 @@ class MainActivity : ComponentActivity() {
                                 )
                             )
                         )
-                    } else {
-                        Modifier.background(Color.Black)
+                        settings.neomorphismEnabled -> Modifier.background(
+                            Brush.linearGradient(
+                                listOf(
+                                    Color(0xFF303846),
+                                    Color(0xFF242B36),
+                                    Color(0xFF1B2029)
+                                )
+                            )
+                        )
+                        else -> Modifier.background(Color.Black)
                     }
                     Box(modifier = Modifier.fillMaxWidth().weight(1f).then(appSurface)) {
                         WavelengthNavHost()

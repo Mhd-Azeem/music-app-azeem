@@ -237,13 +237,23 @@ fun WavelengthNavHost() {
                                 horizontalArrangement = Arrangement.spacedBy(navSpacing),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                val purpleGlassBrush = Brush.linearGradient(
-                                    colors = listOf(
-                                        Color(0xCC332060),
-                                        Color(0xCC56367F),
-                                        Color(0xCC764595)
+                                val purpleGlassBrush = if (settings.neomorphismEnabled) {
+                                    Brush.linearGradient(
+                                        colors = listOf(
+                                            Color(0xFF313947),
+                                            Color(0xFF252C37),
+                                            Color(0xFF1D232C)
+                                        )
                                     )
-                                )
+                                } else {
+                                    Brush.linearGradient(
+                                        colors = listOf(
+                                            Color(0xCC332060),
+                                            Color(0xCC56367F),
+                                            Color(0xCC764595)
+                                        )
+                                    )
+                                }
 
                                 bottomNavScreens.forEachIndexed { index, screen ->
                                     val selected = selectedIndex == index
@@ -258,7 +268,12 @@ fun WavelengthNavHost() {
                                         modifier = Modifier
                                             .width(itemWidth)
                                             .graphicsLayer { alpha = itemAlpha }
-                                            .shadow(if (selected) 13.dp else 9.dp, tileShape)
+                                            .shadow(
+                                                if (selected) 16.dp else 10.dp,
+                                                tileShape,
+                                                ambientColor = if (settings.neomorphismEnabled) Color.Black.copy(alpha = 0.55f) else Color.Black,
+                                                spotColor = if (settings.neomorphismEnabled) Color.Black.copy(alpha = 0.70f) else Color.Black
+                                            )
                                             .clip(tileShape)
                                             .background(purpleGlassBrush)
                                             .border(

@@ -800,6 +800,69 @@ fun SettingsScreen(
             }
 
             item {
+                SettingsSection(title = "Neomorphism Theme") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Full App Neomorphism")
+                            Text(
+                                text = if (settings.neomorphismEnabled) {
+                                    "On • soft raised surfaces, rounded tiles and depth shadows"
+                                } else {
+                                    "Off • use the selected standard appearance"
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = settings.neomorphismEnabled,
+                            onCheckedChange = viewModel::setNeomorphismEnabled
+                        )
+                    }
+                    Text(
+                        text = "Applies a soft dark Neomorphism style across Home, Search, Library, Settings and player surfaces. Enabling it turns Glassmorphism off so the two depth systems do not conflict.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 8.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(
+                                if (settings.neomorphismEnabled) Color(0xFF252B36)
+                                else MaterialTheme.colorScheme.surfaceVariant
+                            )
+                            .border(
+                                1.dp,
+                                if (settings.neomorphismEnabled) Color.White.copy(alpha = 0.10f)
+                                else MaterialTheme.colorScheme.outlineVariant,
+                                RoundedCornerShape(24.dp)
+                            )
+                            .padding(18.dp)
+                    ) {
+                        Column {
+                            Text(
+                                "Neomorphic preview",
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            Text(
+                                "Soft elevated card • subtle highlight • deep rounded surface",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
                 SettingsSection(title = "Glassmorphism Theme") {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),

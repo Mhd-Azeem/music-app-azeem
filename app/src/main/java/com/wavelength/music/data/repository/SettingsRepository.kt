@@ -68,6 +68,8 @@ data class AppSettingsState(
     /** Whether the Now Playing volume slider controls the device's actual media volume (the same
      * one the hardware rocker controls) instead of an app-only software gain. */
     val syncVolumeWithSystem: Boolean = true,
+    /** Full-app soft raised/inset Neomorphism appearance. */
+    val neomorphismEnabled: Boolean = false,
     /** Frosted-glass Now Playing layout inspired by translucent modern music players. */
     val glassmorphismNowPlaying: Boolean = false,
     /** Main unplayed Glass seek/timeline color. Editable only while Glass mode is enabled. */
@@ -127,6 +129,7 @@ class SettingsRepository @Inject constructor(
         trackTransitionEnabled = prefs.getBoolean(KEY_TRACK_TRANSITION_ENABLED, true),
         trackTransitionDurationMs = prefs.getInt(KEY_TRACK_TRANSITION_DURATION, DEFAULT_TRACK_TRANSITION_DURATION_MS),
         syncVolumeWithSystem = prefs.getBoolean(KEY_SYNC_VOLUME_WITH_SYSTEM, true),
+        neomorphismEnabled = prefs.getBoolean(KEY_NEOMORPHISM_ENABLED, false),
         glassmorphismNowPlaying = prefs.getBoolean(KEY_GLASSMORPHISM_NOW_PLAYING, false),
         glassTimelineArgb = prefs.getInt(KEY_GLASS_TIMELINE_ARGB, DEFAULT_GLASS_TIMELINE_ARGB),
         glassPlayedGlowArgb = prefs.getInt(KEY_GLASS_PLAYED_GLOW_ARGB, DEFAULT_GLASS_PLAYED_GLOW_ARGB),
@@ -332,9 +335,30 @@ class SettingsRepository @Inject constructor(
         _state.update { it.copy(syncVolumeWithSystem = enabled) }
     }
 
+    fun setNeomorphismEnabled(enabled: Boolean) {
+        prefs.edit {
+            putBoolean(KEY_NEOMORPHISM_ENABLED, enabled)
+            if (enabled) putBoolean(KEY_GLASSMORPHISM_NOW_PLAYING, false)
+        }
+        _state.update {
+            it.copy(
+                neomorphismEnabled = enabled,
+                glassmorphismNowPlaying = if (enabled) false else it.glassmorphismNowPlaying
+            )
+        }
+    }
+
     fun setGlassmorphismNowPlaying(enabled: Boolean) {
-        prefs.edit { putBoolean(KEY_GLASSMORPHISM_NOW_PLAYING, enabled) }
-        _state.update { it.copy(glassmorphismNowPlaying = enabled) }
+        prefs.edit {
+            putBoolean(KEY_GLASSMORPHISM_NOW_PLAYING, enabled)
+            if (enabled) putBoolean(KEY_NEOMORPHISM_ENABLED, false)
+        }
+        _state.update {
+            it.copy(
+                glassmorphismNowPlaying = enabled,
+                neomorphismEnabled = if (enabled) false else it.neomorphismEnabled
+            )
+        }
     }
 
     fun setGlassTimelineArgb(argb: Int) {
@@ -391,6 +415,7 @@ class SettingsRepository @Inject constructor(
         const val KEY_TRACK_TRANSITION_ENABLED = "track_transition_enabled"
         const val KEY_TRACK_TRANSITION_DURATION = "track_transition_duration_ms"
         const val KEY_SYNC_VOLUME_WITH_SYSTEM = "sync_volume_with_system"
+        const val KEY_NEOMORPHISM_ENABLED = "neomorphism_enabled"
         const val KEY_GLASSMORPHISM_NOW_PLAYING = "glassmorphism_now_playing"
         const val KEY_GLASS_TIMELINE_ARGB = "glass_timeline_argb"
         const val KEY_GLASS_PLAYED_GLOW_ARGB = "glass_played_glow_argb"
