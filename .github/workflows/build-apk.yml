@@ -107,7 +107,8 @@ jobs:
                   app/src/main/java/com/wavelength/music/ui/navigation/NavGraph.kt \
                   app/src/main/java/com/wavelength/music/ui/components/MiniPlayerBar.kt \
                   app/src/main/java/com/wavelength/music/ui/design/UiDesignConfig.kt \
-                  app/src/main/java/com/wavelength/music/MainActivity.kt
+                  app/src/main/java/com/wavelength/music/MainActivity.kt \
+                  app/src/main/java/com/wavelength/music/ui/theme/Theme.kt
           git commit -m 'feat: persist staged AzMusic UI settings update'
           git fetch origin feature/email-activation-access
           git rebase origin/feature/email-activation-access
