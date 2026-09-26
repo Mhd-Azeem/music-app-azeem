@@ -14,7 +14,7 @@ s = s.replace(
 )
 s = s.replace(
     "import androidx.compose.foundation.layout.padding\n",
-    "import androidx.compose.foundation.layout.padding\nimport androidx.compose.foundation.layout.offset\nimport androidx.compose.foundation.layout.size\n"
+    "import androidx.compose.foundation.layout.padding\nimport androidx.compose.foundation.layout.offset\nimport androidx.compose.foundation.layout.size\nimport androidx.compose.foundation.layout.width\n"
 )
 s = s.replace(
     "import androidx.compose.ui.draw.shadow\n",
