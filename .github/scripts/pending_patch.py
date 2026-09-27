@@ -178,7 +178,11 @@ class AdjustableCacheEvictor(initialMaxBytes: Long) : CacheEvictor {
                 .flatMap { key -> cache.getCachedSpans(key).asSequence() }
                 .minByOrNull { it.lastTouchTimestamp }
                 ?: break
-            runCatching { cache.removeSpan(oldest) }.getOrElse { break }
+            try {
+                cache.removeSpan(oldest)
+            } catch (_: Exception) {
+                break
+            }
         }
     }
 }
