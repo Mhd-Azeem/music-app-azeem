@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Added subtle inset horizontal separators between settings inside every expanded Settings category for clearer visual grouping",
     "Slightly reduced the width of the Home, Search and Library floating tiles while keeping the draggable liquid overlay aligned",
     "Added a full-app Neomorphism theme toggle with soft raised dark surfaces, rounded depth styling and automatic Glassmorphism conflict handling",
     "Changed the bottom navigation liquid selector from a circle to a tile-sized rounded overlay and added direct finger-dragging across Home, Search and Library with snap-to-tab navigation",

@@ -36,6 +36,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -1559,6 +1560,14 @@ private fun SettingsSection(title: String, content: @Composable () -> Unit) {
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
         content()
+
+        HorizontalDivider(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 28.dp, end = 28.dp, top = 12.dp),
+            thickness = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.42f)
+        )
     }
 }
 
