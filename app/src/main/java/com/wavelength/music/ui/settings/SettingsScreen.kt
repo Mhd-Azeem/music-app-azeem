@@ -607,7 +607,6 @@ fun SettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
-                                .height(190.dp)
                         )
                     }
                 }
@@ -995,7 +994,6 @@ fun SettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 6.dp)
-                                .height(160.dp)
                         )
                     }
 
@@ -1038,7 +1036,6 @@ fun SettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 6.dp)
-                                .height(160.dp)
                         )
                     }
                 }
@@ -1814,12 +1811,12 @@ private fun LiquidColorPicker(
     onColorSelected: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val initialHsv = remember(selectedArgb) { FloatArray(3).also { AndroidColor.colorToHSV(selectedArgb, it) } }
-    var hue by remember(selectedArgb) { mutableFloatStateOf(initialHsv[0]) }
-    var saturation by remember(selectedArgb) { mutableFloatStateOf(initialHsv[1]) }
-    var value by remember(selectedArgb) { mutableFloatStateOf(initialHsv[2]) }
-    var alpha by remember(selectedArgb) { mutableFloatStateOf(AndroidColor.alpha(selectedArgb) / 255f) }
-    var hexText by remember(selectedArgb) { mutableStateOf("#%06X".format(selectedArgb and 0xFFFFFF)) }
+    val initialHsv = remember { FloatArray(3).also { AndroidColor.colorToHSV(selectedArgb, it) } }
+    var hue by remember { mutableFloatStateOf(initialHsv[0]) }
+    var saturation by remember { mutableFloatStateOf(initialHsv[1]) }
+    var value by remember { mutableFloatStateOf(initialHsv[2]) }
+    var alpha by remember { mutableFloatStateOf(AndroidColor.alpha(selectedArgb) / 255f) }
+    var hexText by remember { mutableStateOf("#%06X".format(selectedArgb and 0xFFFFFF)) }
 
     fun emitColor() {
         val rgb = AndroidColor.HSVToColor(floatArrayOf(hue, saturation, value))
@@ -1832,7 +1829,7 @@ private fun LiquidColorPicker(
         Row(modifier = Modifier.fillMaxWidth().height(190.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Canvas(
                 modifier = Modifier.weight(1f).fillMaxSize().clip(RoundedCornerShape(8.dp))
-                    .pointerInput(hue) {
+                    .pointerInput(Unit) {
                         fun update(pos: Offset) {
                             saturation = (pos.x / size.width).coerceIn(0f, 1f)
                             value = (1f - pos.y / size.height).coerceIn(0f, 1f)
