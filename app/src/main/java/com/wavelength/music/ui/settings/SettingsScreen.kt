@@ -153,6 +153,59 @@ fun SettingsScreen(
         )
     }
 
+    if (showAlbumArtStyleMenu) {
+        AlertDialog(
+            onDismissRequest = { showAlbumArtStyleMenu = false },
+            title = { Text("Album Art Style") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    AlbumArtStyle.entries.forEach { style ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    viewModel.setAlbumArtStyle(style)
+                                    showAlbumArtStyleMenu = false
+                                }
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = style.label,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = style.description,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            if (settings.albumArtStyle == style) {
+                                Icon(
+                                    Icons.Filled.Check,
+                                    contentDescription = "Selected",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(start = 12.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showAlbumArtStyleMenu = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     if (showClearCacheConfirm) {
         AlertDialog(
             onDismissRequest = { showClearCacheConfirm = false },
@@ -739,46 +792,16 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
                         )
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            OutlinedButton(
-                                onClick = { showAlbumArtStyleMenu = true },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = settings.albumArtStyle.label,
-                                    modifier = Modifier.weight(1f),
-                                    textAlign = TextAlign.Start
-                                )
-                                Icon(Icons.Filled.ExpandMore, contentDescription = "Choose album art style")
-                            }
-                            DropdownMenu(
-                                expanded = showAlbumArtStyleMenu,
-                                onDismissRequest = { showAlbumArtStyleMenu = false }
-                            ) {
-                                AlbumArtStyle.entries.forEach { style ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Column {
-                                                Text(style.label)
-                                                Text(
-                                                    style.description,
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        },
-                                        onClick = {
-                                            viewModel.setAlbumArtStyle(style)
-                                            showAlbumArtStyleMenu = false
-                                        },
-                                        trailingIcon = {
-                                            if (settings.albumArtStyle == style) {
-                                                Icon(Icons.Filled.Check, contentDescription = null)
-                                            }
-                                        }
-                                    )
-                                }
-                            }
+                        OutlinedButton(
+                            onClick = { showAlbumArtStyleMenu = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = settings.albumArtStyle.label,
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.Start
+                            )
+                            Icon(Icons.Filled.ExpandMore, contentDescription = "Choose album art style")
                         }
                     }
                     Row(
