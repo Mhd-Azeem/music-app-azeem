@@ -212,3 +212,116 @@ assert needle in a, "About changelog anchor not found for playlist hide"
 if entry not in a:
     a = a.replace(needle, needle + entry, 1)
 about.write_text(a)
+
+
+# Let Up Next items use the same hide/remove action semantics.
+pc = Path("app/src/main/java/com/wavelength/music/playback/PlayerController.kt")
+ps = pc.read_text()
+anchor = '''    fun moveQueueItem(fromIndex: Int, toIndex: Int) {
+        val c = controller ?: return
+        if (fromIndex !in currentQueue.indices || toIndex !in currentQueue.indices) return
+        c.moveMediaItem(fromIndex, toIndex)
+        currentQueue = currentQueue.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
+        _state.update { it.copy(queue = currentQueue, currentIndex = c.currentMediaItemIndex) }
+    }
+'''
+insert = anchor + '''
+    fun removeQueueItem(index: Int) {
+        val c = controller ?: return
+        // "Hide from Up Next" is intended for future items only; never remove the active song.
+        if (index !in currentQueue.indices || index <= c.currentMediaItemIndex) return
+        c.removeMediaItem(index)
+        currentQueue = currentQueue.toMutableList().apply { removeAt(index) }
+        _state.update { it.copy(queue = currentQueue, currentIndex = c.currentMediaItemIndex) }
+    }
+'''
+assert anchor in ps, "moveQueueItem anchor not found"
+ps = ps.replace(anchor, insert, 1)
+pc.write_text(ps)
+
+vm = Path("app/src/main/java/com/wavelength/music/ui/nowplaying/PlayerViewModel.kt")
+vs = vm.read_text()
+needle = '''    fun moveQueueItem(from: Int, to: Int) = playerController.moveQueueItem(from, to)
+'''
+replacement = needle + '''    fun removeQueueItem(index: Int) = playerController.removeQueueItem(index)
+'''
+assert needle in vs, "PlayerViewModel moveQueueItem anchor not found"
+vs = vs.replace(needle, replacement, 1)
+vm.write_text(vs)
+
+opts = Path("app/src/main/java/com/wavelength/music/ui/components/TrackOptionsSheet.kt")
+o = opts.read_text()
+sig = '''    onDismiss: () -> Unit,
+    onRemoveFromPlaylist: (() -> Unit)? = null,
+    onMoveUp: (() -> Unit)? = null,
+'''
+sig2 = '''    onDismiss: () -> Unit,
+    onRemoveFromPlaylist: (() -> Unit)? = null,
+    onRemoveFromQueue: (() -> Unit)? = null,
+    onMoveUp: (() -> Unit)? = null,
+'''
+assert sig in o, "TrackOptionsSheet signature anchor not found"
+o = o.replace(sig, sig2, 1)
+
+menu_anchor = '''            if (onRemoveFromPlaylist != null) {
+                TrackOptionRow(Icons.Filled.Close, "Hide in this playlist") {
+                    onRemoveFromPlaylist()
+                    onDismiss()
+                }
+            }
+'''
+menu_insert = menu_anchor + '''            if (onRemoveFromQueue != null) {
+                TrackOptionRow(Icons.Filled.Close, "Hide from Up Next") {
+                    onRemoveFromQueue()
+                    onDismiss()
+                }
+            }
+'''
+assert menu_anchor in o, "playlist hide action not found"
+o = o.replace(menu_anchor, menu_insert, 1)
+opts.write_text(o)
+
+np = Path("app/src/main/java/com/wavelength/music/ui/nowplaying/NowPlayingScreen.kt")
+ns = np.read_text()
+
+queue_sheet = '''            onDismiss = { menuQueueIndex = null },
+            onMoveUp = if (queueIndex > state.currentIndex + 1) {
+'''
+queue_sheet_new = '''            onDismiss = { menuQueueIndex = null },
+            onRemoveFromQueue = { viewModel.removeQueueItem(queueIndex) },
+            onMoveUp = if (queueIndex > state.currentIndex + 1) {
+'''
+assert queue_sheet in ns, "Up Next TrackOptionsSheet anchor not found"
+ns = ns.replace(queue_sheet, queue_sheet_new, 1)
+
+# Glass Up Next cards: long-press opens the same options sheet, including Hide from Up Next.
+if "import androidx.compose.foundation.combinedClickable\n" not in ns:
+    ns = ns.replace(
+        "import androidx.compose.foundation.clickable\n",
+        "import androidx.compose.foundation.clickable\nimport androidx.compose.foundation.combinedClickable\n",
+        1
+    )
+
+glass_click = '''                                        .background(Color(0xFFD7ECFF).copy(alpha = 0.52f))
+                                        .clickable { viewModel.playQueueItem(state.currentIndex + 1 + index) }
+                                        .padding(5.dp),
+'''
+glass_combined = '''                                        .background(Color(0xFFD7ECFF).copy(alpha = 0.52f))
+                                        .combinedClickable(
+                                            onClick = { viewModel.playQueueItem(state.currentIndex + 1 + index) },
+                                            onLongClick = { menuQueueIndex = state.currentIndex + 1 + index }
+                                        )
+                                        .padding(5.dp),
+'''
+assert glass_click in ns, "Glass queue card click anchor not found"
+ns = ns.replace(glass_click, glass_combined, 1)
+np.write_text(ns)
+
+about = Path("app/src/main/java/com/wavelength/music/ui/settings/AboutSheet.kt")
+a = about.read_text()
+needle = "private val latestUpdates = listOf(\n"
+entry = '    "Extended the hide action to Up Next: queued songs now have Hide from Up Next, and Glass queue cards expose the same menu on long-press",\n'
+assert needle in a, "About changelog anchor not found for Up Next hide"
+if entry not in a:
+    a = a.replace(needle, needle + entry, 1)
+about.write_text(a)
