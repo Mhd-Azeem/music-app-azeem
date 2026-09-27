@@ -106,6 +106,7 @@ jobs:
                   app/src/main/java/com/wavelength/music/ui/home/HomeScreen.kt \
                   app/src/main/java/com/wavelength/music/ui/navigation/NavGraph.kt \
                   app/src/main/java/com/wavelength/music/ui/components/MiniPlayerBar.kt \
+                  app/src/main/java/com/wavelength/music/ui/components/TrackOptionsSheet.kt \
                   app/src/main/java/com/wavelength/music/ui/design/UiDesignConfig.kt \
                   app/src/main/java/com/wavelength/music/MainActivity.kt \
                   app/src/main/java/com/wavelength/music/ui/theme/Theme.kt
