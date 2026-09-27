@@ -190,3 +190,160 @@ assert needle in a, "About changelog anchor not found"
 if entry not in a:
     a = a.replace(needle, needle + entry, 1)
 about.write_text(a)
+
+
+# Add a shared Shuffle button to every TrackListScreen, including language pages and user playlists.
+tls = Path("app/src/main/java/com/wavelength/music/ui/components/TrackListScreen.kt")
+t = tls.read_text()
+
+if "import androidx.compose.material.icons.filled.Shuffle\n" not in t:
+    t = t.replace(
+        "import androidx.compose.material.icons.filled.PlayArrow\n",
+        "import androidx.compose.material.icons.filled.PlayArrow\nimport androidx.compose.material.icons.filled.Shuffle\n",
+        1
+    )
+
+t = t.replace(
+    '''    onRetry: () -> Unit,
+    onPlayAll: () -> Unit,
+    onTrackClick: (Int) -> Unit,
+''',
+    '''    onRetry: () -> Unit,
+    onPlayAll: () -> Unit,
+    onShuffle: () -> Unit,
+    onTrackClick: (Int) -> Unit,
+''',
+    1
+)
+
+old_button = '''                        Button(
+                            onClick = onPlayAll,
+                            modifier = Modifier.padding(top = 12.dp)
+                        ) {
+                            Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                            Text(
+                                text = stringResource(R.string.play_all),
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        }
+'''
+new_button = '''                        Row(
+                            modifier = Modifier.padding(top = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Button(onClick = onPlayAll) {
+                                Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                                Text(
+                                    text = stringResource(R.string.play_all),
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+                            Button(onClick = onShuffle) {
+                                Icon(Icons.Filled.Shuffle, contentDescription = null)
+                                Text(
+                                    text = "Shuffle",
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+                        }
+'''
+assert old_button in t, "TrackListScreen Play All button block not found"
+t = t.replace(old_button, new_button, 1)
+tls.write_text(t)
+
+# Language/genre pages.
+g = Path("app/src/main/java/com/wavelength/music/ui/home/GenreScreen.kt")
+gs = g.read_text()
+needle = '''        onPlayAll = {
+            viewModel.playAll()
+            onTrackClick()
+        },
+        onTrackClick = { index ->
+'''
+replacement = '''        onPlayAll = {
+            viewModel.playAll()
+            onTrackClick()
+        },
+        onShuffle = {
+            viewModel.shuffleAll()
+            onTrackClick()
+        },
+        onTrackClick = { index ->
+'''
+assert needle in gs, "GenreScreen Play All anchor not found"
+gs = gs.replace(needle, replacement, 1)
+g.write_text(gs)
+
+gvm = Path("app/src/main/java/com/wavelength/music/ui/home/GenreViewModel.kt")
+gv = gvm.read_text()
+anchor = '''    fun playAll() {
+        val current = _tracks.value
+        if (current is ScreenState.Success) {
+            playerController.playQueue(current.data, 0)
+        }
+    }
+'''
+insert = anchor + '''
+    fun shuffleAll() {
+        val current = _tracks.value
+        if (current is ScreenState.Success && current.data.isNotEmpty()) {
+            playerController.playQueue(current.data.shuffled(), 0)
+        }
+    }
+'''
+assert anchor in gv, "GenreViewModel playAll anchor not found"
+gv = gv.replace(anchor, insert, 1)
+gvm.write_text(gv)
+
+# User playlists.
+pl = Path("app/src/main/java/com/wavelength/music/ui/playlist/PlaylistDetailScreen.kt")
+pls = pl.read_text()
+needle = '''        onPlayAll = {
+            viewModel.playAll()
+            onTrackClick()
+        },
+        onTrackClick = { index ->
+'''
+replacement = '''        onPlayAll = {
+            viewModel.playAll()
+            onTrackClick()
+        },
+        onShuffle = {
+            viewModel.shuffleAll()
+            onTrackClick()
+        },
+        onTrackClick = { index ->
+'''
+assert needle in pls, "PlaylistDetailScreen Play All anchor not found"
+pls = pls.replace(needle, replacement, 1)
+pl.write_text(pls)
+
+pvm = Path("app/src/main/java/com/wavelength/music/ui/playlist/PlaylistDetailViewModel.kt")
+pvs = pvm.read_text()
+anchor = '''    fun playAll() {
+        val current = tracks.value
+        if (current is ScreenState.Success) {
+            playerController.playQueue(current.data, 0)
+        }
+    }
+'''
+insert = anchor + '''
+    fun shuffleAll() {
+        val current = tracks.value
+        if (current is ScreenState.Success && current.data.isNotEmpty()) {
+            playerController.playQueue(current.data.shuffled(), 0)
+        }
+    }
+'''
+assert anchor in pvs, "PlaylistDetailViewModel playAll anchor not found"
+pvs = pvs.replace(anchor, insert, 1)
+pvm.write_text(pvs)
+
+about = Path("app/src/main/java/com/wavelength/music/ui/settings/AboutSheet.kt")
+a = about.read_text()
+needle = "private val latestUpdates = listOf(\n"
+entry = '    "Added a Shuffle button beside Play All on every playlist-style page, including language pages and user-created playlists",\n'
+assert needle in a, "About changelog anchor not found for playlist shuffle"
+if entry not in a:
+    a = a.replace(needle, needle + entry, 1)
+about.write_text(a)
