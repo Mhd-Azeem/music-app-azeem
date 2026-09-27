@@ -320,7 +320,7 @@ downloads_block = '''            item {
                             text = if (downloadsSummary.count == 0) {
                                 "No downloads yet"
                             } else {
-                                "\${downloadsSummary.count} songs · \${formatStorageSize(downloadsSummary.totalSizeBytes)}"
+                                "${downloadsSummary.count} songs · ${formatStorageSize(downloadsSummary.totalSizeBytes)}"
                             },
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f)
@@ -347,7 +347,7 @@ cache_block = downloads_block + '''
                             text = when (settings.streamCacheLimitMb) {
                                 0 -> "Cache limit: Off (0 MB)"
                                 1024 -> "Cache limit: 1.0 GB"
-                                else -> "Cache limit: \${settings.streamCacheLimitMb} MB"
+                                else -> "Cache limit: ${settings.streamCacheLimitMb} MB"
                             },
                             style = MaterialTheme.typography.bodyMedium
                         )
