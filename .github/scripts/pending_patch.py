@@ -174,3 +174,41 @@ assert needle in a, "About changelog anchor not found for compact nav"
 if entry not in a:
     a = a.replace(needle, needle + entry, 1)
 about.write_text(a)
+
+
+# Match Spotify-style playlist action wording for each song's three-dot menu.
+opts = Path("app/src/main/java/com/wavelength/music/ui/components/TrackOptionsSheet.kt")
+o = opts.read_text()
+
+if "import androidx.compose.material.icons.filled.Close\n" not in o:
+    o = o.replace(
+        "import androidx.compose.material.icons.filled.Album\n",
+        "import androidx.compose.material.icons.filled.Album\nimport androidx.compose.material.icons.filled.Close\n",
+        1
+    )
+
+old = '''            if (onRemoveFromPlaylist != null) {
+                TrackOptionRow(Icons.Filled.Delete, "Remove from playlist") {
+                    onRemoveFromPlaylist()
+                }
+            }
+'''
+new = '''            if (onRemoveFromPlaylist != null) {
+                TrackOptionRow(Icons.Filled.Close, "Hide in this playlist") {
+                    onRemoveFromPlaylist()
+                    onDismiss()
+                }
+            }
+'''
+assert old in o, "playlist remove option not found"
+o = o.replace(old, new, 1)
+opts.write_text(o)
+
+about = Path("app/src/main/java/com/wavelength/music/ui/settings/AboutSheet.kt")
+a = about.read_text()
+needle = "private val latestUpdates = listOf(\n"
+entry = '    "Added a Spotify-style Hide in this playlist action to each song menu inside user playlists",\n'
+assert needle in a, "About changelog anchor not found for playlist hide"
+if entry not in a:
+    a = a.replace(needle, needle + entry, 1)
+about.write_text(a)
