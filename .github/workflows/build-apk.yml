@@ -107,6 +107,11 @@ jobs:
                   app/src/main/java/com/wavelength/music/ui/navigation/NavGraph.kt \
                   app/src/main/java/com/wavelength/music/ui/components/MiniPlayerBar.kt \
                   app/src/main/java/com/wavelength/music/ui/components/TrackOptionsSheet.kt \
+                  app/src/main/java/com/wavelength/music/ui/components/TrackListScreen.kt \
+                  app/src/main/java/com/wavelength/music/ui/home/GenreScreen.kt \
+                  app/src/main/java/com/wavelength/music/ui/home/GenreViewModel.kt \
+                  app/src/main/java/com/wavelength/music/ui/playlist/PlaylistDetailScreen.kt \
+                  app/src/main/java/com/wavelength/music/ui/playlist/PlaylistDetailViewModel.kt \
                   app/src/main/java/com/wavelength/music/ui/design/UiDesignConfig.kt \
                   app/src/main/java/com/wavelength/music/MainActivity.kt \
                   app/src/main/java/com/wavelength/music/ui/theme/Theme.kt
