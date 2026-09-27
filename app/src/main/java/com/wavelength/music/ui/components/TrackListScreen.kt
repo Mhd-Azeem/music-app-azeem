@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -48,6 +49,7 @@ fun TrackListScreen(
     onBack: () -> Unit,
     onRetry: () -> Unit,
     onPlayAll: () -> Unit,
+    onShuffle: () -> Unit,
     onTrackClick: (Int) -> Unit,
     emptyMessage: String? = null,
     onLoadMore: (() -> Unit)? = null,
@@ -143,15 +145,24 @@ fun TrackListScreen(
                                 modifier = Modifier.padding(top = 8.dp)
                             )
                         }
-                        Button(
-                            onClick = onPlayAll,
-                            modifier = Modifier.padding(top = 12.dp)
+                        Row(
+                            modifier = Modifier.padding(top = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Icon(Icons.Filled.PlayArrow, contentDescription = null)
-                            Text(
-                                text = stringResource(R.string.play_all),
-                                modifier = Modifier.padding(start = 4.dp)
-                            )
+                            Button(onClick = onPlayAll) {
+                                Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                                Text(
+                                    text = stringResource(R.string.play_all),
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+                            Button(onClick = onShuffle) {
+                                Icon(Icons.Filled.Shuffle, contentDescription = null)
+                                Text(
+                                    text = "Shuffle",
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
                         }
                     }
                 }

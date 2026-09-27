@@ -29,6 +29,17 @@ enum class BuiltInWallpaper(val label: String) {
 }
 
 
+enum class VisualThemeMode(val label: String, val description: String) {
+    SOLID("Solid", "Clean solid interface"),
+    LIQUID("Liquid", "Translucent liquid surfaces"),
+    GLASSMORPHISM("Glassmorphism", "Frosted glass across the full app"),
+    NEOMORPHISM("Neomorphism", "Soft raised and inset surfaces"),
+    AMOLED("AMOLED", "True black OLED-friendly interface"),
+    ALBUM_ADAPTIVE("Album Adaptive", "Colors follow the current album artwork"),
+    AURORA("Aurora", "Animated cyan, violet and blue atmosphere")
+}
+
+
 enum class AlbumArtStyle(val label: String, val description: String) {
     OFF("Off", "Static album cover"),
     VINYL("Vinyl", "Spinning record-style artwork"),
@@ -41,6 +52,8 @@ enum class AlbumArtStyle(val label: String, val description: String) {
 data class AppSettingsState(
     val iconPreset: IconPreset = IconPreset.CLASSIC,
     val theme: AppTheme = AppTheme.CLASSIC,
+    val visualThemeMode: VisualThemeMode = VisualThemeMode.SOLID,
+    val animateThemeTransitions: Boolean = true,
     val hasCustomBackground: Boolean = false,
     /** Bumped on every write to the background file, even when [hasCustomBackground] itself stays
      * `true` (picking a new photo while one's already set). `MutableStateFlow` skips emitting when
@@ -113,6 +126,20 @@ class SettingsRepository @Inject constructor(
         theme = runCatching {
             AppTheme.valueOf(prefs.getString(KEY_THEME, null) ?: AppTheme.CLASSIC.name)
         }.getOrDefault(AppTheme.CLASSIC),
+        visualThemeMode = runCatching {
+            VisualThemeMode.valueOf(
+                prefs.getString(KEY_VISUAL_THEME_MODE, null)
+                    ?: when {
+                        prefs.getBoolean(KEY_GLASSMORPHISM_NOW_PLAYING, false) -> VisualThemeMode.GLASSMORPHISM.name
+                        prefs.getBoolean(KEY_NEOMORPHISM_ENABLED, false) -> VisualThemeMode.NEOMORPHISM.name
+                        runCatching {
+                            AppTheme.valueOf(prefs.getString(KEY_THEME, null) ?: AppTheme.CLASSIC.name)
+                        }.getOrDefault(AppTheme.CLASSIC).isGlass -> VisualThemeMode.LIQUID.name
+                        else -> VisualThemeMode.SOLID.name
+                    }
+            )
+        }.getOrDefault(VisualThemeMode.SOLID),
+        animateThemeTransitions = prefs.getBoolean(KEY_ANIMATE_THEME_TRANSITIONS, true),
         hasCustomBackground = customBackgroundFile.exists(),
         backgroundOpacity = prefs.getFloat(KEY_BACKGROUND_OPACITY, DEFAULT_BACKGROUND_OPACITY),
         builtInWallpaper = runCatching {
@@ -161,6 +188,38 @@ class SettingsRepository @Inject constructor(
     fun setTheme(theme: AppTheme) {
         prefs.edit { putString(KEY_THEME, theme.name) }
         _state.update { it.copy(theme = theme) }
+    }
+
+    fun setVisualThemeMode(mode: VisualThemeMode) {
+        val mappedTheme = when (mode) {
+            VisualThemeMode.LIQUID, VisualThemeMode.GLASSMORPHISM -> AppTheme.LIQUID
+            VisualThemeMode.AMOLED -> AppTheme.BLACK
+            else -> AppTheme.CLASSIC
+        }
+        val glass = mode == VisualThemeMode.GLASSMORPHISM
+        val neo = mode == VisualThemeMode.NEOMORPHISM
+        val adaptive = mode == VisualThemeMode.ALBUM_ADAPTIVE
+        prefs.edit {
+            putString(KEY_VISUAL_THEME_MODE, mode.name)
+            putString(KEY_THEME, mappedTheme.name)
+            putBoolean(KEY_GLASSMORPHISM_NOW_PLAYING, glass)
+            putBoolean(KEY_NEOMORPHISM_ENABLED, neo)
+            putBoolean(KEY_DYNAMIC_THEME, adaptive)
+        }
+        _state.update {
+            it.copy(
+                visualThemeMode = mode,
+                theme = mappedTheme,
+                glassmorphismNowPlaying = glass,
+                neomorphismEnabled = neo,
+                dynamicThemeFromAlbumArt = adaptive
+            )
+        }
+    }
+
+    fun setAnimateThemeTransitions(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_ANIMATE_THEME_TRANSITIONS, enabled) }
+        _state.update { it.copy(animateThemeTransitions = enabled) }
     }
 
     suspend fun setCustomBackground(bitmap: Bitmap): Result<Unit> = withContext(Dispatchers.IO) {
@@ -343,7 +402,8 @@ class SettingsRepository @Inject constructor(
         _state.update {
             it.copy(
                 neomorphismEnabled = enabled,
-                glassmorphismNowPlaying = if (enabled) false else it.glassmorphismNowPlaying
+                glassmorphismNowPlaying = if (enabled) false else it.glassmorphismNowPlaying,
+                visualThemeMode = if (enabled) VisualThemeMode.NEOMORPHISM else VisualThemeMode.SOLID
             )
         }
     }
@@ -356,7 +416,8 @@ class SettingsRepository @Inject constructor(
         _state.update {
             it.copy(
                 glassmorphismNowPlaying = enabled,
-                neomorphismEnabled = if (enabled) false else it.neomorphismEnabled
+                neomorphismEnabled = if (enabled) false else it.neomorphismEnabled,
+                visualThemeMode = if (enabled) VisualThemeMode.GLASSMORPHISM else VisualThemeMode.SOLID
             )
         }
     }
@@ -399,6 +460,8 @@ class SettingsRepository @Inject constructor(
     private companion object {
         const val KEY_ICON = "icon_preset"
         const val KEY_THEME = "theme"
+        const val KEY_VISUAL_THEME_MODE = "visual_theme_mode"
+        const val KEY_ANIMATE_THEME_TRANSITIONS = "animate_theme_transitions"
         const val KEY_BACKGROUND_OPACITY = "background_opacity"
         const val KEY_BUILT_IN_WALLPAPER = "built_in_wallpaper"
         const val KEY_CUSTOM_ACCENT_ARGB = "custom_accent_argb"

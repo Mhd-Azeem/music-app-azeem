@@ -1,5 +1,7 @@
 package com.wavelength.music.ui.theme
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -132,6 +134,8 @@ fun WavelengthTheme(
     customLiquidAccent: Color? = null,
     glassmorphismEnabled: Boolean = false,
     neomorphismEnabled: Boolean = false,
+    amoledEnabled: Boolean = false,
+    animateTransitions: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val baseScheme = schemeFor(theme, customLiquidAccent)
@@ -165,11 +169,40 @@ fun WavelengthTheme(
             onSurface = Color(0xFFF1F4F8),
             onSurfaceVariant = Color(0xFFBFC8D6)
         )
+    } else if (amoledEnabled) {
+        baseScheme.copy(
+            background = Color.Transparent,
+            surface = Color.Black,
+            surfaceVariant = Color(0xFF090909),
+            surfaceContainerLowest = Color.Black,
+            surfaceContainerLow = Color.Black,
+            surfaceContainer = Color(0xFF050505),
+            surfaceContainerHigh = Color(0xFF0B0B0B),
+            surfaceContainerHighest = Color(0xFF111111),
+            outline = Color.White.copy(alpha = 0.24f),
+            outlineVariant = Color.White.copy(alpha = 0.10f),
+            onBackground = Color.White,
+            onSurface = Color.White,
+            onSurfaceVariant = Color(0xFFCECECE)
+        )
     } else {
         baseScheme
     }
+
+    val duration = if (animateTransitions) 420 else 0
+    val animatedScheme = appScheme.copy(
+        primary = animateColorAsState(appScheme.primary, tween(duration), label = "themePrimary").value,
+        secondary = animateColorAsState(appScheme.secondary, tween(duration), label = "themeSecondary").value,
+        surface = animateColorAsState(appScheme.surface, tween(duration), label = "themeSurface").value,
+        surfaceVariant = animateColorAsState(appScheme.surfaceVariant, tween(duration), label = "themeSurfaceVariant").value,
+        surfaceContainer = animateColorAsState(appScheme.surfaceContainer, tween(duration), label = "themeSurfaceContainer").value,
+        surfaceContainerHigh = animateColorAsState(appScheme.surfaceContainerHigh, tween(duration), label = "themeSurfaceContainerHigh").value,
+        onSurface = animateColorAsState(appScheme.onSurface, tween(duration), label = "themeOnSurface").value,
+        onSurfaceVariant = animateColorAsState(appScheme.onSurfaceVariant, tween(duration), label = "themeOnSurfaceVariant").value
+    )
+
     MaterialTheme(
-        colorScheme = appScheme,
+        colorScheme = animatedScheme,
         typography = WavelengthTypography,
         content = content
     )

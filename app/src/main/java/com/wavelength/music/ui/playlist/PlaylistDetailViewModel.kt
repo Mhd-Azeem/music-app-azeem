@@ -49,6 +49,13 @@ class PlaylistDetailViewModel @Inject constructor(
         }
     }
 
+    fun shuffleAll() {
+        val current = tracks.value
+        if (current is ScreenState.Success && current.data.isNotEmpty()) {
+            playerController.playQueue(current.data.shuffled(), 0)
+        }
+    }
+
     fun playTrack(index: Int) {
         val current = tracks.value
         if (current is ScreenState.Success) {

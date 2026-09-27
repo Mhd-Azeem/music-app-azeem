@@ -89,6 +89,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
 import com.wavelength.music.data.repository.AlbumArtStyle
 import com.wavelength.music.data.repository.BuiltInWallpaper
+import com.wavelength.music.data.repository.VisualThemeMode
 import com.wavelength.music.ui.components.wallpaperBrush
 
 @Composable
@@ -608,59 +609,55 @@ fun SettingsScreen(
             item {
                 SettingsSection(title = "Theme Style") {
                     Text(
-                        text = "Choose how the variable accent color is rendered across the app.",
+                        text = "Choose the complete visual style for AzMusic.",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                     )
+
+                    VisualThemeMode.entries.forEach { mode ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 2.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable { viewModel.setVisualThemeMode(mode) }
+                                .padding(horizontal = 8.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = settings.visualThemeMode == mode,
+                                onClick = { viewModel.setVisualThemeMode(mode) }
+                            )
+                            Column(modifier = Modifier.padding(start = 6.dp).weight(1f)) {
+                                Text(mode.label, style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    mode.description,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(14.dp))
-                                .clickable { viewModel.selectTheme(AppTheme.CLASSIC) }
-                                .padding(horizontal = 8.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = !settings.theme.isGlass,
-                                onClick = { viewModel.selectTheme(AppTheme.CLASSIC) }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Animate theme transitions")
+                            Text(
+                                "Crossfade theme and accent colors instead of changing instantly",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Column(modifier = Modifier.padding(start = 4.dp)) {
-                                Text("Solid", style = MaterialTheme.typography.bodyLarge)
-                                Text(
-                                    "Clean solid interface",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
                         }
-                        Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(14.dp))
-                                .clickable { viewModel.selectTheme(AppTheme.LIQUID) }
-                                .padding(horizontal = 8.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = settings.theme.isGlass,
-                                onClick = { viewModel.selectTheme(AppTheme.LIQUID) }
-                            )
-                            Column(modifier = Modifier.padding(start = 4.dp)) {
-                                Text("Liquid", style = MaterialTheme.typography.bodyLarge)
-                                Text(
-                                    "Glass and blur interface",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
+                        Switch(
+                            checked = settings.animateThemeTransitions,
+                            onCheckedChange = viewModel::setAnimateThemeTransitions
+                        )
                     }
                 }
             }

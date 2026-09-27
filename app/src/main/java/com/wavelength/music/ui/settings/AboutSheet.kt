@@ -24,6 +24,10 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Expanded themes to Solid, Liquid, Glassmorphism, Neomorphism, AMOLED, Album Adaptive and Aurora, plus an Animate theme transitions toggle for smooth color crossfades",
+    "Added Hide in this playlist to language/genre pages as well as user playlists; hidden language-page songs stay removed while browsing and are filtered out of later pagination",
+    "Added a Shuffle button beside Play All on every playlist-style page, including language pages and user-created playlists",
+    "Made Glass Shuffle and Repeat states clearly visible: active controls now glow cyan-purple with a bright rim and status dot, while inactive controls are strongly dimmed",
     "Extended the hide action to Up Next: queued songs now have Hide from Up Next, and Glass queue cards expose the same menu on long-press",
     "Added a Spotify-style Hide in this playlist action to each song menu inside user playlists",
     "Fixed Home, Search and Library bottom tiles on small-width phones so labels stay on one line with compact spacing and icons instead of wrapping vertically",

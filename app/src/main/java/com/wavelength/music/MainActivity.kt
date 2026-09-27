@@ -16,7 +16,13 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateColor
 import androidx.compose.foundation.background
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,11 +40,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
+import androidx.palette.graphics.Palette
+import coil.Coil
+import coil.request.ImageRequest
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.wavelength.music.ui.components.OfflineBanner
+import com.wavelength.music.data.repository.VisualThemeMode
+import com.wavelength.music.ui.nowplaying.PlayerViewModel
 import com.wavelength.music.ui.navigation.WavelengthNavHost
 import com.wavelength.music.ui.settings.AppSettingsViewModel
 import com.wavelength.music.ui.splash.AzMusicSplashScreen
@@ -70,6 +82,20 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settingsViewModel: AppSettingsViewModel = hiltViewModel()
             val settings by settingsViewModel.state.collectAsStateWithLifecycle()
+            val playerViewModel: PlayerViewModel = hiltViewModel()
+            val playbackState by playerViewModel.state.collectAsStateWithLifecycle()
+            var albumAdaptiveAccent by remember { mutableStateOf<Color?>(null) }
+
+            LaunchedEffect(
+                playbackState.currentTrack?.albumArtUrl,
+                settings.visualThemeMode
+            ) {
+                albumAdaptiveAccent = if (settings.visualThemeMode == VisualThemeMode.ALBUM_ADAPTIVE) {
+                    loadAppAlbumAccent(this@MainActivity, playbackState.currentTrack?.albumArtUrl)
+                } else {
+                    null
+                }
+            }
             var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
             var updateDismissed by remember { mutableStateOf(false) }
             var showSplash by remember { mutableStateOf(savedInstanceState == null) }
@@ -90,36 +116,68 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            val targetAccent = albumAdaptiveAccent ?: Color(settings.customAccentArgb)
+            val animatedAccent by animateColorAsState(
+                targetValue = targetAccent,
+                animationSpec = tween(if (settings.animateThemeTransitions) 500 else 0),
+                label = "appThemeAccent"
+            )
+
             WavelengthTheme(
                 theme = settings.theme,
-                customLiquidAccent = Color(settings.customAccentArgb),
-                glassmorphismEnabled = settings.glassmorphismNowPlaying,
-                neomorphismEnabled = settings.neomorphismEnabled
+                customLiquidAccent = animatedAccent,
+                glassmorphismEnabled = settings.visualThemeMode == VisualThemeMode.GLASSMORPHISM,
+                neomorphismEnabled = settings.visualThemeMode == VisualThemeMode.NEOMORPHISM,
+                amoledEnabled = settings.visualThemeMode == VisualThemeMode.AMOLED,
+                animateTransitions = settings.animateThemeTransitions
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     OfflineBanner()
-                    val appSurface = when {
-                        settings.glassmorphismNowPlaying -> Modifier.background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color(settings.customAccentArgb).copy(alpha = 0.24f),
-                                    Color(0xFF0A1628),
-                                    Color(0xFF111827)
-                                )
-                            )
-                        )
-                        settings.neomorphismEnabled -> Modifier.background(
-                            Brush.linearGradient(
-                                listOf(
-                                    Color(0xFF303846),
-                                    Color(0xFF242B36),
-                                    Color(0xFF1B2029)
-                                )
-                            )
-                        )
-                        else -> Modifier.background(Color.Black)
+                    val aurora = rememberInfiniteTransition(label = "auroraTheme")
+                    val auroraA by aurora.animateColor(
+                        initialValue = Color(0xFF0A2342),
+                        targetValue = Color(0xFF4C1D95),
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(4200),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "auroraA"
+                    )
+                    val auroraB by aurora.animateColor(
+                        initialValue = Color(0xFF0E7490),
+                        targetValue = Color(0xFF312E81),
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(5200),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "auroraB"
+                    )
+
+                    val bgTopTarget = when (settings.visualThemeMode) {
+                        VisualThemeMode.GLASSMORPHISM -> animatedAccent.copy(alpha = 0.32f)
+                        VisualThemeMode.NEOMORPHISM -> Color(0xFF303846)
+                        VisualThemeMode.AMOLED -> Color.Black
+                        VisualThemeMode.ALBUM_ADAPTIVE -> animatedAccent.copy(alpha = 0.42f)
+                        VisualThemeMode.AURORA -> auroraA
+                        VisualThemeMode.LIQUID -> animatedAccent.copy(alpha = 0.22f)
+                        VisualThemeMode.SOLID -> Color.Black
                     }
+                    val bgBottomTarget = when (settings.visualThemeMode) {
+                        VisualThemeMode.GLASSMORPHISM -> Color(0xFF0A1628)
+                        VisualThemeMode.NEOMORPHISM -> Color(0xFF1B2029)
+                        VisualThemeMode.AMOLED -> Color.Black
+                        VisualThemeMode.ALBUM_ADAPTIVE -> Color(0xFF080B12)
+                        VisualThemeMode.AURORA -> auroraB
+                        VisualThemeMode.LIQUID -> Color(0xFF101522)
+                        VisualThemeMode.SOLID -> Color.Black
+                    }
+                    val transitionMs = if (settings.animateThemeTransitions) 520 else 0
+                    val bgTop by animateColorAsState(bgTopTarget, tween(transitionMs), label = "themeBgTop")
+                    val bgBottom by animateColorAsState(bgBottomTarget, tween(transitionMs), label = "themeBgBottom")
+                    val appSurface = Modifier.background(
+                        Brush.verticalGradient(listOf(bgTop, bgBottom))
+                    )
                     Box(modifier = Modifier.fillMaxWidth().weight(1f).then(appSurface)) {
                         WavelengthNavHost()
                     }
@@ -167,6 +225,28 @@ class MainActivity : ComponentActivity() {
                 }
                 }
             }
+        }
+    }
+
+    private suspend fun loadAppAlbumAccent(context: Context, url: String?): Color? {
+        if (url.isNullOrBlank()) return null
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                val request = ImageRequest.Builder(context)
+                    .data(url)
+                    .allowHardware(false)
+                    .build()
+                val drawable = Coil.imageLoader(context).execute(request).drawable ?: return@runCatching null
+                val bitmap = drawable.toBitmap()
+                val palette = Palette.from(bitmap).generate()
+                val fallback = palette.dominantSwatch?.rgb ?: return@runCatching null
+                Color(
+                    palette.vibrantSwatch?.rgb
+                        ?: palette.lightVibrantSwatch?.rgb
+                        ?: palette.mutedSwatch?.rgb
+                        ?: fallback
+                )
+            }.getOrNull()
         }
     }
 

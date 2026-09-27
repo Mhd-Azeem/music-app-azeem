@@ -32,6 +32,7 @@ class GenreViewModel @Inject constructor(
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
     private var hasMore = true
     private val pageSize = 30
+    private val hiddenTrackIds = mutableSetOf<String>()
 
     init {
         load()
@@ -45,7 +46,9 @@ class GenreViewModel @Inject constructor(
             _tracks.value = ScreenState.Loading
             repository.getTracksByTag(tag, page = 0, limit = pageSize).fold(
                 onSuccess = { list ->
-                    val unique = list.distinctBy { it.id }
+                    val unique = list
+                        .distinctBy { it.id }
+                        .filterNot { it.id in hiddenTrackIds }
                     _tracks.value = if (unique.isEmpty()) ScreenState.Empty else ScreenState.Success(unique)
                     hasMore = list.isNotEmpty()
                 },
@@ -79,7 +82,9 @@ class GenreViewModel @Inject constructor(
                     // still exist. Keep paging until the API itself returns an empty page.
                     hasMore = true
                     val existingIds = current.map { it.id }.toHashSet()
-                    val newTracks = incoming.filterNot { it.id in existingIds }
+                    val newTracks = incoming.filterNot {
+                        it.id in existingIds || it.id in hiddenTrackIds
+                    }
                     if (newTracks.isNotEmpty()) {
                         _tracks.value = ScreenState.Success(current + newTracks)
                         break
@@ -93,10 +98,26 @@ class GenreViewModel @Inject constructor(
         }
     }
 
+    fun hideTrack(track: Track) {
+        hiddenTrackIds += track.id
+        val current = _tracks.value
+        if (current is ScreenState.Success) {
+            val visible = current.data.filterNot { it.id == track.id }
+            _tracks.value = if (visible.isEmpty()) ScreenState.Empty else ScreenState.Success(visible)
+        }
+    }
+
     fun playAll() {
         val current = _tracks.value
         if (current is ScreenState.Success) {
             playerController.playQueue(current.data, 0)
+        }
+    }
+
+    fun shuffleAll() {
+        val current = _tracks.value
+        if (current is ScreenState.Success && current.data.isNotEmpty()) {
+            playerController.playQueue(current.data.shuffled(), 0)
         }
     }
 

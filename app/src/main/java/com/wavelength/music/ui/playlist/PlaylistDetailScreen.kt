@@ -74,6 +74,10 @@ fun PlaylistDetailScreen(
             viewModel.playAll()
             onTrackClick()
         },
+        onShuffle = {
+            viewModel.shuffleAll()
+            onTrackClick()
+        },
         onTrackClick = { index ->
             viewModel.playTrack(index)
             onTrackClick()

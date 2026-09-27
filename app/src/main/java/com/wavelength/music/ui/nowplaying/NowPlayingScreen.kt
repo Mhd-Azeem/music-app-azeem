@@ -96,6 +96,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -1230,24 +1231,55 @@ fun NowPlayingScreen(
                                         .align(Alignment.TopStart)
                                         .padding(start = 29.dp, top = 4.dp)
                                         .size(UiDesignConfig.GLASS_ORB_SIZE_DP.dp)
+                                        .shadow(
+                                            elevation = if (state.shuffleEnabled) 14.dp else 3.dp,
+                                            shape = CircleShape,
+                                            ambientColor = if (state.shuffleEnabled) glassPlayedGlowColor.copy(alpha = 0.70f) else Color.Transparent,
+                                            spotColor = if (state.shuffleEnabled) glassPlayedGlowColor.copy(alpha = 0.85f) else Color.Transparent
+                                        )
                                         .clip(CircleShape)
                                         .background(
-                                            Brush.radialGradient(
-                                                listOf(
-                                                    Color.White.copy(alpha = 0.28f),
-                                                    Color(0xFFA7C9EA).copy(alpha = 0.30f)
+                                            if (state.shuffleEnabled) {
+                                                Brush.radialGradient(
+                                                    listOf(
+                                                        glassPlayedGlowColor.copy(alpha = 0.95f),
+                                                        accentColor.copy(alpha = 0.82f),
+                                                        Color(0xFF6D5BFF).copy(alpha = 0.78f)
+                                                    )
                                                 )
-                                            )
+                                            } else {
+                                                Brush.radialGradient(
+                                                    listOf(
+                                                        Color.White.copy(alpha = 0.14f),
+                                                        Color(0xFFA7C9EA).copy(alpha = 0.16f)
+                                                    )
+                                                )
+                                            }
                                         )
-                                        .border(1.2.dp, Color.White.copy(alpha = 0.32f), CircleShape)
+                                        .border(
+                                            if (state.shuffleEnabled) 2.dp else 1.1.dp,
+                                            if (state.shuffleEnabled) Color.White.copy(alpha = 0.90f) else Color.White.copy(alpha = 0.24f),
+                                            CircleShape
+                                        )
                                         .clickable(onClick = viewModel::toggleShuffle),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         Icons.Filled.Shuffle,
-                                        contentDescription = "Shuffle",
-                                        tint = if (state.shuffleEnabled) Color.White else Color.White.copy(alpha = 0.78f),
+                                        contentDescription = if (state.shuffleEnabled) "Shuffle on" else "Shuffle off",
+                                        tint = if (state.shuffleEnabled) Color.White else Color.White.copy(alpha = 0.48f),
                                         modifier = Modifier.size(24.dp)
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .padding(bottom = 5.dp)
+                                            .size(if (state.shuffleEnabled) 6.dp else 4.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (state.shuffleEnabled) Color.White
+                                                else Color.White.copy(alpha = 0.26f)
+                                            )
                                     )
                                 }
 
@@ -1256,24 +1288,59 @@ fun NowPlayingScreen(
                                         .align(Alignment.TopEnd)
                                         .padding(end = 29.dp, top = 4.dp)
                                         .size(UiDesignConfig.GLASS_ORB_SIZE_DP.dp)
+                                        .shadow(
+                                            elevation = if (state.repeatMode != RepeatMode.OFF) 14.dp else 3.dp,
+                                            shape = CircleShape,
+                                            ambientColor = if (state.repeatMode != RepeatMode.OFF) glassPlayedGlowColor.copy(alpha = 0.70f) else Color.Transparent,
+                                            spotColor = if (state.repeatMode != RepeatMode.OFF) glassPlayedGlowColor.copy(alpha = 0.85f) else Color.Transparent
+                                        )
                                         .clip(CircleShape)
                                         .background(
-                                            Brush.radialGradient(
-                                                listOf(
-                                                    Color.White.copy(alpha = 0.28f),
-                                                    Color(0xFFA7C9EA).copy(alpha = 0.30f)
+                                            if (state.repeatMode != RepeatMode.OFF) {
+                                                Brush.radialGradient(
+                                                    listOf(
+                                                        glassPlayedGlowColor.copy(alpha = 0.95f),
+                                                        accentColor.copy(alpha = 0.82f),
+                                                        Color(0xFF6D5BFF).copy(alpha = 0.78f)
+                                                    )
                                                 )
-                                            )
+                                            } else {
+                                                Brush.radialGradient(
+                                                    listOf(
+                                                        Color.White.copy(alpha = 0.14f),
+                                                        Color(0xFFA7C9EA).copy(alpha = 0.16f)
+                                                    )
+                                                )
+                                            }
                                         )
-                                        .border(1.2.dp, Color.White.copy(alpha = 0.32f), CircleShape)
+                                        .border(
+                                            if (state.repeatMode != RepeatMode.OFF) 2.dp else 1.1.dp,
+                                            if (state.repeatMode != RepeatMode.OFF) Color.White.copy(alpha = 0.90f) else Color.White.copy(alpha = 0.24f),
+                                            CircleShape
+                                        )
                                         .clickable(onClick = viewModel::cycleRepeatMode),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = if (state.repeatMode == RepeatMode.ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
-                                        contentDescription = "Repeat",
-                                        tint = if (state.repeatMode != RepeatMode.OFF) Color.White else Color.White.copy(alpha = 0.78f),
+                                        contentDescription = when (state.repeatMode) {
+                                            RepeatMode.ONE -> "Repeat one"
+                                            RepeatMode.ALL -> "Repeat all"
+                                            else -> "Repeat off"
+                                        },
+                                        tint = if (state.repeatMode != RepeatMode.OFF) Color.White else Color.White.copy(alpha = 0.48f),
                                         modifier = Modifier.size(24.dp)
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .padding(bottom = 5.dp)
+                                            .size(if (state.repeatMode != RepeatMode.OFF) 6.dp else 4.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (state.repeatMode != RepeatMode.OFF) Color.White
+                                                else Color.White.copy(alpha = 0.26f)
+                                            )
                                     )
                                 }
 

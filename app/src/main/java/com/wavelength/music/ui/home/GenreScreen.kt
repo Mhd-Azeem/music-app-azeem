@@ -28,12 +28,17 @@ fun GenreScreen(
             viewModel.playAll()
             onTrackClick()
         },
+        onShuffle = {
+            viewModel.shuffleAll()
+            onTrackClick()
+        },
         onTrackClick = { index ->
             viewModel.playTrack(index)
             onTrackClick()
         },
         emptyMessage = stringResource(R.string.search_empty_hint),
         onLoadMore = viewModel::loadMore,
-        isLoadingMore = isLoadingMore
+        isLoadingMore = isLoadingMore,
+        onRemoveFromPlaylist = viewModel::hideTrack
     )
 }

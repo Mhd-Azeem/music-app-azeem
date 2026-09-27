@@ -12,6 +12,7 @@ import com.wavelength.music.data.repository.BackupRepository
 import com.wavelength.music.data.repository.BuiltInWallpaper
 import com.wavelength.music.data.repository.MusicRepository
 import com.wavelength.music.data.repository.SettingsRepository
+import com.wavelength.music.data.repository.VisualThemeMode
 import com.wavelength.music.ui.theme.AppTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -76,6 +77,11 @@ class AppSettingsViewModel @Inject constructor(
     fun selectIcon(preset: IconPreset) = settingsRepository.setIconPreset(preset)
 
     fun selectTheme(theme: AppTheme) = settingsRepository.setTheme(theme)
+
+    fun setVisualThemeMode(mode: VisualThemeMode) = settingsRepository.setVisualThemeMode(mode)
+
+    fun setAnimateThemeTransitions(enabled: Boolean) =
+        settingsRepository.setAnimateThemeTransitions(enabled)
 
     fun pickBackground(bitmap: Bitmap) {
         viewModelScope.launch { settingsRepository.setCustomBackground(bitmap) }
