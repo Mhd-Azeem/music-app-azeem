@@ -47,9 +47,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -67,10 +70,12 @@ import com.wavelength.music.ui.components.TrackOptionsSheet
 import com.wavelength.music.ui.components.TrackRow
 import com.wavelength.music.ui.components.swipeHorizontal
 import java.util.Locale
+import kotlinx.coroutines.delay
 
 @Composable
 fun SearchScreen(
     onTrackClick: () -> Unit,
+    focusRequestSequence: Int = 0,
     onSwipeToHome: () -> Unit = {},
     onSwipeToLibrary: () -> Unit = {},
     viewModel: SearchViewModel = hiltViewModel()
@@ -82,8 +87,17 @@ fun SearchScreen(
     var trackForMenu by remember { mutableStateOf<Track?>(null) }
     var trackForQuickAdd by remember { mutableStateOf<Track?>(null) }
     val context = LocalContext.current
+    val searchFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(Unit) { viewModel.consumePendingSearch() }
+    LaunchedEffect(focusRequestSequence) {
+        if (focusRequestSequence > 0) {
+            delay(60)
+            searchFocusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
 
     trackForMenu?.let { track ->
         TrackOptionsSheet(track = track, onDismiss = { trackForMenu = null })
@@ -135,7 +149,10 @@ fun SearchScreen(
             OutlinedTextField(
                 value = query,
                 onValueChange = viewModel::onQueryChange,
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .focusRequester(searchFocusRequester),
                 shape = RoundedCornerShape(28.dp),
                 placeholder = { Text(stringResource(R.string.search_hint)) },
                 singleLine = true,

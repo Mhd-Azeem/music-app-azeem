@@ -110,6 +110,7 @@ fun WavelengthNavHost() {
         currentRoute != Screen.AdminActivation.route
     val activationRequiredSequence by playerViewModel.activationRequiredSequence.collectAsStateWithLifecycle()
     var showActivationPrompt by remember { mutableStateOf(false) }
+    var searchFocusRequestSequence by remember { mutableFloatStateOf(0f) }
 
     LaunchedEffect(activationRequiredSequence) {
         if (activationRequiredSequence > 0L && activation.status != ActivationStatus.ACTIVE) {
@@ -284,7 +285,9 @@ fun WavelengthNavHost() {
                                                 tileShape
                                             )
                                             .clickable {
-                                                if (!selected) {
+                                                if (selected && screen.route == Screen.Search.route) {
+                                                    searchFocusRequestSequence += 1f
+                                                } else if (!selected) {
                                                     navController.navigate(screen.route) {
                                                         popUpTo(navController.graph.startDestinationId) {
                                                             saveState = true
@@ -451,6 +454,7 @@ fun WavelengthNavHost() {
                 composable(Screen.Search.route) {
                     SearchScreen(
                         onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
+                        focusRequestSequence = searchFocusRequestSequence.toInt(),
                         onSwipeToLibrary = {
                             navController.navigate(Screen.Library.route) {
                                 popUpTo(navController.graph.startDestinationId) { saveState = true }
