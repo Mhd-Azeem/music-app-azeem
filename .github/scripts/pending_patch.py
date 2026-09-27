@@ -60,3 +60,117 @@ assert needle in a, "About changelog anchor not found"
 if entry not in a:
     a = a.replace(needle, needle + entry, 1)
 about.write_text(a)
+
+
+# Keep Home/Search/Library readable on small-width phones and large font scales.
+nav = Path("app/src/main/java/com/wavelength/music/ui/navigation/NavGraph.kt")
+n = nav.read_text()
+
+if "import androidx.compose.ui.text.style.TextOverflow\n" not in n:
+    n = n.replace(
+        "import androidx.compose.ui.graphics.Color\n",
+        "import androidx.compose.ui.graphics.Color\nimport androidx.compose.ui.text.style.TextOverflow\n",
+        1
+    )
+
+n = n.replace(
+    '''                        val navSpacing = 10.dp
+                        val itemWidth = (maxWidth - navSpacing * 2) / 3
+''',
+    '''                        val compactBottomNav = maxWidth < 340.dp
+                        val navSpacing = if (compactBottomNav) 6.dp else 10.dp
+                        val itemWidth = (maxWidth - navSpacing * 2) / 3
+''',
+    1
+)
+
+n = n.replace(
+    '''                                    val tileShape = RoundedCornerShape(24.dp)
+''',
+    '''                                    val tileShape = RoundedCornerShape(if (compactBottomNav) 20.dp else 24.dp)
+''',
+    1
+)
+
+old_row = '''                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 10.dp, vertical = 11.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Icon(
+                                                iconFor(screen),
+                                                contentDescription = navLabelFor(screen),
+                                                tint = Color.White
+                                            )
+                                            Text(
+                                                navLabelFor(screen),
+                                                style = MaterialTheme.typography.labelLarge,
+                                                color = Color.White,
+                                                modifier = Modifier.padding(start = 7.dp)
+                                            )
+                                        }
+'''
+new_row = '''                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(
+                                                    horizontal = if (compactBottomNav) 5.dp else 10.dp,
+                                                    vertical = if (compactBottomNav) 10.dp else 11.dp
+                                                ),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Icon(
+                                                iconFor(screen),
+                                                contentDescription = navLabelFor(screen),
+                                                tint = Color.White,
+                                                modifier = Modifier.size(if (compactBottomNav) 20.dp else 24.dp)
+                                            )
+                                            Text(
+                                                navLabelFor(screen),
+                                                style = if (compactBottomNav) {
+                                                    MaterialTheme.typography.labelMedium
+                                                } else {
+                                                    MaterialTheme.typography.labelLarge
+                                                },
+                                                color = Color.White,
+                                                maxLines = 1,
+                                                softWrap = false,
+                                                overflow = TextOverflow.Clip,
+                                                modifier = Modifier.padding(start = if (compactBottomNav) 4.dp else 7.dp)
+                                            )
+                                        }
+'''
+assert old_row in n, "bottom nav label row not found"
+n = n.replace(old_row, new_row, 1)
+
+n = n.replace(
+    '''                            val overlayExtra = 4.dp
+                            val overlayShape = RoundedCornerShape(26.dp)
+''',
+    '''                            val overlayExtra = if (compactBottomNav) 3.dp else 4.dp
+                            val overlayShape = RoundedCornerShape(if (compactBottomNav) 22.dp else 26.dp)
+''',
+    1
+)
+
+n = n.replace(
+    '''                                    .height(50.dp)
+''',
+    '''                                    .height(if (compactBottomNav) 44.dp else 50.dp)
+''',
+    1
+)
+
+nav.write_text(n)
+
+about = Path("app/src/main/java/com/wavelength/music/ui/settings/AboutSheet.kt")
+a = about.read_text()
+needle = "private val latestUpdates = listOf(\n"
+entry = '    "Fixed Home, Search and Library bottom tiles on small-width phones so labels stay on one line with compact spacing and icons instead of wrapping vertically",\n'
+assert needle in a, "About changelog anchor not found for compact nav"
+if entry not in a:
+    a = a.replace(needle, needle + entry, 1)
+about.write_text(a)
