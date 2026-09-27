@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -163,7 +164,8 @@ fun WavelengthNavHost() {
                             .fillMaxWidth()
                             .padding(horizontal = 22.dp, vertical = 10.dp)
                     ) {
-                        val navSpacing = 10.dp
+                        val compactBottomNav = maxWidth < 340.dp
+                        val navSpacing = if (compactBottomNav) 6.dp else 10.dp
                         val itemWidth = (maxWidth - navSpacing * 2) / 3
                         val selectedIndex = bottomNavScreens.indexOfFirst { currentRoute == it.route }
                             .coerceAtLeast(0)
@@ -257,7 +259,7 @@ fun WavelengthNavHost() {
 
                                 bottomNavScreens.forEachIndexed { index, screen ->
                                     val selected = selectedIndex == index
-                                    val tileShape = RoundedCornerShape(24.dp)
+                                    val tileShape = RoundedCornerShape(if (compactBottomNav) 20.dp else 24.dp)
                                     val itemAlpha by animateFloatAsState(
                                         targetValue = if (selected) 1f else 0.82f,
                                         animationSpec = tween(180),
@@ -296,20 +298,31 @@ fun WavelengthNavHost() {
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .padding(horizontal = 10.dp, vertical = 11.dp),
+                                                .padding(
+                                                    horizontal = if (compactBottomNav) 5.dp else 10.dp,
+                                                    vertical = if (compactBottomNav) 10.dp else 11.dp
+                                                ),
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.Center
                                         ) {
                                             Icon(
                                                 iconFor(screen),
                                                 contentDescription = navLabelFor(screen),
-                                                tint = Color.White
+                                                tint = Color.White,
+                                                modifier = Modifier.size(if (compactBottomNav) 20.dp else 24.dp)
                                             )
                                             Text(
                                                 navLabelFor(screen),
-                                                style = MaterialTheme.typography.labelLarge,
+                                                style = if (compactBottomNav) {
+                                                    MaterialTheme.typography.labelMedium
+                                                } else {
+                                                    MaterialTheme.typography.labelLarge
+                                                },
                                                 color = Color.White,
-                                                modifier = Modifier.padding(start = 7.dp)
+                                                maxLines = 1,
+                                                softWrap = false,
+                                                overflow = TextOverflow.Clip,
+                                                modifier = Modifier.padding(start = if (compactBottomNav) 4.dp else 7.dp)
                                             )
                                         }
                                     }
@@ -319,15 +332,15 @@ fun WavelengthNavHost() {
                             // Same pill/rounded-rectangle silhouette as the actual nav tile.
                             // It is only a few dp larger so the liquid overlay remains visible
                             // around the Home/Search/Library tile while following the finger.
-                            val overlayExtra = 4.dp
-                            val overlayShape = RoundedCornerShape(26.dp)
+                            val overlayExtra = if (compactBottomNav) 3.dp else 4.dp
+                            val overlayShape = RoundedCornerShape(if (compactBottomNav) 22.dp else 26.dp)
                             val overlayX = (itemWidth + navSpacing) * overlayIndex - overlayExtra / 2
 
                             Box(
                                 modifier = Modifier
                                     .offset(x = overlayX, y = -overlayExtra / 2)
                                     .width(itemWidth + overlayExtra)
-                                    .height(50.dp)
+                                    .height(if (compactBottomNav) 44.dp else 50.dp)
                                     .shadow(
                                         elevation = 18.dp,
                                         shape = overlayShape,

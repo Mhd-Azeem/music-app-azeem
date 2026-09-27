@@ -25,6 +25,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -447,6 +448,7 @@ fun NowPlayingScreen(
         TrackOptionsSheet(
             track = menuTrack,
             onDismiss = { menuQueueIndex = null },
+            onRemoveFromQueue = { viewModel.removeQueueItem(queueIndex) },
             onMoveUp = if (queueIndex > state.currentIndex + 1) {
                 { viewModel.moveQueueItem(queueIndex, queueIndex - 1) }
             } else null,
@@ -938,6 +940,37 @@ fun NowPlayingScreen(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     contentAlignment = Alignment.BottomCenter
                 ) {
+                    if (glassUpcoming.size > 1) {
+                        Row(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(end = 14.dp, top = 4.dp)
+                                .clip(RoundedCornerShape(22.dp))
+                                .background(Color.White.copy(alpha = 0.12f))
+                                .border(
+                                    1.dp,
+                                    Color.White.copy(alpha = 0.26f),
+                                    RoundedCornerShape(22.dp)
+                                )
+                                .clickable { viewModel.smartShuffle() }
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Shuffle,
+                                contentDescription = "Shuffle Up Next",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "Shuffle",
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                    }
+
                     if (glassUpcoming.isNotEmpty()) {
                         LazyRow(
                             state = fanState,
@@ -982,7 +1015,10 @@ fun NowPlayingScreen(
                                         .graphicsLayer { rotationZ = tangentAngle }
                                         .clip(RoundedCornerShape(UiDesignConfig.GLASS_QUEUE_CARD_RADIUS_DP.dp))
                                         .background(Color(0xFFD7ECFF).copy(alpha = 0.52f))
-                                        .clickable { viewModel.playQueueItem(state.currentIndex + 1 + index) }
+                                        .combinedClickable(
+                                            onClick = { viewModel.playQueueItem(state.currentIndex + 1 + index) },
+                                            onLongClick = { menuQueueIndex = state.currentIndex + 1 + index }
+                                        )
                                         .padding(5.dp),
                                     contentAlignment = Alignment.TopCenter
                                 ) {

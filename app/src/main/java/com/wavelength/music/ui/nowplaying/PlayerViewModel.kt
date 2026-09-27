@@ -76,6 +76,7 @@ class PlayerViewModel @Inject constructor(
     fun cycleRepeatMode() = playerController.cycleRepeatMode()
     fun playQueueItem(index: Int) = playerController.playQueueItem(index)
     fun moveQueueItem(from: Int, to: Int) = playerController.moveQueueItem(from, to)
+    fun removeQueueItem(index: Int) = playerController.removeQueueItem(index)
     fun setVolume(volume: Float) = playerController.setVolume(volume)
     fun setSystemVolume(volume: Float) = systemVolumeController.setVolume(volume)
     fun setPlaybackSpeed(speed: Float) = playerController.setPlaybackSpeed(speed)

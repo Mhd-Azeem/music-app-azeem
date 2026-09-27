@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
@@ -52,6 +53,7 @@ fun TrackOptionsSheet(
     track: Track,
     onDismiss: () -> Unit,
     onRemoveFromPlaylist: (() -> Unit)? = null,
+    onRemoveFromQueue: (() -> Unit)? = null,
     onMoveUp: (() -> Unit)? = null,
     onMoveDown: (() -> Unit)? = null,
     onBrowseArtist: (() -> Unit)? = null,
@@ -200,8 +202,15 @@ fun TrackOptionsSheet(
                 }
             }
             if (onRemoveFromPlaylist != null) {
-                TrackOptionRow(Icons.Filled.Delete, "Remove from playlist") {
+                TrackOptionRow(Icons.Filled.Close, "Hide in this playlist") {
                     onRemoveFromPlaylist()
+                    onDismiss()
+                }
+            }
+            if (onRemoveFromQueue != null) {
+                TrackOptionRow(Icons.Filled.Close, "Hide from Up Next") {
+                    onRemoveFromQueue()
+                    onDismiss()
                 }
             }
         }

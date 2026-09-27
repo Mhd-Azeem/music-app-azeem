@@ -425,6 +425,15 @@ class PlayerController @Inject constructor(
         _state.update { it.copy(queue = currentQueue, currentIndex = c.currentMediaItemIndex) }
     }
 
+    fun removeQueueItem(index: Int) {
+        val c = controller ?: return
+        // "Hide from Up Next" is intended for future items only; never remove the active song.
+        if (index !in currentQueue.indices || index <= c.currentMediaItemIndex) return
+        c.removeMediaItem(index)
+        currentQueue = currentQueue.toMutableList().apply { removeAt(index) }
+        _state.update { it.copy(queue = currentQueue, currentIndex = c.currentMediaItemIndex) }
+    }
+
     fun smartShuffleQueue() {
         val c = controller ?: return
         val remainingStart = c.currentMediaItemIndex + 1

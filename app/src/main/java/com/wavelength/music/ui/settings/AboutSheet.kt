@@ -24,6 +24,10 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Extended the hide action to Up Next: queued songs now have Hide from Up Next, and Glass queue cards expose the same menu on long-press",
+    "Added a Spotify-style Hide in this playlist action to each song menu inside user playlists",
+    "Fixed Home, Search and Library bottom tiles on small-width phones so labels stay on one line with compact spacing and icons instead of wrapping vertically",
+    "Added a visible Shuffle pill to the Glassmorphism Up Next area so the upcoming queue can be reshuffled directly from the Glass player",
     "Added subtle inset horizontal separators between settings inside every expanded Settings category for clearer visual grouping",
     "Slightly reduced the width of the Home, Search and Library floating tiles while keeping the draggable liquid overlay aligned",
     "Added a full-app Neomorphism theme toggle with soft raised dark surfaces, rounded depth styling and automatic Glassmorphism conflict handling",
