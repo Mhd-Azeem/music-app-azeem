@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Fixed Search keyboard behavior so returning to Search stays keyboard-free; only tapping the already-selected Search tab a second time opens the keyboard",
     "Search bottom navigation now uses a two-step tap: first tap opens Search, tapping Search again focuses the search box and opens the keyboard automatically",
     "Expanded themes to Solid, Liquid, Glassmorphism, Neomorphism, AMOLED, Album Adaptive and Aurora, plus an Animate theme transitions toggle for smooth color crossfades",
     "Added Hide in this playlist to language/genre pages as well as user playlists; hidden language-page songs stay removed while browsing and are filtered out of later pagination",

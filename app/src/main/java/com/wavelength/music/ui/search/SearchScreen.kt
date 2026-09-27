@@ -44,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -90,9 +91,16 @@ fun SearchScreen(
     val searchFocusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    // Initialize to the current sequence whenever Search enters composition. This prevents an old
+    // second-tap request from reopening the IME when the user later returns to Search normally.
+    var lastHandledFocusRequest by remember {
+        mutableIntStateOf(focusRequestSequence)
+    }
+
     LaunchedEffect(Unit) { viewModel.consumePendingSearch() }
     LaunchedEffect(focusRequestSequence) {
-        if (focusRequestSequence > 0) {
+        if (focusRequestSequence > lastHandledFocusRequest) {
+            lastHandledFocusRequest = focusRequestSequence
             delay(60)
             searchFocusRequester.requestFocus()
             keyboardController?.show()
