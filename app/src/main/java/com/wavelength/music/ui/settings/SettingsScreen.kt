@@ -116,7 +116,7 @@ fun SettingsScreen(
     var showAbout by remember { mutableStateOf(false) }
     var showAlbumArtStyleMenu by remember { mutableStateOf(false) }
     var showThemeColorPicker by remember { mutableStateOf(false) }
-    var expandedSettingsCategory by remember { mutableStateOf<String?>("Appearance & Interface") }
+    var expandedSettingsCategory by remember { mutableStateOf<String?>(null) }
     var showGlassTimelineColorPicker by remember { mutableStateOf(false) }
     var showGlassGlowColorPicker by remember { mutableStateOf(false) }
     val context = LocalContext.current
