@@ -364,15 +364,29 @@ fun NowPlayingScreen(
     // Bass Zoom uses the continuous decoded-PCM bass level, not the old Beat Bounce onset event.
     // Quiet/low-bass sections therefore stay almost still while strong bass smoothly zooms in.
     val pcmBassLevel by viewModel.pcmBassLevel.collectAsStateWithLifecycle()
+    // Shape the raw bass level so quiet bass produces only a tiny visual vibration,
+    // while the strongest kick/bass hits use the full zoom range.
+    val normalizedBass = pcmBassLevel.coerceIn(0f, 1f)
+    val bassZoomAmount = when {
+        normalizedBass < 0.12f -> normalizedBass / 0.12f * 0.004f
+        normalizedBass < 0.55f -> {
+            val t = (normalizedBass - 0.12f) / 0.43f
+            0.004f + (t * t) * 0.036f
+        }
+        else -> {
+            val t = (normalizedBass - 0.55f) / 0.45f
+            0.040f + (t * t) * 0.120f
+        }
+    }
     val bassZoomScale by animateFloatAsState(
         targetValue = if (bassZoomAlbumArt && state.isPlaying) {
-            1f + pcmBassLevel.coerceIn(0f, 1f) * 0.115f
+            1f + bassZoomAmount
         } else {
             1f
         },
         animationSpec = spring(
-            dampingRatio = 0.74f,
-            stiffness = Spring.StiffnessMedium
+            dampingRatio = 0.62f,
+            stiffness = Spring.StiffnessHigh
         ),
         label = "bassZoomScale"
     )
