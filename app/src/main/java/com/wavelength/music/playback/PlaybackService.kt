@@ -10,8 +10,10 @@ import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.CacheDataSource
-import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
+import androidx.media3.datasource.cache.CacheEvictor
+import androidx.media3.datasource.cache.CacheSpan
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
@@ -69,12 +71,20 @@ class PlaybackService : MediaSessionService() {
         // Persist streamed song bytes on-device, Spotify-style. A track that has already been
         // played can be served from this cache on later plays, reducing re-buffering and network
         // use. LRU eviction caps the cache so it cannot grow without bound.
+        val savedLimitMb = getSharedPreferences(
+            SETTINGS_PREFS_NAME,
+            Context.MODE_PRIVATE
+        ).getInt(KEY_STREAM_CACHE_LIMIT_MB, DEFAULT_STREAM_CACHE_LIMIT_MB)
+            .coerceIn(0, DEFAULT_STREAM_CACHE_LIMIT_MB)
+
+        val cacheEvictor = AdjustableCacheEvictor(savedLimitMb.toLong() * BYTES_PER_MB)
         val cache = SimpleCache(
-            File(cacheDir, "azmusic_stream_cache"),
-            LeastRecentlyUsedCacheEvictor(STREAM_CACHE_MAX_BYTES),
+            File(cacheDir, STREAM_CACHE_DIR),
+            cacheEvictor,
             StandaloneDatabaseProvider(this)
         )
         streamCache = cache
+        StreamCacheControl.attach(cache, cacheEvictor)
 
         val upstreamFactory = DefaultDataSource.Factory(this)
         val cacheDataSourceFactory = CacheDataSource.Factory()
@@ -157,13 +167,100 @@ class PlaybackService : MediaSessionService() {
             release()
             mediaSession = null
         }
+        StreamCacheControl.detach(streamCache)
         runCatching { streamCache?.release() }
         streamCache = null
         super.onDestroy()
     }
 
     private companion object {
-        // Roughly 1 GB of recently streamed audio, automatically evicting the oldest cache data.
-        const val STREAM_CACHE_MAX_BYTES = 1_073_741_824L
+        const val SETTINGS_PREFS_NAME = "wavelength_settings"
+        const val KEY_STREAM_CACHE_LIMIT_MB = "stream_cache_limit_mb"
+        const val DEFAULT_STREAM_CACHE_LIMIT_MB = 1024
+        const val BYTES_PER_MB = 1_048_576L
+        const val STREAM_CACHE_DIR = "azmusic_stream_cache"
+    }
+}
+
+@UnstableApi
+class AdjustableCacheEvictor(initialMaxBytes: Long) : CacheEvictor {
+    @Volatile
+    private var maxBytes: Long = initialMaxBytes.coerceAtLeast(0L)
+
+    override fun requiresCacheSpanTouches(): Boolean = true
+    override fun onCacheInitialized() = Unit
+
+    override fun onStartFile(cache: Cache, key: String, position: Long, length: Long) {
+        evict(cache, if (length > 0L) length else 0L)
+    }
+
+    override fun onSpanAdded(cache: Cache, span: CacheSpan) {
+        evict(cache, 0L)
+    }
+
+    override fun onSpanRemoved(cache: Cache, span: CacheSpan) = Unit
+    override fun onSpanTouched(cache: Cache, oldSpan: CacheSpan, newSpan: CacheSpan) = Unit
+
+    fun updateMaxBytes(cache: Cache, newMaxBytes: Long) {
+        maxBytes = newMaxBytes.coerceAtLeast(0L)
+        evict(cache, 0L)
+    }
+
+    private fun evict(cache: Cache, requiredSpace: Long) {
+        while (cache.cacheSpace + requiredSpace > maxBytes) {
+            val oldest = cache.keys
+                .asSequence()
+                .flatMap { key -> cache.getCachedSpans(key).asSequence() }
+                .minByOrNull { it.lastTouchTimestamp }
+                ?: break
+            try {
+                cache.removeSpan(oldest)
+            } catch (_: Exception) {
+                break
+            }
+        }
+    }
+}
+
+@UnstableApi
+object StreamCacheControl {
+    @Volatile private var activeCache: SimpleCache? = null
+    @Volatile private var activeEvictor: AdjustableCacheEvictor? = null
+
+    @Synchronized
+    fun attach(cache: SimpleCache, evictor: AdjustableCacheEvictor) {
+        activeCache = cache
+        activeEvictor = evictor
+    }
+
+    @Synchronized
+    fun detach(cache: SimpleCache?) {
+        if (activeCache === cache) {
+            activeCache = null
+            activeEvictor = null
+        }
+    }
+
+    @Synchronized
+    fun updateLimitBytes(context: Context, maxBytes: Long) {
+        val cache = activeCache
+        val evictor = activeEvictor
+        if (cache != null && evictor != null) {
+            evictor.updateMaxBytes(cache, maxBytes)
+        } else if (maxBytes == 0L) {
+            File(context.cacheDir, "azmusic_stream_cache").deleteRecursively()
+        }
+    }
+
+    @Synchronized
+    fun clear(context: Context) {
+        val cache = activeCache
+        if (cache != null) {
+            cache.keys.toList().forEach { key ->
+                runCatching { cache.removeResource(key) }
+            }
+        } else {
+            File(context.cacheDir, "azmusic_stream_cache").deleteRecursively()
+        }
     }
 }

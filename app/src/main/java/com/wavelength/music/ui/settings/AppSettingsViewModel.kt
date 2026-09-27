@@ -140,6 +140,12 @@ class AppSettingsViewModel @Inject constructor(
     fun setLiquidAlbumArtBackground(enabled: Boolean) =
         settingsRepository.setLiquidAlbumArtBackground(enabled)
 
+
+    fun setStreamCacheLimitMb(limitMb: Int) =
+        settingsRepository.setStreamCacheLimitMb(limitMb)
+
+    fun clearStreamCache() = settingsRepository.clearStreamCache()
+
     fun clearAllDownloads() {
         viewModelScope.launch { repository.clearAllDownloads() }
     }

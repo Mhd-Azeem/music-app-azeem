@@ -23,89 +23,10 @@ import androidx.compose.ui.unit.dp
 import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
-private val latestUpdates = listOf(
-    "Home AZ Music, Stats and Settings controls now transform with the selected theme instead of staying as the same purple glass buttons",
-    "Reworked every theme as a distinct visual system, not just a recolor: each now changes app-wide geometry, surface material, mini-player shape, bottom navigation, depth, borders and background treatment",
-    "Fixed Search keyboard behavior so returning to Search stays keyboard-free; only tapping the already-selected Search tab a second time opens the keyboard",
-    "Search bottom navigation now uses a two-step tap: first tap opens Search, tapping Search again focuses the search box and opens the keyboard automatically",
-    "Expanded themes to Solid, Liquid, Glassmorphism, Neomorphism, AMOLED, Album Adaptive and Aurora, plus an Animate theme transitions toggle for smooth color crossfades",
-    "Added Hide in this playlist to language/genre pages as well as user playlists; hidden language-page songs stay removed while browsing and are filtered out of later pagination",
-    "Added a Shuffle button beside Play All on every playlist-style page, including language pages and user-created playlists",
-    "Made Glass Shuffle and Repeat states clearly visible: active controls now glow cyan-purple with a bright rim and status dot, while inactive controls are strongly dimmed",
-    "Extended the hide action to Up Next: queued songs now have Hide from Up Next, and Glass queue cards expose the same menu on long-press",
-    "Added a Spotify-style Hide in this playlist action to each song menu inside user playlists",
-    "Fixed Home, Search and Library bottom tiles on small-width phones so labels stay on one line with compact spacing and icons instead of wrapping vertically",
-    "Added a visible Shuffle pill to the Glassmorphism Up Next area so the upcoming queue can be reshuffled directly from the Glass player",
-    "Added subtle inset horizontal separators between settings inside every expanded Settings category for clearer visual grouping",
-    "Slightly reduced the width of the Home, Search and Library floating tiles while keeping the draggable liquid overlay aligned",
-    "Added a full-app Neomorphism theme toggle with soft raised dark surfaces, rounded depth styling and automatic Glassmorphism conflict handling",
-    "Changed the bottom navigation liquid selector from a circle to a tile-sized rounded overlay and added direct finger-dragging across Home, Search and Library with snap-to-tab navigation",
-    "Added a reference-style liquid selector animation to Home, Search and Library: the selected tile springs larger while a glowing glass lens glides between tabs",
-    "Removed the visible Android launcher icon before the custom splash; startup now begins with a clean matching dark-purple system splash and transitions directly into the animated AZ Music splash",
-    "Completely redesigned startup with a native dark-purple launch screen and a new animated AZ Music glass splash with glowing logo, waveform bars and smooth handoff into the app",
-    "Fixed the launch intro by replacing the broken embedded video asset with the uploaded MP4 in a compact Android-compatible encode",
-    "Added a 4-second muted video launch intro using the uploaded video, with tap-anywhere skip and cold-launch-only playback",
-    "Added a native AzMusic startup splash screen with the app icon on a purple background",
-    "Organized Settings into expandable Appearance & Interface, Playback, Library & Data, Audio, and System & Account categories",
-    "Made Now Playing responsive on short/small phones so artwork, controls and Up Next stay visible; Glass queue/player geometry now scales down automatically",
-    "Restyled the floating Home header and bottom navigation as purple translucent glass pills with thin luminous white rims and matching circular controls",
-    "Replaced the full-width Home header and bottom navigation bars with compact floating AZ Music, Stats, Settings, Home, Search and Library tiles",
-    "Glass timeline now supports continuous swipe/drag seeking as well as tap-to-seek",
-    "Glass timeline is now thicker with a glowing played segment, plus Glass-only editable timeline and glow colors in Settings",
-    "Glass Now Playing can now be dragged down from anywhere on the screen to collapse smoothly into the mini player",
-    "Added persistent Spotify-style song caching with up to 1 GB of recent streamed audio plus longer read-ahead buffering for smoother playback in weak coverage",
-    "Fine-polished the Glass transport edges with smoother symmetric shoulders, cleaner side pods, and a tighter Saturn-style contour",
-    "Refined the Glass transport silhouette to the reference with tighter shoulders, compact side lobes, a higher smaller center disc, and a softer outer rim",
-    "Refined the Glass transport outer contour and luminous rim to more closely match the supplied liquid-glass reference",
-    "Rebuilt Glass playback controls to match the supplied liquid-glass reference: organic four-lobed body, upper Shuffle/Repeat orbs, white side transport icons, and luminous center Play/Pause disc",
-    "Removed the Glass lower-player outline and Up Next card outlines for a seamless borderless blur",
-    "Restored the normal seek bar, time labels, Shuffle, Previous, Play/Pause, Next and Repeat controls when Glass mode is off",
-    "Removed the remaining invisible gap between the Glass Up Next fan and the frosted player curve",
-    "Fixed Smart Queue in Glass Now Playing, removed the hard blur seam, replaced the blue player fill with real frosted blur, and strengthened the timeline accent",
-    "Removed the white Glass separator line, lengthened Up Next cards, and added a clear gap above the player panel",
-    "Removed the extra Up Next/player separation, matched the Glass panel crown to the timeline arc, switched Up Next to frosted glass, and increased card spacing",
-    "Refined Glass Now Playing spacing: separated Up Next cards and controls, plus safe margins for timeline, time, shuffle and repeat",
-    "Up Next now scrolls continuously along the curved player timeline with live circular position and tangent rotation",
-    "Removed the inherited Glass Now Playing parent horizontal inset so the main player panel reaches both screen edges",
-    "Made the Glass player zero-gap layout visibly edge-to-edge, with tightly overlapping Up Next cards touching the separator crown",
-    "Removed Glass Now Playing outer margins and closed the gaps between Up Next cards and the curved separator",
-    "Fixed Glass Up Next motion so songs continuously rotate around the circular fan while scrolling, with the separator realigned to the fan baseline",
-    "Rebuilt Glass Now Playing to the supplied reference: yellow album-art Up Next cards in a circular swipe fan, one large curved frosted player panel, arched seek line, and compact connected transport",
-    "Corrected Glass Now Playing geometry: clean single separator, unclipped circular Up Next fan, separated seek arc, and compact single-outline Saturn controls",
-    "Now Playing refined with a thicker translucent timeline-shaped separator, softer lower playback frost, larger Play/Pause orbit, and Previous/Next moved closer to center",
-    "Refined Glass Now Playing to match the supplied reference: true circular-fan Up Next geometry and corrected compact Saturn transport proportions",
-    "Glass Now Playing now separates Up Next from playback with a curved divider, stronger lower-panel frost, and a horizontally scrollable circular fan queue",
-    "Fixed Glass Up Next screenshot issue: removed numbering/encoded-looking prefixes, tightened spacing, and softened the horizontal arc",
-    "Refined Glass Up Next: borderless vertical song names in a smoother horizontally scrollable curved layout",
-    "Refined full-app Glassmorphism with a liquid gradient background, darker readable glass cards, vertical scrollable Up Next labels, deeper seek arc, and a smoother Saturn transport outline",
-    "Glassmorphism is now a full-app theme with a continuous Saturn transport border, deeper curved seek arc, and scrollable arced Up Next cards",
-    "Glass playback controls now use Saturn-style orbital rings and a deeper curved song timeline",
-    "Glass Now Playing refined again for full-screen artwork, lower reference layout, and truly connected liquid transport controls",
-    "Refined Glass Now Playing to closely match the reference: cleaner artwork, centered metadata, compact arc timeline, organic liquid transport, and minimal controls",
-    "Fixed the curved glass seek timeline gesture build issue",
-    "Glass Now Playing now matches the reference with an arched seek timeline and connected liquid playback controls",
-    "Glassmorphism Now Playing now includes reference-style liquid-glass Previous, Play/Pause, Next, Shuffle and Repeat controls",
-    "Optional Glassmorphism Now Playing mode with a blurred album-art backdrop and frosted translucent interface",
-    "Fixed exact song-variant search matching and ranking for slowed, reverb, lofi, remix, and sped-up queries",
-    "Search now prioritizes the exact song title before version words like slowed, reverb, lofi, remix and sped-up",
-    "Updater now opens the Android installer automatically as soon as the APK download finishes",
-    "Background opacity slider restored with live 0–100% control",
-    "Simplified appearance selector with Solid and Liquid modes using one variable accent color",
-    "New album-art styles: Depth Float, Bass Zoom, Spatial Float, Parallax, and Vinyl",
-    "Album-art style now defaults to Off",
-    "Expand Up Next when scrolled now defaults to On",
-    "Smart Queue automatically adds related songs when Up Next is nearly empty",
-    "Gapless Playback option added, enabled by default",
-    "Adjustable crossfade retained for smooth transitions between songs",
-    "Swipe down on Now Playing to collapse back to the mini-player",
-    "Email Activation moved into Settings below Cloudflare Usage and above About",
-    "Theme accent color picker is collapsible and applies to both Solid and Liquid modes"
-)
-
 private val featureGroups = listOf(
     "Playback" to listOf(
         "Stream millions of songs via JioSaavn, plus play files already on your device",
-        "Persistent streamed-song cache for faster replays and smoother playback in weak coverage",
+        "Persistent streamed-song cache with an adjustable 0–1 GB storage limit and safe clear-cache control",
         "Gapless playback with adjustable crossfade between tracks",
         "Adjustable playback speed",
         "Sleep timer — countdown or end-of-track",
@@ -131,9 +52,9 @@ private val featureGroups = listOf(
         "Paginated search results with infinite scroll"
     ),
     "Personalization" to listOf(
-        "Single variable accent color shared by Solid and Liquid appearance modes",
-        "Optional full-app Glassmorphism theme with frosted translucent surfaces and reference-style playback controls",
-        "Solid or Liquid appearance selection",
+        "Seven distinct visual systems: Solid, Liquid, Glassmorphism, Neomorphism, AMOLED, Album Adaptive and Aurora",
+        "Theme-specific geometry, surfaces, navigation, mini-player styling, backgrounds and animated transitions",
+        "Album-adaptive colors and animated Aurora backgrounds",
         "Multiple app icon presets",
         "Custom background photo, plus a gallery of favorite wallpapers",
         "Depth Float, Bass Zoom, Spatial Float, Parallax, and Vinyl album-art styles",
@@ -187,17 +108,11 @@ fun AboutSheet(onDismiss: () -> Unit) {
             }
 
             Text(
-                text = "Latest updates",
+                text = "Features",
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 18.dp, bottom = 4.dp)
             )
-            latestUpdates.forEach { update ->
-                Row(modifier = Modifier.padding(vertical = 2.dp)) {
-                    Text("•  ", color = MaterialTheme.colorScheme.primary)
-                    Text(update, style = MaterialTheme.typography.bodySmall)
-                }
-            }
 
             featureGroups.forEach { (group, items) ->
                 Text(

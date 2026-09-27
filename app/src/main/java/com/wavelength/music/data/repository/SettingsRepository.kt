@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.core.content.edit
 import com.wavelength.music.ui.settings.IconPreset
+import com.wavelength.music.playback.StreamCacheControl
 import com.wavelength.music.ui.theme.AppTheme
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -90,7 +91,9 @@ data class AppSettingsState(
     /** Played seek segment + glow color. Editable only while Glass mode is enabled. */
     val glassPlayedGlowArgb: Int = DEFAULT_GLASS_PLAYED_GLOW_ARGB,
     /** When enabled in Liquid themes, the current track artwork fills the Now Playing backdrop. */
-    val liquidAlbumArtBackground: Boolean = false
+    val liquidAlbumArtBackground: Boolean = false,
+    /** Persistent streamed-audio cache cap in MB. 0 disables retained stream caching. */
+    val streamCacheLimitMb: Int = DEFAULT_STREAM_CACHE_LIMIT_MB
 )
 
 const val DEFAULT_BACKGROUND_OPACITY = 0.25f
@@ -98,6 +101,7 @@ const val DEFAULT_TRACK_TRANSITION_DURATION_MS = 300
 const val DEFAULT_CUSTOM_ACCENT_ARGB: Int = 0xFF22D3EE.toInt()
 const val DEFAULT_GLASS_TIMELINE_ARGB: Int = 0xFF14B8E6.toInt()
 const val DEFAULT_GLASS_PLAYED_GLOW_ARGB: Int = 0xFF54E8FF.toInt()
+const val DEFAULT_STREAM_CACHE_LIMIT_MB: Int = 1024
 
 @Singleton
 class SettingsRepository @Inject constructor(
@@ -160,7 +164,9 @@ class SettingsRepository @Inject constructor(
         glassmorphismNowPlaying = prefs.getBoolean(KEY_GLASSMORPHISM_NOW_PLAYING, false),
         glassTimelineArgb = prefs.getInt(KEY_GLASS_TIMELINE_ARGB, DEFAULT_GLASS_TIMELINE_ARGB),
         glassPlayedGlowArgb = prefs.getInt(KEY_GLASS_PLAYED_GLOW_ARGB, DEFAULT_GLASS_PLAYED_GLOW_ARGB),
-        liquidAlbumArtBackground = false
+        liquidAlbumArtBackground = false,
+        streamCacheLimitMb = prefs.getInt(KEY_STREAM_CACHE_LIMIT_MB, DEFAULT_STREAM_CACHE_LIMIT_MB)
+            .coerceIn(0, DEFAULT_STREAM_CACHE_LIMIT_MB)
     )
 
     private fun loadAlbumArtStyle(): AlbumArtStyle {
@@ -439,6 +445,21 @@ class SettingsRepository @Inject constructor(
         _state.update { it.copy(liquidAlbumArtBackground = enabled) }
     }
 
+
+    fun setStreamCacheLimitMb(limitMb: Int) {
+        val clamped = limitMb.coerceIn(0, DEFAULT_STREAM_CACHE_LIMIT_MB)
+        prefs.edit { putInt(KEY_STREAM_CACHE_LIMIT_MB, clamped) }
+        _state.update { it.copy(streamCacheLimitMb = clamped) }
+        StreamCacheControl.updateLimitBytes(
+            context,
+            clamped.toLong() * 1024L * 1024L
+        )
+    }
+
+    fun clearStreamCache() {
+        StreamCacheControl.clear(context)
+    }
+
     /** Enables the alias matching [preset] and disables the others, so exactly one launcher
      * icon is ever active at a time. */
     private fun applyIconPreset(preset: IconPreset) {
@@ -460,6 +481,7 @@ class SettingsRepository @Inject constructor(
     private companion object {
         const val KEY_ICON = "icon_preset"
         const val KEY_THEME = "theme"
+        const val KEY_STREAM_CACHE_LIMIT_MB = "stream_cache_limit_mb"
         const val KEY_VISUAL_THEME_MODE = "visual_theme_mode"
         const val KEY_ANIMATE_THEME_TRANSITIONS = "animate_theme_transitions"
         const val KEY_BACKGROUND_OPACITY = "background_opacity"

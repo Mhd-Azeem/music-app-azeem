@@ -1,6 +1,7 @@
 package com.wavelength.music.ui.settings
 
 import android.net.Uri
+import androidx.compose.animation.core.animate
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -52,6 +53,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -60,11 +62,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.widget.Toast
@@ -83,7 +87,11 @@ import kotlin.math.roundToInt
 import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
@@ -104,6 +112,7 @@ fun SettingsScreen(
     val downloadsSummary by viewModel.downloadsSummary.collectAsStateWithLifecycle()
     val usageState by viewModel.usageState.collectAsStateWithLifecycle()
     var showClearDownloadsConfirm by remember { mutableStateOf(false) }
+    var showClearCacheConfirm by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
     var showAlbumArtStyleMenu by remember { mutableStateOf(false) }
     var showThemeColorPicker by remember { mutableStateOf(false) }
@@ -140,6 +149,31 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showClearDownloadsConfirm = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    if (showClearCacheConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearCacheConfirm = false },
+            title = { Text("Clear streamed-song cache?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("This removes cached streamed audio only. Downloads, playlists and favorites are not deleted.")
+                    CacheSwipeToConfirm(
+                        onConfirmed = {
+                            viewModel.clearStreamCache()
+                            showClearCacheConfirm = false
+                            Toast.makeText(context, "Stream cache cleared", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showClearCacheConfirm = false }) {
+                    Text("Cancel")
+                }
             }
         )
     }
@@ -1143,6 +1177,62 @@ fun SettingsScreen(
                 }
             }
 
+
+            item {
+                SettingsSection(title = "Stream Cache") {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        Text(
+                            text = when (settings.streamCacheLimitMb) {
+                                0 -> "Cache limit: Off (0 MB)"
+                                1024 -> "Cache limit: 1.0 GB"
+                                else -> "Cache limit: ${settings.streamCacheLimitMb} MB"
+                            },
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Slider(
+                            value = settings.streamCacheLimitMb.toFloat(),
+                            onValueChange = { raw ->
+                                val snapped = ((raw / 64f).roundToInt() * 64).coerceIn(0, 1024)
+                                viewModel.setStreamCacheLimitMb(snapped)
+                            },
+                            valueRange = 0f..1024f,
+                            steps = 15
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                "0 MB",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                "1 GB",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Text(
+                            text = "Limits persistent streamed-song cache storage. Lowering the limit immediately evicts older cached audio. 0 MB disables retained stream caching.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 6.dp, bottom = 10.dp)
+                        )
+                        OutlinedButton(
+                            onClick = { showClearCacheConfirm = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Clear cache")
+                        }
+                    }
+                }
+            }
+
             item {
                 SettingsSection(title = "Statistics") {
                     Row(
@@ -1493,6 +1583,67 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CacheSwipeToConfirm(onConfirmed: () -> Unit) {
+    var offsetPx by remember { mutableFloatStateOf(0f) }
+    var maxOffsetPx by remember { mutableFloatStateOf(0f) }
+    val scope = rememberCoroutineScope()
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(58.dp)
+            .clip(RoundedCornerShape(29.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .onSizeChanged { size ->
+                maxOffsetPx = (size.width - size.height.toFloat()).coerceAtLeast(0f)
+                offsetPx = offsetPx.coerceIn(0f, maxOffsetPx)
+            },
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Text(
+            text = "Swipe to clear cache  →",
+            modifier = Modifier.align(Alignment.Center),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelLarge
+        )
+        androidx.compose.material3.Surface(
+            modifier = Modifier
+                .padding(4.dp)
+                .size(50.dp)
+                .offset { IntOffset(offsetPx.roundToInt(), 0) }
+                .draggable(
+                    orientation = Orientation.Horizontal,
+                    state = rememberDraggableState { delta ->
+                        offsetPx = (offsetPx + delta).coerceIn(0f, maxOffsetPx)
+                    },
+                    onDragStopped = {
+                        if (maxOffsetPx > 0f && offsetPx >= maxOffsetPx * 0.85f) {
+                            offsetPx = maxOffsetPx
+                            onConfirmed()
+                        } else {
+                            val start = offsetPx
+                            scope.launch {
+                                animate(start, 0f) { value, _ -> offsetPx = value }
+                            }
+                        }
+                    }
+                ),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primary,
+            tonalElevation = 4.dp
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    "✓",
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.titleLarge
                 )
             }
         }
