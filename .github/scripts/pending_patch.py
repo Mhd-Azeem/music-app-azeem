@@ -933,3 +933,37 @@ assert needle in a, "About changelog anchor not found for themes"
 if entry not in a:
     a = a.replace(needle, needle + entry, 1)
 about.write_text(a)
+
+
+# Fix Compose animation imports for seven-theme build.
+main = Path("app/src/main/java/com/wavelength/music/MainActivity.kt")
+ms = main.read_text()
+ms = ms.replace("import androidx.compose.animation.core.animateColorAsState\n", "")
+if "import androidx.compose.animation.animateColorAsState\n" not in ms:
+    ms = ms.replace(
+        "import androidx.activity.result.contract.ActivityResultContracts\n",
+        "import androidx.activity.result.contract.ActivityResultContracts\nimport androidx.compose.animation.animateColorAsState\nimport androidx.compose.animation.animateColor\n",
+        1
+    )
+main.write_text(ms)
+
+theme = Path("app/src/main/java/com/wavelength/music/ui/theme/Theme.kt")
+ts = theme.read_text()
+ts = ts.replace("import androidx.compose.animation.core.animateColorAsState\n", "")
+if "import androidx.compose.animation.animateColorAsState\n" not in ts:
+    ts = ts.replace(
+        "package com.wavelength.music.ui.theme\n\n",
+        "package com.wavelength.music.ui.theme\n\nimport androidx.compose.animation.animateColorAsState\n",
+        1
+    )
+theme.write_text(ts)
+
+np = Path("app/src/main/java/com/wavelength/music/ui/nowplaying/NowPlayingScreen.kt")
+ns = np.read_text()
+if "import androidx.compose.ui.draw.shadow\n" not in ns:
+    ns = ns.replace(
+        "import androidx.compose.ui.draw.clip\n",
+        "import androidx.compose.ui.draw.clip\nimport androidx.compose.ui.draw.shadow\n",
+        1
+    )
+np.write_text(ns)
