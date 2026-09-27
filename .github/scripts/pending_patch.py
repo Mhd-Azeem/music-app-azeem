@@ -347,3 +347,79 @@ assert needle in a, "About changelog anchor not found for playlist shuffle"
 if entry not in a:
     a = a.replace(needle, needle + entry, 1)
 about.write_text(a)
+
+
+# Expose "Hide in this playlist" on dynamic language/genre pages too.
+g = Path("app/src/main/java/com/wavelength/music/ui/home/GenreScreen.kt")
+gs = g.read_text()
+needle = '''        emptyMessage = stringResource(R.string.search_empty_hint),
+        onLoadMore = viewModel::loadMore,
+        isLoadingMore = isLoadingMore
+'''
+replacement = '''        emptyMessage = stringResource(R.string.search_empty_hint),
+        onLoadMore = viewModel::loadMore,
+        isLoadingMore = isLoadingMore,
+        onRemoveFromPlaylist = viewModel::hideTrack
+'''
+assert needle in gs, "GenreScreen list tail anchor not found"
+gs = gs.replace(needle, replacement, 1)
+g.write_text(gs)
+
+gvm = Path("app/src/main/java/com/wavelength/music/ui/home/GenreViewModel.kt")
+gv = gvm.read_text()
+
+# Keep hidden IDs for the lifetime of the language page so pagination cannot add them back.
+anchor = '''    private var hasMore = true
+    private val pageSize = 30
+'''
+replacement = '''    private var hasMore = true
+    private val pageSize = 30
+    private val hiddenTrackIds = mutableSetOf<String>()
+'''
+assert anchor in gv, "GenreViewModel paging state anchor not found"
+gv = gv.replace(anchor, replacement, 1)
+
+load_unique = '''                    val unique = list.distinctBy { it.id }
+                    _tracks.value = if (unique.isEmpty()) ScreenState.Empty else ScreenState.Success(unique)
+'''
+load_unique_new = '''                    val unique = list
+                        .distinctBy { it.id }
+                        .filterNot { it.id in hiddenTrackIds }
+                    _tracks.value = if (unique.isEmpty()) ScreenState.Empty else ScreenState.Success(unique)
+'''
+assert load_unique in gv, "GenreViewModel initial list block not found"
+gv = gv.replace(load_unique, load_unique_new, 1)
+
+incoming = '''                    val newTracks = incoming.filterNot { it.id in existingIds }
+'''
+incoming_new = '''                    val newTracks = incoming.filterNot {
+                        it.id in existingIds || it.id in hiddenTrackIds
+                    }
+'''
+assert incoming in gv, "GenreViewModel loadMore filter not found"
+gv = gv.replace(incoming, incoming_new, 1)
+
+play_anchor = '''    fun playAll() {
+'''
+hide_fun = '''    fun hideTrack(track: Track) {
+        hiddenTrackIds += track.id
+        val current = _tracks.value
+        if (current is ScreenState.Success) {
+            val visible = current.data.filterNot { it.id == track.id }
+            _tracks.value = if (visible.isEmpty()) ScreenState.Empty else ScreenState.Success(visible)
+        }
+    }
+
+'''
+assert play_anchor in gv, "GenreViewModel playAll marker not found"
+gv = gv.replace(play_anchor, hide_fun + play_anchor, 1)
+gvm.write_text(gv)
+
+about = Path("app/src/main/java/com/wavelength/music/ui/settings/AboutSheet.kt")
+a = about.read_text()
+needle = "private val latestUpdates = listOf(\n"
+entry = '    "Added Hide in this playlist to language/genre pages as well as user playlists; hidden language-page songs stay removed while browsing and are filtered out of later pagination",\n'
+assert needle in a, "About changelog anchor not found for language hide"
+if entry not in a:
+    a = a.replace(needle, needle + entry, 1)
+about.write_text(a)
