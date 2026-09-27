@@ -30,13 +30,13 @@ enum class BuiltInWallpaper(val label: String) {
 
 
 enum class VisualThemeMode(val label: String, val description: String) {
-    SOLID("Solid", "Clean solid interface"),
-    LIQUID("Liquid", "Translucent liquid surfaces"),
-    GLASSMORPHISM("Glassmorphism", "Frosted glass across the full app"),
-    NEOMORPHISM("Neomorphism", "Soft raised and inset surfaces"),
-    AMOLED("AMOLED", "True black OLED-friendly interface"),
-    ALBUM_ADAPTIVE("Album Adaptive", "Colors follow the current album artwork"),
-    AURORA("Aurora", "Animated cyan, violet and blue atmosphere")
+    SOLID("Solid", "Flat, compact geometry with restrained surfaces"),
+    LIQUID("Liquid", "Rounded flowing surfaces with soft translucent depth"),
+    GLASSMORPHISM("Glassmorphism", "Large frosted glass shapes, luminous rims and blur"),
+    NEOMORPHISM("Neomorphism", "Raised graphite controls with soft depth and shadows"),
+    AMOLED("AMOLED", "True black, sharp minimal geometry and almost no glow"),
+    ALBUM_ADAPTIVE("Album Adaptive", "Album-driven surfaces, borders and ambient backdrop"),
+    AURORA("Aurora", "Oversized rounded UI with animated cyan-violet atmosphere")
 }
 
 

@@ -69,6 +69,7 @@ import com.wavelength.music.activation.ActivationScreen
 import com.wavelength.music.activation.ActivationStatus
 import com.wavelength.music.activation.ActivationViewModel
 import com.wavelength.music.activation.AdminActivationScreen
+import com.wavelength.music.data.repository.VisualThemeMode
 import com.wavelength.music.ui.components.AppBackground
 import com.wavelength.music.ui.components.MiniPlayerBar
 import com.wavelength.music.ui.home.GenreScreen
@@ -158,7 +159,8 @@ fun WavelengthNavHost() {
                             hazeState = if (isLiquid) hazeState else null,
                             glassStyle = glassStyle,
                             trackTransitionEnabled = settings.trackTransitionEnabled,
-                            trackTransitionDurationMs = settings.trackTransitionDurationMs
+                            trackTransitionDurationMs = settings.trackTransitionDurationMs,
+                            visualThemeMode = settings.visualThemeMode
                         )
                     BoxWithConstraints(
                         modifier = Modifier
@@ -240,27 +242,58 @@ fun WavelengthNavHost() {
                                 horizontalArrangement = Arrangement.spacedBy(navSpacing),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                val purpleGlassBrush = if (settings.neomorphismEnabled) {
-                                    Brush.linearGradient(
-                                        colors = listOf(
-                                            Color(0xFF313947),
-                                            Color(0xFF252C37),
-                                            Color(0xFF1D232C)
+                                val navBrush = when (settings.visualThemeMode) {
+                                    VisualThemeMode.SOLID -> Brush.linearGradient(
+                                        listOf(Color(0xFF171717), Color(0xFF101010))
+                                    )
+                                    VisualThemeMode.LIQUID -> Brush.linearGradient(
+                                        listOf(
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.56f),
+                                            Color(0xCC263B63),
+                                            Color(0xAA101A2C)
                                         )
                                     )
-                                } else {
-                                    Brush.linearGradient(
-                                        colors = listOf(
-                                            Color(0xCC332060),
-                                            Color(0xCC56367F),
-                                            Color(0xCC764595)
+                                    VisualThemeMode.GLASSMORPHISM -> Brush.linearGradient(
+                                        listOf(
+                                            Color.White.copy(alpha = 0.20f),
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.28f),
+                                            Color(0x66122A43)
+                                        )
+                                    )
+                                    VisualThemeMode.NEOMORPHISM -> Brush.linearGradient(
+                                        listOf(Color(0xFF37404E), Color(0xFF252C37), Color(0xFF1A1F27))
+                                    )
+                                    VisualThemeMode.AMOLED -> Brush.linearGradient(
+                                        listOf(Color.Black, Color(0xFF050505))
+                                    )
+                                    VisualThemeMode.ALBUM_ADAPTIVE -> Brush.linearGradient(
+                                        listOf(
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.72f),
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.30f),
+                                            Color(0xCC0A0D14)
+                                        )
+                                    )
+                                    VisualThemeMode.AURORA -> Brush.linearGradient(
+                                        listOf(
+                                            Color(0xCC4338CA),
+                                            Color(0xCC7E22CE),
+                                            Color(0xAA0891B2)
                                         )
                                     )
                                 }
 
                                 bottomNavScreens.forEachIndexed { index, screen ->
                                     val selected = selectedIndex == index
-                                    val tileShape = RoundedCornerShape(if (compactBottomNav) 20.dp else 24.dp)
+                                    val tileRadius = when (settings.visualThemeMode) {
+                                        VisualThemeMode.SOLID -> if (compactBottomNav) 8.dp else 10.dp
+                                        VisualThemeMode.LIQUID -> if (compactBottomNav) 22.dp else 28.dp
+                                        VisualThemeMode.GLASSMORPHISM -> if (compactBottomNav) 24.dp else 30.dp
+                                        VisualThemeMode.NEOMORPHISM -> if (compactBottomNav) 16.dp else 20.dp
+                                        VisualThemeMode.AMOLED -> if (compactBottomNav) 2.dp else 4.dp
+                                        VisualThemeMode.ALBUM_ADAPTIVE -> if (compactBottomNav) 16.dp else 22.dp
+                                        VisualThemeMode.AURORA -> if (compactBottomNav) 26.dp else 32.dp
+                                    }
+                                    val tileShape = RoundedCornerShape(tileRadius)
                                     val itemAlpha by animateFloatAsState(
                                         targetValue = if (selected) 1f else 0.82f,
                                         animationSpec = tween(180),
@@ -272,16 +305,41 @@ fun WavelengthNavHost() {
                                             .width(itemWidth)
                                             .graphicsLayer { alpha = itemAlpha }
                                             .shadow(
-                                                if (selected) 16.dp else 10.dp,
+                                                when (settings.visualThemeMode) {
+                                                    VisualThemeMode.AMOLED -> if (selected) 2.dp else 0.dp
+                                                    VisualThemeMode.SOLID -> if (selected) 8.dp else 3.dp
+                                                    VisualThemeMode.NEOMORPHISM -> if (selected) 18.dp else 12.dp
+                                                    VisualThemeMode.AURORA -> if (selected) 22.dp else 12.dp
+                                                    else -> if (selected) 16.dp else 9.dp
+                                                },
                                                 tileShape,
-                                                ambientColor = if (settings.neomorphismEnabled) Color.Black.copy(alpha = 0.55f) else Color.Black,
-                                                spotColor = if (settings.neomorphismEnabled) Color.Black.copy(alpha = 0.70f) else Color.Black
+                                                ambientColor = when (settings.visualThemeMode) {
+                                                    VisualThemeMode.AURORA -> Color(0xFF7C3AED)
+                                                    VisualThemeMode.ALBUM_ADAPTIVE -> MaterialTheme.colorScheme.primary
+                                                    else -> Color.Black.copy(alpha = 0.62f)
+                                                },
+                                                spotColor = when (settings.visualThemeMode) {
+                                                    VisualThemeMode.AURORA -> Color(0xFF22D3EE)
+                                                    VisualThemeMode.ALBUM_ADAPTIVE -> MaterialTheme.colorScheme.primary
+                                                    else -> Color.Black.copy(alpha = 0.76f)
+                                                }
                                             )
                                             .clip(tileShape)
-                                            .background(purpleGlassBrush)
+                                            .background(navBrush)
                                             .border(
-                                                if (selected) 1.4.dp else 1.1.dp,
-                                                Color.White.copy(alpha = if (selected) 0.56f else 0.34f),
+                                                if (selected) {
+                                                    if (settings.visualThemeMode == VisualThemeMode.AMOLED) 1.dp else 1.5.dp
+                                                } else {
+                                                    if (settings.visualThemeMode == VisualThemeMode.SOLID) 0.6.dp else 1.dp
+                                                },
+                                                when (settings.visualThemeMode) {
+                                                    VisualThemeMode.SOLID -> MaterialTheme.colorScheme.primary.copy(alpha = if (selected) 0.78f else 0.20f)
+                                                    VisualThemeMode.AMOLED -> Color.White.copy(alpha = if (selected) 0.72f else 0.18f)
+                                                    VisualThemeMode.NEOMORPHISM -> Color.White.copy(alpha = if (selected) 0.18f else 0.08f)
+                                                    VisualThemeMode.ALBUM_ADAPTIVE -> MaterialTheme.colorScheme.primary.copy(alpha = if (selected) 0.96f else 0.42f)
+                                                    VisualThemeMode.AURORA -> Color.White.copy(alpha = if (selected) 0.82f else 0.36f)
+                                                    else -> Color.White.copy(alpha = if (selected) 0.62f else 0.30f)
+                                                },
                                                 tileShape
                                             )
                                             .clickable {
@@ -335,8 +393,22 @@ fun WavelengthNavHost() {
                             // Same pill/rounded-rectangle silhouette as the actual nav tile.
                             // It is only a few dp larger so the liquid overlay remains visible
                             // around the Home/Search/Library tile while following the finger.
-                            val overlayExtra = if (compactBottomNav) 3.dp else 4.dp
-                            val overlayShape = RoundedCornerShape(if (compactBottomNav) 22.dp else 26.dp)
+                            val overlayExtra = when (settings.visualThemeMode) {
+                                VisualThemeMode.AMOLED, VisualThemeMode.SOLID -> 2.dp
+                                VisualThemeMode.AURORA -> if (compactBottomNav) 5.dp else 7.dp
+                                else -> if (compactBottomNav) 3.dp else 4.dp
+                            }
+                            val overlayShape = RoundedCornerShape(
+                                when (settings.visualThemeMode) {
+                                    VisualThemeMode.SOLID -> if (compactBottomNav) 10.dp else 12.dp
+                                    VisualThemeMode.LIQUID -> if (compactBottomNav) 24.dp else 30.dp
+                                    VisualThemeMode.GLASSMORPHISM -> if (compactBottomNav) 26.dp else 32.dp
+                                    VisualThemeMode.NEOMORPHISM -> if (compactBottomNav) 18.dp else 22.dp
+                                    VisualThemeMode.AMOLED -> if (compactBottomNav) 3.dp else 5.dp
+                                    VisualThemeMode.ALBUM_ADAPTIVE -> if (compactBottomNav) 18.dp else 24.dp
+                                    VisualThemeMode.AURORA -> if (compactBottomNav) 28.dp else 35.dp
+                                }
+                            )
                             val overlayX = (itemWidth + navSpacing) * overlayIndex - overlayExtra / 2
 
                             Box(
@@ -352,13 +424,39 @@ fun WavelengthNavHost() {
                                     )
                                     .clip(overlayShape)
                                     .background(
-                                        Brush.linearGradient(
-                                            listOf(
-                                                Color.White.copy(alpha = 0.16f),
-                                                Color(0xFFB56BFF).copy(alpha = 0.17f),
-                                                Color(0xFF60E9FF).copy(alpha = 0.10f)
+                                        when (settings.visualThemeMode) {
+                                            VisualThemeMode.SOLID -> Brush.linearGradient(
+                                                listOf(
+                                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                                    Color.Transparent
+                                                )
                                             )
-                                        )
+                                            VisualThemeMode.AMOLED -> Brush.linearGradient(
+                                                listOf(Color.White.copy(alpha = 0.06f), Color.Transparent)
+                                            )
+                                            VisualThemeMode.NEOMORPHISM -> Brush.linearGradient(
+                                                listOf(Color.White.copy(alpha = 0.07f), Color.Black.copy(alpha = 0.10f))
+                                            )
+                                            VisualThemeMode.ALBUM_ADAPTIVE -> Brush.linearGradient(
+                                                listOf(
+                                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.34f),
+                                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+                                                )
+                                            )
+                                            VisualThemeMode.AURORA -> Brush.linearGradient(
+                                                listOf(
+                                                    Color(0xFF8B5CF6).copy(alpha = 0.34f),
+                                                    Color(0xFF22D3EE).copy(alpha = 0.24f)
+                                                )
+                                            )
+                                            else -> Brush.linearGradient(
+                                                listOf(
+                                                    Color.White.copy(alpha = 0.16f),
+                                                    Color(0xFFB56BFF).copy(alpha = 0.17f),
+                                                    Color(0xFF60E9FF).copy(alpha = 0.10f)
+                                                )
+                                            )
+                                        }
                                     )
                                     .border(
                                         1.45.dp,

@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Reworked every theme as a distinct visual system, not just a recolor: each now changes app-wide geometry, surface material, mini-player shape, bottom navigation, depth, borders and background treatment",
     "Fixed Search keyboard behavior so returning to Search stays keyboard-free; only tapping the already-selected Search tab a second time opens the keyboard",
     "Search bottom navigation now uses a two-step tap: first tap opens Search, tapping Search again focuses the search box and opens the keyboard automatically",
     "Expanded themes to Solid, Liquid, Glassmorphism, Neomorphism, AMOLED, Album Adaptive and Aurora, plus an Animate theme transitions toggle for smooth color crossfades",

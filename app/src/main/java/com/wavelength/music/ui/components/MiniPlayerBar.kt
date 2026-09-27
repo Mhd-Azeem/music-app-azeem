@@ -1,5 +1,7 @@
 package com.wavelength.music.ui.components
 
+import com.wavelength.music.data.repository.VisualThemeMode
+
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.snap
@@ -54,7 +56,8 @@ fun MiniPlayerBar(
     hazeState: HazeState? = null,
     glassStyle: HazeStyle = HazeStyle.Unspecified,
     trackTransitionEnabled: Boolean = true,
-    trackTransitionDurationMs: Int = 300
+    trackTransitionDurationMs: Int = 300,
+    visualThemeMode: VisualThemeMode = VisualThemeMode.SOLID
 ) {
     val track = state.currentTrack ?: return
     val trackTransitionSpec: FiniteAnimationSpec<Float> = if (trackTransitionEnabled) {
@@ -66,7 +69,17 @@ fun MiniPlayerBar(
     val expandThresholdPx = with(density) { 40.dp.toPx() }
     val skipThresholdPx = with(density) { 56.dp.toPx() }
     val isLiquid = hazeState != null
-    val shape = RoundedCornerShape(UiDesignConfig.MINI_PLAYER_RADIUS_DP.dp)
+    val shape = RoundedCornerShape(
+        when (visualThemeMode) {
+            VisualThemeMode.SOLID -> 8.dp
+            VisualThemeMode.LIQUID -> 24.dp
+            VisualThemeMode.GLASSMORPHISM -> 30.dp
+            VisualThemeMode.NEOMORPHISM -> 20.dp
+            VisualThemeMode.AMOLED -> 2.dp
+            VisualThemeMode.ALBUM_ADAPTIVE -> 18.dp
+            VisualThemeMode.AURORA -> 28.dp
+        }
+    )
 
     var barModifier = modifier.fillMaxWidth()
     if (isLiquid) {
@@ -76,8 +89,24 @@ fun MiniPlayerBar(
             .clip(shape)
             .hazeChild(state = hazeState!!, style = glassStyle) { inputScale = HazeInputScale.Auto }
             .border(1.dp, Color.White.copy(alpha = 0.25f), shape)
-    } else {
+    } else if (visualThemeMode == VisualThemeMode.SOLID) {
         barModifier = barModifier.height(UiDesignConfig.MINI_PLAYER_HEIGHT_DP.dp)
+    } else {
+        barModifier = barModifier
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .height(UiDesignConfig.MINI_PLAYER_HEIGHT_DP.dp)
+            .clip(shape)
+            .border(
+                1.dp,
+                when (visualThemeMode) {
+                    VisualThemeMode.AMOLED -> Color.White.copy(alpha = 0.20f)
+                    VisualThemeMode.NEOMORPHISM -> Color.White.copy(alpha = 0.08f)
+                    VisualThemeMode.ALBUM_ADAPTIVE -> MaterialTheme.colorScheme.primary.copy(alpha = 0.72f)
+                    VisualThemeMode.AURORA -> Color.White.copy(alpha = 0.32f)
+                    else -> MaterialTheme.colorScheme.outlineVariant
+                },
+                shape
+            )
     }
     barModifier = barModifier
         .clickable(onClick = onClick)
@@ -86,8 +115,21 @@ fun MiniPlayerBar(
 
     Surface(
         modifier = barModifier,
-        color = if (isLiquid) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = if (isLiquid) 0.dp else 4.dp
+        color = when {
+            isLiquid -> Color.Transparent
+            visualThemeMode == VisualThemeMode.AMOLED -> Color.Black
+            visualThemeMode == VisualThemeMode.NEOMORPHISM -> MaterialTheme.colorScheme.surfaceVariant
+            visualThemeMode == VisualThemeMode.ALBUM_ADAPTIVE -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+            visualThemeMode == VisualThemeMode.AURORA -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.88f)
+            else -> MaterialTheme.colorScheme.surfaceVariant
+        },
+        tonalElevation = when (visualThemeMode) {
+            VisualThemeMode.NEOMORPHISM -> 12.dp
+            VisualThemeMode.AURORA -> 8.dp
+            VisualThemeMode.AMOLED -> 0.dp
+            else -> if (isLiquid) 0.dp else 4.dp
+        },
+        shape = shape
     ) {
         Row(
             modifier = Modifier

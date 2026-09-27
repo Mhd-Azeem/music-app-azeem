@@ -129,6 +129,7 @@ class MainActivity : ComponentActivity() {
                 glassmorphismEnabled = settings.visualThemeMode == VisualThemeMode.GLASSMORPHISM,
                 neomorphismEnabled = settings.visualThemeMode == VisualThemeMode.NEOMORPHISM,
                 amoledEnabled = settings.visualThemeMode == VisualThemeMode.AMOLED,
+                visualThemeMode = settings.visualThemeMode,
                 animateTransitions = settings.animateThemeTransitions
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -179,6 +180,86 @@ class MainActivity : ComponentActivity() {
                         Brush.verticalGradient(listOf(bgTop, bgBottom))
                     )
                     Box(modifier = Modifier.fillMaxWidth().weight(1f).then(appSurface)) {
+                        when (settings.visualThemeMode) {
+                            VisualThemeMode.LIQUID -> {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.radialGradient(
+                                                colors = listOf(
+                                                    animatedAccent.copy(alpha = 0.22f),
+                                                    Color.Transparent
+                                                ),
+                                                radius = 900f
+                                            )
+                                        )
+                                )
+                            }
+                            VisualThemeMode.GLASSMORPHISM -> {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.radialGradient(
+                                                colors = listOf(
+                                                    Color.White.copy(alpha = 0.08f),
+                                                    animatedAccent.copy(alpha = 0.12f),
+                                                    Color.Transparent
+                                                ),
+                                                radius = 760f
+                                            )
+                                        )
+                                )
+                            }
+                            VisualThemeMode.NEOMORPHISM -> {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.linearGradient(
+                                                listOf(
+                                                    Color.White.copy(alpha = 0.035f),
+                                                    Color.Transparent,
+                                                    Color.Black.copy(alpha = 0.18f)
+                                                )
+                                            )
+                                        )
+                                )
+                            }
+                            VisualThemeMode.ALBUM_ADAPTIVE -> {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.radialGradient(
+                                                colors = listOf(
+                                                    animatedAccent.copy(alpha = 0.38f),
+                                                    animatedAccent.copy(alpha = 0.10f),
+                                                    Color.Transparent
+                                                ),
+                                                radius = 1050f
+                                            )
+                                        )
+                                )
+                            }
+                            VisualThemeMode.AURORA -> {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.linearGradient(
+                                                listOf(
+                                                    auroraA.copy(alpha = 0.56f),
+                                                    Color.Transparent,
+                                                    auroraB.copy(alpha = 0.52f)
+                                                )
+                                            )
+                                        )
+                                )
+                            }
+                            VisualThemeMode.AMOLED, VisualThemeMode.SOLID -> Unit
+                        }
                         WavelengthNavHost()
                     }
                 }

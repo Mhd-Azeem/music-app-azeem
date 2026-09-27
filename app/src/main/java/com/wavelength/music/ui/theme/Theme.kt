@@ -2,11 +2,15 @@ package com.wavelength.music.ui.theme
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import com.wavelength.music.data.repository.VisualThemeMode
 
 private fun schemeFor(theme: AppTheme, customAccent: Color? = null): ColorScheme = when (theme) {
     AppTheme.CLASSIC -> darkColorScheme(
@@ -135,6 +139,7 @@ fun WavelengthTheme(
     glassmorphismEnabled: Boolean = false,
     neomorphismEnabled: Boolean = false,
     amoledEnabled: Boolean = false,
+    visualThemeMode: VisualThemeMode = VisualThemeMode.SOLID,
     animateTransitions: Boolean = true,
     content: @Composable () -> Unit
 ) {
@@ -185,8 +190,90 @@ fun WavelengthTheme(
             onSurface = Color.White,
             onSurfaceVariant = Color(0xFFCECECE)
         )
+    } else if (visualThemeMode == VisualThemeMode.LIQUID) {
+        baseScheme.copy(
+            background = Color.Transparent,
+            surface = Color(0xFF101827).copy(alpha = 0.84f),
+            surfaceVariant = Color(0xFF17243A).copy(alpha = 0.80f),
+            surfaceContainer = Color(0xFF132037).copy(alpha = 0.82f),
+            surfaceContainerHigh = Color(0xFF1D2D48).copy(alpha = 0.86f),
+            outline = baseScheme.primary.copy(alpha = 0.42f),
+            outlineVariant = Color.White.copy(alpha = 0.16f)
+        )
+    } else if (visualThemeMode == VisualThemeMode.ALBUM_ADAPTIVE) {
+        baseScheme.copy(
+            background = Color.Transparent,
+            surface = baseScheme.primary.copy(alpha = 0.16f),
+            surfaceVariant = baseScheme.primary.copy(alpha = 0.24f),
+            surfaceContainer = baseScheme.primary.copy(alpha = 0.18f),
+            surfaceContainerHigh = baseScheme.primary.copy(alpha = 0.28f),
+            outline = baseScheme.primary.copy(alpha = 0.70f),
+            outlineVariant = baseScheme.primary.copy(alpha = 0.34f)
+        )
+    } else if (visualThemeMode == VisualThemeMode.AURORA) {
+        baseScheme.copy(
+            background = Color.Transparent,
+            surface = Color(0xFF12152D).copy(alpha = 0.88f),
+            surfaceVariant = Color(0xFF242052).copy(alpha = 0.84f),
+            surfaceContainer = Color(0xFF171B3A).copy(alpha = 0.86f),
+            surfaceContainerHigh = Color(0xFF302665).copy(alpha = 0.86f),
+            outline = Color(0xFF7DD3FC).copy(alpha = 0.54f),
+            outlineVariant = Color(0xFFC084FC).copy(alpha = 0.30f)
+        )
     } else {
         baseScheme
+    }
+
+    val visualShapes = when (visualThemeMode) {
+        VisualThemeMode.SOLID -> Shapes(
+            extraSmall = RoundedCornerShape(4.dp),
+            small = RoundedCornerShape(6.dp),
+            medium = RoundedCornerShape(10.dp),
+            large = RoundedCornerShape(14.dp),
+            extraLarge = RoundedCornerShape(18.dp)
+        )
+        VisualThemeMode.LIQUID -> Shapes(
+            extraSmall = RoundedCornerShape(14.dp),
+            small = RoundedCornerShape(18.dp),
+            medium = RoundedCornerShape(26.dp),
+            large = RoundedCornerShape(34.dp),
+            extraLarge = RoundedCornerShape(42.dp)
+        )
+        VisualThemeMode.GLASSMORPHISM -> Shapes(
+            extraSmall = RoundedCornerShape(18.dp),
+            small = RoundedCornerShape(22.dp),
+            medium = RoundedCornerShape(30.dp),
+            large = RoundedCornerShape(38.dp),
+            extraLarge = RoundedCornerShape(48.dp)
+        )
+        VisualThemeMode.NEOMORPHISM -> Shapes(
+            extraSmall = RoundedCornerShape(12.dp),
+            small = RoundedCornerShape(18.dp),
+            medium = RoundedCornerShape(24.dp),
+            large = RoundedCornerShape(30.dp),
+            extraLarge = RoundedCornerShape(36.dp)
+        )
+        VisualThemeMode.AMOLED -> Shapes(
+            extraSmall = RoundedCornerShape(0.dp),
+            small = RoundedCornerShape(2.dp),
+            medium = RoundedCornerShape(4.dp),
+            large = RoundedCornerShape(6.dp),
+            extraLarge = RoundedCornerShape(8.dp)
+        )
+        VisualThemeMode.ALBUM_ADAPTIVE -> Shapes(
+            extraSmall = RoundedCornerShape(10.dp),
+            small = RoundedCornerShape(14.dp),
+            medium = RoundedCornerShape(20.dp),
+            large = RoundedCornerShape(28.dp),
+            extraLarge = RoundedCornerShape(34.dp)
+        )
+        VisualThemeMode.AURORA -> Shapes(
+            extraSmall = RoundedCornerShape(20.dp),
+            small = RoundedCornerShape(26.dp),
+            medium = RoundedCornerShape(34.dp),
+            large = RoundedCornerShape(42.dp),
+            extraLarge = RoundedCornerShape(52.dp)
+        )
     }
 
     val duration = if (animateTransitions) 420 else 0
@@ -204,6 +291,7 @@ fun WavelengthTheme(
     MaterialTheme(
         colorScheme = animatedScheme,
         typography = WavelengthTypography,
+        shapes = visualShapes,
         content = content
     )
 }
