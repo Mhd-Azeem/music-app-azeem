@@ -24,6 +24,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 
 private val latestUpdates = listOf(
+    "Home AZ Music, Stats and Settings controls now transform with the selected theme instead of staying as the same purple glass buttons",
     "Reworked every theme as a distinct visual system, not just a recolor: each now changes app-wide geometry, surface material, mini-player shape, bottom navigation, depth, borders and background treatment",
     "Fixed Search keyboard behavior so returning to Search stays keyboard-free; only tapping the already-selected Search tab a second time opens the keyboard",
     "Search bottom navigation now uses a two-step tap: first tap opens Search, tapping Search again focuses the search box and opens the keyboard automatically",
