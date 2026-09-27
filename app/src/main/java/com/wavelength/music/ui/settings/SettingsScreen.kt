@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -43,6 +44,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -1812,67 +1814,87 @@ private fun LiquidColorPicker(
     onColorSelected: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val hsv = remember(selectedArgb) {
-        FloatArray(3).also { AndroidColor.colorToHSV(selectedArgb, it) }
-    }
-    var marker by remember(selectedArgb) {
-        mutableStateOf(
-            Offset(
-                x = (hsv[0] / 360f).coerceIn(0f, 1f),
-                y = (1f - hsv[2]).coerceIn(0f, 1f)
-            )
-        )
+    val initialHsv = remember(selectedArgb) { FloatArray(3).also { AndroidColor.colorToHSV(selectedArgb, it) } }
+    var hue by remember(selectedArgb) { mutableFloatStateOf(initialHsv[0]) }
+    var saturation by remember(selectedArgb) { mutableFloatStateOf(initialHsv[1]) }
+    var value by remember(selectedArgb) { mutableFloatStateOf(initialHsv[2]) }
+    var alpha by remember(selectedArgb) { mutableFloatStateOf(AndroidColor.alpha(selectedArgb) / 255f) }
+    var hexText by remember(selectedArgb) { mutableStateOf("#%06X".format(selectedArgb and 0xFFFFFF)) }
+
+    fun emitColor() {
+        val rgb = AndroidColor.HSVToColor(floatArrayOf(hue, saturation, value))
+        val argb = AndroidColor.argb((alpha.coerceIn(0f, 1f) * 255f).roundToInt(), AndroidColor.red(rgb), AndroidColor.green(rgb), AndroidColor.blue(rgb))
+        hexText = "#%06X".format(argb and 0xFFFFFF)
+        onColorSelected(argb)
     }
 
-    fun updateFromFraction(x: Float, y: Float) {
-        val fx = x.coerceIn(0f, 1f)
-        val fy = y.coerceIn(0f, 1f)
-        marker = Offset(fx, fy)
-        val hue = fx * 360f
-        val saturation = (0.35f + fy * 0.65f).coerceIn(0f, 1f)
-        val value = (1f - fy * 0.78f).coerceIn(0.22f, 1f)
-        onColorSelected(AndroidColor.HSVToColor(floatArrayOf(hue, saturation, value)))
-    }
-
-    Canvas(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = { pos ->
-                        updateFromFraction(pos.x / size.width, pos.y / size.height)
-                    },
-                    onDrag = { change, _ ->
-                        updateFromFraction(change.position.x / size.width, change.position.y / size.height)
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().height(190.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Canvas(
+                modifier = Modifier.weight(1f).fillMaxSize().clip(RoundedCornerShape(8.dp))
+                    .pointerInput(hue) {
+                        fun update(pos: Offset) {
+                            saturation = (pos.x / size.width).coerceIn(0f, 1f)
+                            value = (1f - pos.y / size.height).coerceIn(0f, 1f)
+                            emitColor()
+                        }
+                        detectDragGestures(onDragStart = { update(it) }, onDrag = { change, _ -> update(change.position) })
                     }
-                )
+            ) {
+                val pureHue = Color(AndroidColor.HSVToColor(floatArrayOf(hue, 1f, 1f)))
+                drawRect(brush = Brush.horizontalGradient(listOf(Color.White, pureHue)))
+                drawRect(brush = Brush.verticalGradient(listOf(Color.Transparent, Color.Black)))
+                val center = Offset(saturation * size.width, (1f - value) * size.height)
+                drawCircle(Color.White, 9.dp.toPx(), center)
+                drawCircle(Color.Black, 6.dp.toPx(), center)
+                drawCircle(Color(AndroidColor.HSVToColor(floatArrayOf(hue, saturation, value))), 4.dp.toPx(), center)
             }
-    ) {
-        drawRect(
-            brush = Brush.horizontalGradient(
-                listOf(
-                    Color.Red,
-                    Color.Yellow,
-                    Color.Green,
-                    Color.Cyan,
-                    Color.Blue,
-                    Color.Magenta,
-                    Color.Red
-                )
+            Canvas(
+                modifier = Modifier.width(30.dp).fillMaxSize().clip(RoundedCornerShape(4.dp))
+                    .pointerInput(Unit) {
+                        fun update(y: Float) { hue = (y / size.height).coerceIn(0f, 1f) * 360f; emitColor() }
+                        detectDragGestures(onDragStart = { update(it.y) }, onDrag = { change, _ -> update(change.position.y) })
+                    }
+            ) {
+                drawRect(brush = Brush.verticalGradient(listOf(Color.Red, Color.Yellow, Color.Green, Color.Cyan, Color.Blue, Color.Magenta, Color.Red)))
+                val y = (hue / 360f) * size.height
+                drawRect(Color.White, Offset(0f, (y - 3.dp.toPx()).coerceAtLeast(0f)), androidx.compose.ui.geometry.Size(size.width, 6.dp.toPx()))
+                drawRect(Color.Black, Offset(0f, (y - 1.dp.toPx()).coerceAtLeast(0f)), androidx.compose.ui.geometry.Size(size.width, 2.dp.toPx()))
+            }
+        }
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            OutlinedTextField(
+                value = hexText,
+                onValueChange = { input ->
+                    hexText = input.uppercase().filter { it == '#' || it in '0'..'9' || it in 'A'..'F' }.take(7)
+                    val hex = hexText.removePrefix("#")
+                    if (hex.length == 6) hex.toLongOrNull(16)?.let { rgb ->
+                        val parsed = (0xFF000000L or rgb).toInt()
+                        val parsedHsv = FloatArray(3).also { AndroidColor.colorToHSV(parsed, it) }
+                        hue = parsedHsv[0]; saturation = parsedHsv[1]; value = parsedHsv[2]; emitColor()
+                    }
+                },
+                label = { Text("HEX") }, singleLine = true, modifier = Modifier.weight(1f)
             )
-        )
-        drawRect(
-            brush = Brush.verticalGradient(
-                listOf(
-                    Color.White.copy(alpha = 0.18f),
-                    Color.Transparent,
-                    Color.Black.copy(alpha = 0.78f)
-                )
-            )
-        )
-        val center = Offset(marker.x * size.width, marker.y * size.height)
-        drawCircle(Color.White, radius = 11.dp.toPx(), center = center)
-        drawCircle(Color.Black.copy(alpha = 0.75f), radius = 7.dp.toPx(), center = center)
-        drawCircle(Color(selectedArgb), radius = 5.dp.toPx(), center = center)
+            Box(Modifier.size(48.dp).clip(RoundedCornerShape(8.dp)).background(Color(selectedArgb)).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)))
+        }
+        Text(text = "Opacity " + (alpha * 100).roundToInt() + "%", style = MaterialTheme.typography.labelMedium)
+        Canvas(
+            modifier = Modifier.fillMaxWidth().height(28.dp).clip(RoundedCornerShape(5.dp))
+                .pointerInput(Unit) {
+                    fun update(x: Float) { alpha = (x / size.width).coerceIn(0f, 1f); emitColor() }
+                    detectDragGestures(onDragStart = { update(it.x) }, onDrag = { change, _ -> update(change.position.x) })
+                }
+        ) {
+            val tile = 10.dp.toPx(); var yy = 0f; var row = 0
+            while (yy < size.height) { var xx = 0f; var col = 0
+                while (xx < size.width) { drawRect(if ((row + col) % 2 == 0) Color.LightGray else Color.White, Offset(xx, yy), androidx.compose.ui.geometry.Size(tile, tile)); xx += tile; col++ }
+                yy += tile; row++
+            }
+            val opaque = Color(AndroidColor.HSVToColor(floatArrayOf(hue, saturation, value)))
+            drawRect(brush = Brush.horizontalGradient(listOf(Color.Transparent, opaque)))
+            val x = alpha * size.width
+            drawRect(Color.White, Offset((x - 2.dp.toPx()).coerceIn(0f, size.width - 4.dp.toPx()), 0f), androidx.compose.ui.geometry.Size(4.dp.toPx(), size.height))
+        }
     }
 }
