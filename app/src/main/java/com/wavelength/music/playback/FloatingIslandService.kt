@@ -24,7 +24,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 
 /**
- * AzMusic's optional Dynamic-Island-style overlay. This is deliberately independent of vendor
+ * AzMusic's optional Dynamic-Island-style overlay.\n * Enabled explicitly from Settings. This is deliberately independent of vendor
  * Live Island APIs: it follows the app's Media3 session and uses Android's standard overlay
  * permission, so it can work on devices whose SystemUI only allowlists selected music apps.
  */
