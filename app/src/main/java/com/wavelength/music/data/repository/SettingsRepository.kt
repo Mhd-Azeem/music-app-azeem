@@ -92,6 +92,8 @@ data class AppSettingsState(
     val glassPlayedGlowArgb: Int = DEFAULT_GLASS_PLAYED_GLOW_ARGB,
     /** When enabled in Liquid themes, the current track artwork fills the Now Playing backdrop. */
     val liquidAlbumArtBackground: Boolean = false,
+    /** Show AzMusic's own camera-cutout-style playback overlay above other apps. */
+    val floatingIslandEnabled: Boolean = false,
     /** Persistent streamed-audio cache cap in MB. 0 disables retained stream caching. */
     val streamCacheLimitMb: Int = DEFAULT_STREAM_CACHE_LIMIT_MB
 )
@@ -165,6 +167,7 @@ class SettingsRepository @Inject constructor(
         glassTimelineArgb = prefs.getInt(KEY_GLASS_TIMELINE_ARGB, DEFAULT_GLASS_TIMELINE_ARGB),
         glassPlayedGlowArgb = prefs.getInt(KEY_GLASS_PLAYED_GLOW_ARGB, DEFAULT_GLASS_PLAYED_GLOW_ARGB),
         liquidAlbumArtBackground = false,
+        floatingIslandEnabled = prefs.getBoolean(KEY_FLOATING_ISLAND_ENABLED, false),
         streamCacheLimitMb = prefs.getInt(KEY_STREAM_CACHE_LIMIT_MB, DEFAULT_STREAM_CACHE_LIMIT_MB)
             .coerceIn(0, DEFAULT_STREAM_CACHE_LIMIT_MB)
     )
@@ -446,6 +449,11 @@ class SettingsRepository @Inject constructor(
     }
 
 
+    fun setFloatingIslandEnabled(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_FLOATING_ISLAND_ENABLED, enabled) }
+        _state.update { it.copy(floatingIslandEnabled = enabled) }
+    }
+
     fun setStreamCacheLimitMb(limitMb: Int) {
         val clamped = limitMb.coerceIn(0, DEFAULT_STREAM_CACHE_LIMIT_MB)
         prefs.edit { putInt(KEY_STREAM_CACHE_LIMIT_MB, clamped) }
@@ -482,6 +490,7 @@ class SettingsRepository @Inject constructor(
         const val KEY_ICON = "icon_preset"
         const val KEY_THEME = "theme"
         const val KEY_STREAM_CACHE_LIMIT_MB = "stream_cache_limit_mb"
+        const val KEY_FLOATING_ISLAND_ENABLED = "floating_island_enabled"
         const val KEY_VISUAL_THEME_MODE = "visual_theme_mode"
         const val KEY_ANIMATE_THEME_TRANSITIONS = "animate_theme_transitions"
         const val KEY_BACKGROUND_OPACITY = "background_opacity"
