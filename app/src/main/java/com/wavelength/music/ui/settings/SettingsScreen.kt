@@ -1,6 +1,8 @@
 package com.wavelength.music.ui.settings
 
 import android.net.Uri
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.animation.core.animate
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -79,6 +81,7 @@ import coil.request.ImageRequest
 import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 import com.wavelength.music.playback.EqualizerMode
+import com.wavelength.music.playback.FloatingIslandService
 import com.wavelength.music.playback.EqualizerPreset
 import com.wavelength.music.ui.components.CircularKnob
 import com.wavelength.music.ui.components.ImageCropDialog
@@ -122,6 +125,18 @@ fun SettingsScreen(
     var showGlassTimelineColorPicker by remember { mutableStateOf(false) }
     var showGlassGlowColorPicker by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val floatingIslandPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        if (Settings.canDrawOverlays(context)) {
+            viewModel.setFloatingIslandEnabled(true)
+            context.startService(Intent(context, FloatingIslandService::class.java))
+            Toast.makeText(context, "Floating Island enabled", Toast.LENGTH_SHORT).show()
+        } else {
+            viewModel.setFloatingIslandEnabled(false)
+            Toast.makeText(context, "Display over other apps permission is required", Toast.LENGTH_LONG).show()
+        }
+    }
 
     val eqSupported by equalizerViewModel.isSupported.collectAsStateWithLifecycle()
     val eqEnabled by equalizerViewModel.enabled.collectAsStateWithLifecycle()
@@ -609,6 +624,51 @@ fun SettingsScreen(
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
                         )
                     }
+                }
+            }
+
+            item {
+                SettingsSection(title = "Floating Island") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("AzMusic Floating Island")
+                            Text(
+                                "Show a draggable mini Now Playing island above other apps. Tap it to expand playback controls.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = settings.floatingIslandEnabled,
+                            onCheckedChange = { enabled ->
+                                if (!enabled) {
+                                    viewModel.setFloatingIslandEnabled(false)
+                                    context.stopService(Intent(context, FloatingIslandService::class.java))
+                                } else if (Settings.canDrawOverlays(context)) {
+                                    viewModel.setFloatingIslandEnabled(true)
+                                    context.startService(Intent(context, FloatingIslandService::class.java))
+                                } else {
+                                    floatingIslandPermissionLauncher.launch(
+                                        Intent(
+                                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                            Uri.parse("package:${context.packageName}")
+                                        )
+                                    )
+                                }
+                            }
+                        )
+                    }
+                    Text(
+                        "Android will ask for Display over other apps permission the first time. This is AzMusic's own overlay and does not replace your phone's native Live Island.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
                 }
             }
 
