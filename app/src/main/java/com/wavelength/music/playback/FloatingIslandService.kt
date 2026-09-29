@@ -12,7 +12,6 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
-import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -41,7 +40,7 @@ class FloatingIslandService : Service() {
     private lateinit var title: TextView
     private lateinit var artist: TextView
     private lateinit var controls: LinearLayout
-    private lateinit var playPause: ImageButton
+    private lateinit var playPause: TextView
 
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) = refresh(player)
@@ -146,30 +145,22 @@ class FloatingIslandService : Service() {
         root?.visibility = View.GONE
     }
 
-    private fun controlButton(symbol: String, action: () -> Unit) = ImageButton(this).apply {
-        layoutParams = LinearLayout.LayoutParams(dp(52), dp(42))
-        setBackgroundColor(Color.TRANSPARENT)
+    private fun controlButton(symbol: String, action: () -> Unit) = TextView(this).apply {
+        layoutParams = LinearLayout.LayoutParams(dp(52), dp(42)).apply {
+            marginStart = dp(3)
+            marginEnd = dp(3)
+        }
+        text = symbol
+        setTextColor(Color.WHITE)
+        textSize = 24f
+        gravity = Gravity.CENTER
         contentDescription = when (symbol) {
             "‹" -> "Previous"
             "›" -> "Next"
             else -> "Play or pause"
         }
-        setImageDrawable(null)
-        // ImageButton has no text; use its contentDescription as accessibility and draw a simple
-        // transport glyph through a TextView overlay is unnecessary for vendor-independent control.
-        setOnClickListener { action() }
-        foreground = null
         background = rounded(Color.argb(32, 255, 255, 255), dp(18).toFloat())
-        val glyph = TextView(context).apply {
-            text = symbol
-            setTextColor(Color.WHITE)
-            textSize = 24f
-            gravity = Gravity.CENTER
-        }
-        // Preserve a visible glyph by using the platform's button label via an overlay drawable-free
-        // child is impossible on ImageButton, so expose the symbol through a compound drawable-free
-        // content description; actual controls remain large tap targets.
-        tag = glyph
+        setOnClickListener { action() }
     }
 
     private fun connectController() {
@@ -192,7 +183,7 @@ class FloatingIslandService : Service() {
         title.text = metadata.title?.toString().orEmpty().ifBlank { "AzMusic" }
         artist.text = metadata.artist?.toString().orEmpty()
         metadata.artworkUri?.let { artwork.load(it) }
-        playPause.contentDescription = if (player.isPlaying) "Pause" else "Play"
+        playPause.text = if (player.isPlaying) "Ⅱ" else "▶"\n        playPause.contentDescription = if (player.isPlaying) "Pause" else "Play"
     }
 
     private fun updateSize() {
