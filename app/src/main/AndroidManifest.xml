@@ -208,6 +208,9 @@
             android:foregroundServiceType="mediaPlayback">
             <intent-filter>
                 <action android:name="androidx.media3.session.MediaSessionService" />
+                <!-- Platform media-browser discovery improves compatibility with SystemUI,
+                     vendor media surfaces and playback-resumption clients such as MyOS. -->
+                <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
 
