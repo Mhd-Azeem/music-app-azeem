@@ -201,14 +201,17 @@ fun WavelengthTheme(
             outlineVariant = Color.White.copy(alpha = 0.16f)
         )
     } else if (visualThemeMode == VisualThemeMode.ALBUM_ADAPTIVE) {
+        // Keep large surfaces neutral so the accent color never becomes a full-screen
+        // tint over the selected wallpaper. The adaptive/accent color is reserved for
+        // controls, highlights and outlines.
         baseScheme.copy(
             background = Color.Transparent,
-            surface = baseScheme.primary.copy(alpha = 0.16f),
-            surfaceVariant = baseScheme.primary.copy(alpha = 0.24f),
-            surfaceContainer = baseScheme.primary.copy(alpha = 0.18f),
-            surfaceContainerHigh = baseScheme.primary.copy(alpha = 0.28f),
+            surface = Color(0xFF101820).copy(alpha = 0.58f),
+            surfaceVariant = Color(0xFF17232D).copy(alpha = 0.64f),
+            surfaceContainer = Color(0xFF121D26).copy(alpha = 0.60f),
+            surfaceContainerHigh = Color(0xFF1B2934).copy(alpha = 0.68f),
             outline = baseScheme.primary.copy(alpha = 0.70f),
-            outlineVariant = baseScheme.primary.copy(alpha = 0.34f)
+            outlineVariant = Color.White.copy(alpha = 0.18f)
         )
     } else if (visualThemeMode == VisualThemeMode.AURORA) {
         baseScheme.copy(
