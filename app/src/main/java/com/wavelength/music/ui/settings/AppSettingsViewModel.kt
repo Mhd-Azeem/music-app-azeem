@@ -141,6 +141,9 @@ class AppSettingsViewModel @Inject constructor(
         settingsRepository.setLiquidAlbumArtBackground(enabled)
 
 
+    fun setFloatingIslandEnabled(enabled: Boolean) =
+        settingsRepository.setFloatingIslandEnabled(enabled)
+
     fun setStreamCacheLimitMb(limitMb: Int) =
         settingsRepository.setStreamCacheLimitMb(limitMb)
 
