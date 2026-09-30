@@ -24,7 +24,8 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 
 /**
- * AzMusic's optional Dynamic-Island-style overlay.\n * Enabled explicitly from Settings. This is deliberately independent of vendor
+ * AzMusic's optional Dynamic-Island-style overlay.
+ * Enabled explicitly from Settings. This is deliberately independent of vendor
  * Live Island APIs: it follows the app's Media3 session and uses Android's standard overlay
  * permission, so it can work on devices whose SystemUI only allowlists selected music apps.
  */
@@ -138,8 +139,9 @@ class FloatingIslandService : Service() {
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         ).apply {
+            // Anchor directly to the top screen edge.
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            y = dp(8)
+            y = 0
         }
         windowManager.addView(root, params)
         root?.visibility = View.GONE
@@ -222,7 +224,8 @@ class FloatingIslandService : Service() {
                     val dy = (event.rawY - downY).toInt()
                     if (kotlin.math.abs(dx) > 8 || kotlin.math.abs(dy) > 8) dragged = true
                     p.x = startX + dx
-                    p.y = (startY + dy).coerceAtLeast(0)
+                    // Horizontal repositioning is allowed, but vertical drag cannot detach it.
+                    p.y = 0
                     root?.let { windowManager.updateViewLayout(it, p) }
                     return true
                 }
