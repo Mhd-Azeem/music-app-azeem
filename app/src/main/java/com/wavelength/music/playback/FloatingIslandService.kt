@@ -183,7 +183,8 @@ class FloatingIslandService : Service() {
         title.text = metadata.title?.toString().orEmpty().ifBlank { "AzMusic" }
         artist.text = metadata.artist?.toString().orEmpty()
         metadata.artworkUri?.let { artwork.load(it) }
-        playPause.text = if (player.isPlaying) "Ⅱ" else "▶"\n        playPause.contentDescription = if (player.isPlaying) "Pause" else "Play"
+        playPause.text = if (player.isPlaying) "Ⅱ" else "▶"
+        playPause.contentDescription = if (player.isPlaying) "Pause" else "Play"
     }
 
     private fun updateSize() {
