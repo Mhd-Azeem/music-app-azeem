@@ -49,6 +49,8 @@ class FloatingIslandService : Service() {
 
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) = refresh(player)
+        override fun onPlaybackStateChanged(playbackState: Int) = controller?.let { refresh(it) }
+        override fun onIsPlayingChanged(isPlaying: Boolean) = controller?.let { refresh(it) }
     }
 
     override fun onCreate() {
@@ -86,7 +88,7 @@ class FloatingIslandService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private fun createOverlay() {
@@ -192,8 +194,16 @@ class FloatingIslandService : Service() {
     private fun refresh(player: Player) {
         val appVisible = getSharedPreferences(VISIBILITY_PREFS, MODE_PRIVATE)
             .getBoolean(KEY_APP_VISIBLE, false)
-        root?.visibility = if (player.mediaItemCount > 0 && !appVisible) View.VISIBLE else View.GONE
-        if (player.mediaItemCount == 0) return
+        // A queued media item alone is not enough: after playback is stopped/dismissed the
+        // controller can still retain the last item. Only show for an active/paused playback session.
+        val hasActivePlayback = player.mediaItemCount > 0 &&
+            player.playbackState != Player.STATE_IDLE &&
+            player.playbackState != Player.STATE_ENDED
+        root?.visibility = if (hasActivePlayback && !appVisible) View.VISIBLE else View.GONE
+        if (!hasActivePlayback) {
+            hideControls()
+            return
+        }
         val metadata: MediaMetadata = player.mediaMetadata
         title.text = metadata.title?.toString().orEmpty().ifBlank { "AzMusic" }
         metadata.artworkUri?.let { artwork.load(it) }
@@ -288,6 +298,13 @@ class FloatingIslandService : Service() {
             }
             return false
         }
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        // Swiping AzMusic away from Recents must not leave a stale overlay on screen.
+        root?.visibility = View.GONE
+        stopSelf()
+        super.onTaskRemoved(rootIntent)
     }
 
     override fun onDestroy() {
