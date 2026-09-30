@@ -49,6 +49,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.wavelength.music.ui.components.OfflineBanner
+import com.wavelength.music.playback.FloatingIslandService
 import com.wavelength.music.data.repository.VisualThemeMode
 import com.wavelength.music.ui.nowplaying.PlayerViewModel
 import com.wavelength.music.ui.navigation.WavelengthNavHost
@@ -73,6 +74,24 @@ class MainActivity : ComponentActivity() {
     private val updaterClient by lazy { OkHttpClient() }
     private val updaterPrefs by lazy {
         getSharedPreferences("azmusic_updater", Context.MODE_PRIVATE)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        getSharedPreferences(FloatingIslandService.VISIBILITY_PREFS, Context.MODE_PRIVATE)
+            .edit().putBoolean(FloatingIslandService.KEY_APP_VISIBLE, true).apply()
+        sendBroadcast(
+            Intent(FloatingIslandService.ACTION_APP_FOREGROUND).setPackage(packageName)
+        )
+    }
+
+    override fun onStop() {
+        getSharedPreferences(FloatingIslandService.VISIBILITY_PREFS, Context.MODE_PRIVATE)
+            .edit().putBoolean(FloatingIslandService.KEY_APP_VISIBLE, false).apply()
+        sendBroadcast(
+            Intent(FloatingIslandService.ACTION_APP_BACKGROUND).setPackage(packageName)
+        )
+        super.onStop()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
