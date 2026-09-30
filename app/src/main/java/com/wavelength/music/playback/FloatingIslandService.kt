@@ -44,7 +44,6 @@ class FloatingIslandService : Service() {
 
     private lateinit var artwork: ImageView
     private lateinit var title: TextView
-    private lateinit var artist: TextView
     private lateinit var controls: LinearLayout
     private lateinit var playPause: TextView
 
@@ -109,17 +108,10 @@ class FloatingIslandService : Service() {
             maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
         }
-        artist = TextView(this).apply {
-            setTextColor(Color.rgb(180, 180, 186))
-            textSize = 10f
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
-        }
         val labels = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
             addView(title, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            addView(artist, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         }
 
         playPause = controlButton("▶") { controller?.let { if (it.isPlaying) it.pause() else it.play() } }
@@ -136,7 +128,7 @@ class FloatingIslandService : Service() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             addView(artwork)
-            addView(labels, LinearLayout.LayoutParams(dp(160), dp(38)))
+            addView(labels, LinearLayout.LayoutParams(dp(92), dp(34)))
         }
 
         root = LinearLayout(this).apply {
@@ -151,7 +143,7 @@ class FloatingIslandService : Service() {
         }
 
         params = WindowManager.LayoutParams(
-            dp(226),
+            dp(146),
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
@@ -167,7 +159,7 @@ class FloatingIslandService : Service() {
     }
 
     private fun controlButton(symbol: String, action: () -> Unit) = TextView(this).apply {
-        layoutParams = LinearLayout.LayoutParams(dp(64), dp(52)).apply {
+        layoutParams = LinearLayout.LayoutParams(dp(62), dp(48)).apply {
             marginStart = dp(3)
             marginEnd = dp(3)
         }
@@ -204,7 +196,6 @@ class FloatingIslandService : Service() {
         if (player.mediaItemCount == 0) return
         val metadata: MediaMetadata = player.mediaMetadata
         title.text = metadata.title?.toString().orEmpty().ifBlank { "AzMusic" }
-        artist.text = metadata.artist?.toString().orEmpty()
         metadata.artworkUri?.let { artwork.load(it) }
         playPause.text = if (player.isPlaying) "Ⅱ" else "▶"
         playPause.contentDescription = if (player.isPlaying) "Pause" else "Play"
@@ -233,7 +224,7 @@ class FloatingIslandService : Service() {
     private fun updateSize() {
         val p = params ?: return
         p.height = WindowManager.LayoutParams.WRAP_CONTENT
-        p.width = (if (expanded) 250 else 226) * resources.displayMetrics.density.toInt().coerceAtLeast(1)
+        p.width = dp(if (expanded) 224 else 146)
         root?.let { windowManager.updateViewLayout(it, p) }
     }
 
@@ -272,7 +263,6 @@ class FloatingIslandService : Service() {
                     if (kotlin.math.abs(dx) > 12 || kotlin.math.abs(dy) > 12) {
                         dragged = true
                         handler.removeCallbacksAndMessages(null)
-        runCatching { unregisterReceiver(appVisibilityReceiver) }
                     }
                     if (dragged) {
                         p.x = startX + dx
@@ -302,6 +292,7 @@ class FloatingIslandService : Service() {
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        runCatching { unregisterReceiver(appVisibilityReceiver) }
         controller?.removeListener(listener)
         controllerFuture?.let { MediaController.releaseFuture(it) }
         controller = null
