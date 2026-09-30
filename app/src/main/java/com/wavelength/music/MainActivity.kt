@@ -184,7 +184,7 @@ class MainActivity : ComponentActivity() {
                         VisualThemeMode.GLASSMORPHISM -> animatedAccent.copy(alpha = 0.32f)
                         VisualThemeMode.NEOMORPHISM -> Color(0xFF303846)
                         VisualThemeMode.AMOLED -> Color.Black
-                        VisualThemeMode.ALBUM_ADAPTIVE -> animatedAccent.copy(alpha = 0.42f)
+                        VisualThemeMode.ALBUM_ADAPTIVE -> Color.Transparent
                         VisualThemeMode.AURORA -> auroraA
                         VisualThemeMode.LIQUID -> animatedAccent.copy(alpha = 0.22f)
                         VisualThemeMode.SOLID -> Color.Black
@@ -193,7 +193,7 @@ class MainActivity : ComponentActivity() {
                         VisualThemeMode.GLASSMORPHISM -> Color(0xFF0A1628)
                         VisualThemeMode.NEOMORPHISM -> Color(0xFF1B2029)
                         VisualThemeMode.AMOLED -> Color.Black
-                        VisualThemeMode.ALBUM_ADAPTIVE -> Color(0xFF080B12)
+                        VisualThemeMode.ALBUM_ADAPTIVE -> Color.Transparent
                         VisualThemeMode.AURORA -> auroraB
                         VisualThemeMode.LIQUID -> Color(0xFF101522)
                         VisualThemeMode.SOLID -> Color.Black
@@ -252,22 +252,7 @@ class MainActivity : ComponentActivity() {
                                         )
                                 )
                             }
-                            VisualThemeMode.ALBUM_ADAPTIVE -> {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(
-                                            Brush.radialGradient(
-                                                colors = listOf(
-                                                    animatedAccent.copy(alpha = 0.38f),
-                                                    animatedAccent.copy(alpha = 0.10f),
-                                                    Color.Transparent
-                                                ),
-                                                radius = 1050f
-                                            )
-                                        )
-                                )
-                            }
+                            VisualThemeMode.ALBUM_ADAPTIVE -> Unit
                             VisualThemeMode.AURORA -> {
                                 Box(
                                     modifier = Modifier
