@@ -6,7 +6,9 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.provider.Settings
 import android.view.Gravity
 import android.view.MotionEvent
@@ -22,6 +24,7 @@ import androidx.media3.session.SessionToken
 import coil.load
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
+import com.wavelength.music.MainActivity
 
 /**
  * AzMusic's optional Dynamic-Island-style overlay.
@@ -36,6 +39,8 @@ class FloatingIslandService : Service() {
     private var controller: MediaController? = null
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var expanded = false
+    private val handler = Handler(Looper.getMainLooper())
+    private val longPressRunnable = Runnable { showControls() }
 
     private lateinit var artwork: ImageView
     private lateinit var title: TextView
@@ -123,12 +128,7 @@ class FloatingIslandService : Service() {
             elevation = dp(10).toFloat()
             addView(topRow)
             addView(controls)
-            setOnClickListener {
-                expanded = !expanded
-                controls.visibility = if (expanded) View.VISIBLE else View.GONE
-                updateSize()
-            }
-            setOnTouchListener(DragTouchListener())
+            setOnTouchListener(IslandTouchListener())
         }
 
         params = WindowManager.LayoutParams(
@@ -148,20 +148,20 @@ class FloatingIslandService : Service() {
     }
 
     private fun controlButton(symbol: String, action: () -> Unit) = TextView(this).apply {
-        layoutParams = LinearLayout.LayoutParams(dp(52), dp(42)).apply {
+        layoutParams = LinearLayout.LayoutParams(dp(64), dp(52)).apply {
             marginStart = dp(3)
             marginEnd = dp(3)
         }
         text = symbol
         setTextColor(Color.WHITE)
-        textSize = 24f
+        textSize = 30f
         gravity = Gravity.CENTER
         contentDescription = when (symbol) {
             "‹" -> "Previous"
             "›" -> "Next"
             else -> "Play or pause"
         }
-        background = rounded(Color.argb(32, 255, 255, 255), dp(18).toFloat())
+        background = rounded(Color.rgb(42, 42, 46), dp(20).toFloat())
         setOnClickListener { action() }
     }
 
@@ -189,6 +189,26 @@ class FloatingIslandService : Service() {
         playPause.contentDescription = if (player.isPlaying) "Pause" else "Play"
     }
 
+    private fun openAzMusic() {
+        startActivity(
+            Intent(this, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+        )
+    }
+
+    private fun showControls() {
+        expanded = true
+        controls.visibility = View.VISIBLE
+        updateSize()
+    }
+
+    private fun hideControls() {
+        expanded = false
+        controls.visibility = View.GONE
+        updateSize()
+    }
+
     private fun updateSize() {
         val p = params ?: return
         p.height = WindowManager.LayoutParams.WRAP_CONTENT
@@ -201,12 +221,12 @@ class FloatingIslandService : Service() {
         cornerRadius = radius
     }
 
-    private inner class DragTouchListener : View.OnTouchListener {
+    private inner class IslandTouchListener : View.OnTouchListener {
         private var downX = 0f
         private var downY = 0f
         private var startX = 0
-        private var startY = 0
         private var dragged = false
+        private var longPressed = false
 
         override fun onTouch(v: View, event: MotionEvent): Boolean {
             val p = params ?: return false
@@ -215,22 +235,42 @@ class FloatingIslandService : Service() {
                     downX = event.rawX
                     downY = event.rawY
                     startX = p.x
-                    startY = p.y
                     dragged = false
+                    longPressed = false
+                    handler.postDelayed({
+                        if (!dragged) {
+                            longPressed = true
+                            showControls()
+                        }
+                    }, 450L)
                     return true
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val dx = (event.rawX - downX).toInt()
                     val dy = (event.rawY - downY).toInt()
-                    if (kotlin.math.abs(dx) > 8 || kotlin.math.abs(dy) > 8) dragged = true
-                    p.x = startX + dx
-                    // Horizontal repositioning is allowed, but vertical drag cannot detach it.
-                    p.y = 0
-                    root?.let { windowManager.updateViewLayout(it, p) }
+                    if (kotlin.math.abs(dx) > 12 || kotlin.math.abs(dy) > 12) {
+                        dragged = true
+                        handler.removeCallbacksAndMessages(null)
+                    }
+                    if (dragged) {
+                        p.x = startX + dx
+                        p.y = 0
+                        root?.let { windowManager.updateViewLayout(it, p) }
+                    }
                     return true
                 }
                 MotionEvent.ACTION_UP -> {
-                    if (!dragged) v.performClick()
+                    handler.removeCallbacksAndMessages(null)
+                    when {
+                        dragged -> Unit
+                        longPressed -> Unit
+                        expanded -> hideControls()
+                        else -> openAzMusic()
+                    }
+                    return true
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    handler.removeCallbacksAndMessages(null)
                     return true
                 }
             }
@@ -239,6 +279,7 @@ class FloatingIslandService : Service() {
     }
 
     override fun onDestroy() {
+        handler.removeCallbacksAndMessages(null)
         controller?.removeListener(listener)
         controllerFuture?.let { MediaController.releaseFuture(it) }
         controller = null
