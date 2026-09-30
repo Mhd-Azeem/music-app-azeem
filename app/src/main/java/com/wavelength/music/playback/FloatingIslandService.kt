@@ -60,7 +60,26 @@ class FloatingIslandService : Service() {
         }
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         createOverlay()
+        val filter = android.content.IntentFilter().apply {
+            addAction(ACTION_APP_FOREGROUND)
+            addAction(ACTION_APP_BACKGROUND)
+        }
+        androidx.core.content.ContextCompat.registerReceiver(
+            this,
+            appVisibilityReceiver,
+            filter,
+            androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
+        )
         connectController()
+    }
+
+    private val appVisibilityReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            when (intent?.action) {
+                ACTION_APP_FOREGROUND -> root?.visibility = View.GONE
+                ACTION_APP_BACKGROUND -> controller?.let { refresh(it) }
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -179,7 +198,9 @@ class FloatingIslandService : Service() {
     }
 
     private fun refresh(player: Player) {
-        root?.visibility = if (player.mediaItemCount > 0) View.VISIBLE else View.GONE
+        val appVisible = getSharedPreferences(VISIBILITY_PREFS, MODE_PRIVATE)
+            .getBoolean(KEY_APP_VISIBLE, false)
+        root?.visibility = if (player.mediaItemCount > 0 && !appVisible) View.VISIBLE else View.GONE
         if (player.mediaItemCount == 0) return
         val metadata: MediaMetadata = player.mediaMetadata
         title.text = metadata.title?.toString().orEmpty().ifBlank { "AzMusic" }
@@ -251,6 +272,7 @@ class FloatingIslandService : Service() {
                     if (kotlin.math.abs(dx) > 12 || kotlin.math.abs(dy) > 12) {
                         dragged = true
                         handler.removeCallbacksAndMessages(null)
+        runCatching { unregisterReceiver(appVisibilityReceiver) }
                     }
                     if (dragged) {
                         p.x = startX + dx
@@ -290,6 +312,13 @@ class FloatingIslandService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    companion object {
+        const val ACTION_APP_FOREGROUND = "com.wavelength.music.APP_FOREGROUND"
+        const val ACTION_APP_BACKGROUND = "com.wavelength.music.APP_BACKGROUND"
+        const val VISIBILITY_PREFS = "floating_island_visibility"
+        const val KEY_APP_VISIBLE = "app_visible"
+    }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }
