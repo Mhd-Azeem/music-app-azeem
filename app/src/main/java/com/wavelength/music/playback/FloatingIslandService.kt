@@ -1,14 +1,20 @@
 package com.wavelength.music.playback
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.ComponentName
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.graphics.drawable.Icon
 import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.Build
 import android.provider.Settings
 import android.view.Gravity
 import android.view.MotionEvent
@@ -25,6 +31,7 @@ import coil.load
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import com.wavelength.music.MainActivity
+import com.wavelength.music.R
 
 /**
  * AzMusic's optional Dynamic-Island-style overlay.
@@ -65,6 +72,7 @@ class FloatingIslandService : Service() {
         }
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         createOverlay()
+        createBubbleChannel()
         val filter = android.content.IntentFilter().apply {
             addAction(ACTION_APP_FOREGROUND)
             addAction(ACTION_APP_BACKGROUND)
@@ -81,7 +89,10 @@ class FloatingIslandService : Service() {
     private val appVisibilityReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: android.content.Context?, intent: Intent?) {
             when (intent?.action) {
-                ACTION_APP_FOREGROUND -> root?.visibility = View.GONE
+                ACTION_APP_FOREGROUND -> {
+                    root?.visibility = View.GONE
+                    cancelBubble()
+                }
                 ACTION_APP_BACKGROUND -> controller?.let { refresh(it) }
             }
         }
@@ -203,9 +214,17 @@ class FloatingIslandService : Service() {
         val hasActivePlayback = player.mediaItemCount > 0 &&
             player.playbackState != Player.STATE_IDLE &&
             player.playbackState != Player.STATE_ENDED
-        root?.visibility = if (hasActivePlayback && !appVisible) View.VISIBLE else View.GONE
+        // Android 11+ uses the native Bubble UI: a circular dock that expands into a
+        // floating activity. Older Android versions retain the compact overlay fallback.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            root?.visibility = View.GONE
+            if (hasActivePlayback && !appVisible) showBubble(player) else cancelBubble()
+        } else {
+            root?.visibility = if (hasActivePlayback && !appVisible) View.VISIBLE else View.GONE
+        }
         if (!hasActivePlayback) {
             hideControls()
+            cancelBubble()
             return
         }
         val metadata: MediaMetadata = player.mediaMetadata
@@ -213,6 +232,59 @@ class FloatingIslandService : Service() {
         metadata.artworkUri?.let { artwork.load(it) }
         playPause.text = if (player.isPlaying) "Ⅱ" else "▶"
         playPause.contentDescription = if (player.isPlaying) "Pause" else "Play"
+    }
+
+    private fun createBubbleChannel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val manager = getSystemService(NotificationManager::class.java)
+        val channel = NotificationChannel(
+            BUBBLE_CHANNEL_ID,
+            "AzMusic floating player",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Shows AzMusic as a floating playback bubble"
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) setAllowBubbles(true)
+        }
+        manager.createNotificationChannel(channel)
+    }
+
+    private fun showBubble(player: Player) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        val manager = getSystemService(NotificationManager::class.java)
+        val bubbleIntent = PendingIntent.getActivity(
+            this,
+            701,
+            Intent(this, MainActivity::class.java).apply {
+                putExtra(EXTRA_BUBBLE_MODE, true)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        )
+        val bubble = Notification.BubbleMetadata.Builder(
+            bubbleIntent,
+            Icon.createWithResource(this, R.drawable.ic_launcher_classic)
+        )
+            .setDesiredHeight(640)
+            .setAutoExpandBubble(false)
+            .setSuppressNotification(true)
+            .build()
+
+        val metadata = player.mediaMetadata
+        val notification = Notification.Builder(this, BUBBLE_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_classic)
+            .setContentTitle(metadata.title?.toString().orEmpty().ifBlank { "AzMusic" })
+            .setContentText(metadata.artist?.toString().orEmpty().ifBlank { "Music playing" })
+            .setBubbleMetadata(bubble)
+            .setCategory(Notification.CATEGORY_TRANSPORT)
+            .setOngoing(player.isPlaying)
+            .build()
+        manager.notify(BUBBLE_NOTIFICATION_ID, notification)
+    }
+
+    private fun cancelBubble() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            getSystemService(NotificationManager::class.java).cancel(BUBBLE_NOTIFICATION_ID)
+        }
     }
 
     private fun openAzMusic() {
@@ -307,12 +379,14 @@ class FloatingIslandService : Service() {
     override fun onTaskRemoved(rootIntent: Intent?) {
         // Swiping AzMusic away from Recents must not leave a stale overlay on screen.
         root?.visibility = View.GONE
+        cancelBubble()
         stopSelf()
         super.onTaskRemoved(rootIntent)
     }
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        cancelBubble()
         runCatching { unregisterReceiver(appVisibilityReceiver) }
         controller?.removeListener(listener)
         controllerFuture?.let { MediaController.releaseFuture(it) }
@@ -330,6 +404,9 @@ class FloatingIslandService : Service() {
         const val ACTION_APP_BACKGROUND = "com.wavelength.music.APP_BACKGROUND"
         const val VISIBILITY_PREFS = "floating_island_visibility"
         const val KEY_APP_VISIBLE = "app_visible"
+        const val EXTRA_BUBBLE_MODE = "azmusic_bubble_mode"
+        private const val BUBBLE_CHANNEL_ID = "azmusic_floating_player"
+        private const val BUBBLE_NOTIFICATION_ID = 701
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
