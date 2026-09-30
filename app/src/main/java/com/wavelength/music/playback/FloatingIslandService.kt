@@ -49,8 +49,12 @@ class FloatingIslandService : Service() {
 
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) = refresh(player)
-        override fun onPlaybackStateChanged(playbackState: Int) = controller?.let { refresh(it) }
-        override fun onIsPlayingChanged(isPlaying: Boolean) = controller?.let { refresh(it) }
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            controller?.let { refresh(it) }
+        }
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            controller?.let { refresh(it) }
+        }
     }
 
     override fun onCreate() {
