@@ -68,11 +68,28 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideLrcLibApiService(okHttpClient: OkHttpClient, moshi: Moshi): LrcLibApiService =
-        Retrofit.Builder()
+    fun provideLrcLibApiService(okHttpClient: OkHttpClient, moshi: Moshi): LrcLibApiService {
+        // LRCLIB requires API clients to identify themselves. Keep this client separate from the
+        // JioSaavn client so the LRCLIB identity header and its slower-response timeout do not leak
+        // into unrelated requests.
+        val lrcLibClient = okHttpClient.newBuilder()
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .header(
+                        "Lrclib-Client",
+                        "AzMusic/${BuildConfig.VERSION_NAME} (https://github.com/Mhd-Azeem/music-app-azeem)"
+                    )
+                    .build()
+                chain.proceed(request)
+            }
+            .readTimeout(45, TimeUnit.SECONDS)
+            .build()
+
+        return Retrofit.Builder()
             .baseUrl("https://lrclib.net/")
-            .client(okHttpClient)
+            .client(lrcLibClient)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
             .create(LrcLibApiService::class.java)
+    }
 }
