@@ -821,7 +821,10 @@ private fun ArtistCircleTile(artist: String, onClick: () -> Unit) {
             style = MaterialTheme.typography.labelMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 6.dp)
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp)
         )
     }
 }
