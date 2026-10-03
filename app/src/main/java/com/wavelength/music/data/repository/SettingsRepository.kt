@@ -205,13 +205,11 @@ class SettingsRepository @Inject constructor(
             VisualThemeMode.AMOLED -> AppTheme.BLACK
             else -> AppTheme.CLASSIC
         }
-        val glass = mode == VisualThemeMode.GLASSMORPHISM
         val neo = mode == VisualThemeMode.NEOMORPHISM
         val adaptive = mode == VisualThemeMode.ALBUM_ADAPTIVE
         prefs.edit {
             putString(KEY_VISUAL_THEME_MODE, mode.name)
             putString(KEY_THEME, mappedTheme.name)
-            putBoolean(KEY_GLASSMORPHISM_NOW_PLAYING, glass)
             putBoolean(KEY_NEOMORPHISM_ENABLED, neo)
             putBoolean(KEY_DYNAMIC_THEME, adaptive)
         }
@@ -219,7 +217,6 @@ class SettingsRepository @Inject constructor(
             it.copy(
                 visualThemeMode = mode,
                 theme = mappedTheme,
-                glassmorphismNowPlaying = glass,
                 neomorphismEnabled = neo,
                 dynamicThemeFromAlbumArt = adaptive
             )
@@ -418,17 +415,11 @@ class SettingsRepository @Inject constructor(
     }
 
     fun setGlassmorphismNowPlaying(enabled: Boolean) {
-        prefs.edit {
-            putBoolean(KEY_GLASSMORPHISM_NOW_PLAYING, enabled)
-            if (enabled) putBoolean(KEY_NEOMORPHISM_ENABLED, false)
-        }
-        _state.update {
-            it.copy(
-                glassmorphismNowPlaying = enabled,
-                neomorphismEnabled = if (enabled) false else it.neomorphismEnabled,
-                visualThemeMode = if (enabled) VisualThemeMode.GLASSMORPHISM else VisualThemeMode.SOLID
-            )
-        }
+        // This is a Now Playing presentation override, not an app-wide theme selection.
+        // Keep the user's current visual theme untouched so Glass Now Playing can be used
+        // with Solid, Liquid, AMOLED, Aurora, Album Adaptive, Neomorphism, or Glassmorphism.
+        prefs.edit { putBoolean(KEY_GLASSMORPHISM_NOW_PLAYING, enabled) }
+        _state.update { it.copy(glassmorphismNowPlaying = enabled) }
     }
 
     fun setGlassTimelineArgb(argb: Int) {
