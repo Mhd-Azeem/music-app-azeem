@@ -880,13 +880,20 @@ private val artistPortraits = mapOf(
     "Sabrina Carpenter" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Sabrina%20Carpenter%20Vogue%202025%20(cropped).jpg",
     "Olivia Rodrigo" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Olivia%20Rodrigo%20@%20Theatre%20at%20Ace%20Hotel%2010%2009%202023%20(53476356280).jpg",
 
+    "Pradeep Kumar" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Pradeep%20Kumar%20Indian%20singer.jpg",
+
     // Malayalam
+    "K. S. Harisankar" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/K%20S%20HARISANKAR.jpg",
+    "Hesham Abdul Wahab" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Hesham-Wahab.jpg",
+    "Fejo" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Fejo%20Mallu%20Rapper.jpg",
     "Vineeth Sreenivasan" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Vineeth%20Sreenivasan.jpg",
     "Vijay Yesudas" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Vijay%20Yesudas.jpg",
     "K. S. Chithra" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/K.%20S.%20Chithra%20at%20Vijay%20Awards.jpg",
     "Sithara Krishnakumar" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Sithara%20Krishnakumar.jpg",
 
     // Hindi
+    "Pritam" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Pritam%20Chakraborty%20at%20the%205th%20GiMA%20Awards.jpg",
+    "Jubin Nautiyal" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Jubin%20Nautiyal%20record%20a%20song.jpg",
     "Arijit Singh" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Arijit%20Singh%20(cropped).jpg",
     "Shreya Ghoshal" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Shreya%20Ghoshal%20at%20the%2066th%20Filmfare%20Awards.jpg",
     "Sonu Nigam" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Sonu%20Nigam%20at%20the%20Mirchi%20Music%20Awards%202016.jpg",
