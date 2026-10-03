@@ -533,6 +533,9 @@ fun WavelengthNavHost() {
                         onPlaylistClick = { id ->
                             navController.navigate(Screen.PlaylistDetail.createRoute(id))
                         },
+                        onStartListeningViewAll = {
+                            navController.navigate(Screen.Genre.createRoute("latest songs", "Start listening"))
+                        },
                         onSearchClick = {
                             navController.navigate(Screen.Search.route) {
                                 popUpTo(navController.graph.startDestinationId) { saveState = true }
