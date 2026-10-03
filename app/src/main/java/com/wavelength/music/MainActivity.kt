@@ -78,25 +78,19 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        // A bubble activity is intentionally floating above another app, so it must not
-        // be treated as the normal full-screen AzMusic foreground state.
-        if (!intent.getBooleanExtra(FloatingIslandService.EXTRA_BUBBLE_MODE, false)) {
-            getSharedPreferences(FloatingIslandService.VISIBILITY_PREFS, Context.MODE_PRIVATE)
-                .edit().putBoolean(FloatingIslandService.KEY_APP_VISIBLE, true).apply()
-            sendBroadcast(
-                Intent(FloatingIslandService.ACTION_APP_FOREGROUND).setPackage(packageName)
-            )
-        }
+        getSharedPreferences(FloatingIslandService.VISIBILITY_PREFS, Context.MODE_PRIVATE)
+            .edit().putBoolean(FloatingIslandService.KEY_APP_VISIBLE, true).apply()
+        sendBroadcast(
+            Intent(FloatingIslandService.ACTION_APP_FOREGROUND).setPackage(packageName)
+        )
     }
 
     override fun onStop() {
-        if (!intent.getBooleanExtra(FloatingIslandService.EXTRA_BUBBLE_MODE, false)) {
-            getSharedPreferences(FloatingIslandService.VISIBILITY_PREFS, Context.MODE_PRIVATE)
-                .edit().putBoolean(FloatingIslandService.KEY_APP_VISIBLE, false).apply()
-            sendBroadcast(
-                Intent(FloatingIslandService.ACTION_APP_BACKGROUND).setPackage(packageName)
-            )
-        }
+        getSharedPreferences(FloatingIslandService.VISIBILITY_PREFS, Context.MODE_PRIVATE)
+            .edit().putBoolean(FloatingIslandService.KEY_APP_VISIBLE, false).apply()
+        sendBroadcast(
+            Intent(FloatingIslandService.ACTION_APP_BACKGROUND).setPackage(packageName)
+        )
         super.onStop()
     }
 
