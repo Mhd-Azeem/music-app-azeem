@@ -794,6 +794,7 @@ private fun ArtistCircleTile(artist: String, onClick: () -> Unit) {
         modifier = Modifier.width(88.dp).clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        val portraitUrl = tamilArtistPortraits[artist]
         Box(
             modifier = Modifier
                 .size(76.dp)
@@ -809,12 +810,22 @@ private fun ArtistCircleTile(artist: String, onClick: () -> Unit) {
                 .border(1.dp, Color.White.copy(alpha = 0.28f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
+            // Initials stay behind the image, so a failed/slow network image still has
+            // a useful visual fallback instead of an empty circle.
             Text(
                 text = artist.split(" ").filter { it.isNotBlank() }.take(2)
                     .joinToString("") { it.first().uppercase() },
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White
             )
+            if (portraitUrl != null) {
+                AsyncImage(
+                    model = portraitUrl,
+                    contentDescription = "$artist portrait",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize().clip(CircleShape)
+                )
+            }
         }
         Text(
             text = artist,
@@ -828,3 +839,22 @@ private fun ArtistCircleTile(artist: String, onClick: () -> Unit) {
         )
     }
 }
+
+
+/*
+ * Tamil artist portrait pilot. These URLs resolve through Wikimedia Commons to freely
+ * reusable images. Artists without a verified Commons portrait deliberately fall back
+ * to the initials tile until a suitable licensed image is available.
+ */
+private val tamilArtistPortraits = mapOf(
+    "Anirudh Ravichander" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Anirudh%20Ravichander%20at%20Audi%20Ritz%20Style%20Awards%202017%20(cropped).jpg",
+    "A. R. Rahman" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/A.%20R.%20Rahman.jpg",
+    "Yuvan Shankar Raja" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Yuvan%20Shankar%20Raja%20exclusive%20HQ%20Photos%20Silverscreen.jpg",
+    "Hiphop Tamizha" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Hiphop%20Tamizha%20Adhi%20-%20Hiphop%20Tamizha%20Aambala%20audio%20launch%20(cropped).jpg",
+    "G. V. Prakash Kumar" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/GV%20Prakash%20Kumar.webp",
+    "Harris Jayaraj" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Harris%20Jayaraj.jpg",
+    "Santhosh Narayanan" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Santhosh%20Narayanan.png",
+    "Ilaiyaraaja" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Ilaiyaraaja%20at%20Merku%20Thodarchi%20Malai%20Press%20Meet.jpg",
+    "Dhanush" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Dhanush%20at%20the%20%E2%80%98Asuran%E2%80%99%20Success%20Meet.jpg",
+    "Sid Sriram" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Sid%20Sriram.jpg"
+)
