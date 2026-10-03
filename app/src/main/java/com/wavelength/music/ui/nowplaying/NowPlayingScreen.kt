@@ -479,9 +479,14 @@ fun NowPlayingScreen(
     }
 
     val density = LocalDensity.current
-    val screenHeightDp = LocalConfiguration.current.screenHeightDp
-    val compactHeightLayout = screenHeightDp < 720
-    val veryCompactHeightLayout = screenHeightDp < 620
+    val configuration = LocalConfiguration.current
+    val screenHeightDp = configuration.screenHeightDp
+    val screenWidthDp = configuration.screenWidthDp
+    // Height alone misses narrow phones whose reported dp height is still fairly large.
+    // Treat narrow portrait devices as compact too so artwork/controls cannot consume the
+    // queue's remaining space and push Up Next completely below the viewport.
+    val compactHeightLayout = screenHeightDp < 800 || screenWidthDp < 400
+    val veryCompactHeightLayout = screenHeightDp < 680 || (screenWidthDp < 360 && screenHeightDp < 820)
     val collapseThresholdPx = with(density) { 80.dp.toPx() }
     val skipThresholdPx = with(density) { 56.dp.toPx() }
 
