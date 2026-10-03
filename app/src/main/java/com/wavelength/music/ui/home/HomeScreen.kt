@@ -84,6 +84,7 @@ fun HomeScreen(
     onStatisticsClick: () -> Unit,
     onPlaylistClick: (Long) -> Unit,
     onSearchClick: () -> Unit,
+    onStartListeningViewAll: () -> Unit,
     onSwipeToSearch: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -348,7 +349,8 @@ fun HomeScreen(
                     onSearchHistoryClick = { query ->
                         viewModel.prepareSearch(query)
                         onSearchClick()
-                    }
+                    },
+                    onStartListeningViewAll = onStartListeningViewAll
                 )
             }
         }
@@ -370,7 +372,8 @@ private fun HomeContent(
     onTrackClick: (Int, List<Track>) -> Unit,
     onGenreClick: (String, String) -> Unit,
     onPlaylistClick: (Long) -> Unit,
-    onSearchHistoryClick: (String) -> Unit
+    onSearchHistoryClick: (String) -> Unit,
+    onStartListeningViewAll: () -> Unit
 ) {
     var trackForMenu by remember { mutableStateOf<Track?>(null) }
     var trackForQuickAdd by remember { mutableStateOf<Track?>(null) }
@@ -452,7 +455,15 @@ private fun HomeContent(
 
         val startListening = if (recentlyPlayed.isNotEmpty()) recentlyPlayed else featuredTracks
         if (startListening.isNotEmpty()) {
-            item { SectionHeader("Start listening") }
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Start listening", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                    TextButton(onClick = onStartListeningViewAll) { Text("View all") }
+                }
+            }
             itemsIndexed(startListening.take(5), key = { _, track -> "start:" + track.id }) { index, track ->
                 TrackRow(
                     track = track,
@@ -497,14 +508,19 @@ private fun HomeContent(
             }
         }
 
-        item { SectionHeader("Artists") }
-        item {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(featuredArtists, key = { it }) { artist ->
-                    AssistChip(onClick = { onSearchHistoryClick(artist) }, label = { Text(artist) })
+        artistGroups.forEach { (language, artists) ->
+            item { SectionHeader("$language artists") }
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    items(artists, key = { language + ":" + it }) { artist ->
+                        ArtistCircleTile(
+                            artist = artist,
+                            onClick = { onGenreClick(artist, artist) }
+                        )
+                    }
                 }
             }
         }
@@ -745,5 +761,67 @@ private fun QuickTrackTile(
                 )
             }
         }
+    }
+}
+
+
+private val artistGroups = linkedMapOf(
+    "🎵 Tamil" to listOf(
+        "Anirudh Ravichander", "A. R. Rahman", "Yuvan Shankar Raja", "Sai Abhyankkar",
+        "Hiphop Tamizha", "G. V. Prakash Kumar", "Harris Jayaraj", "Santhosh Narayanan",
+        "Ilaiyaraaja", "Dhanush", "Sid Sriram", "Pradeep Kumar"
+    ),
+    "🌎 English" to listOf(
+        "The Weeknd", "Taylor Swift", "Bruno Mars", "Ed Sheeran", "Billie Eilish",
+        "Ariana Grande", "Justin Bieber", "Dua Lipa", "Drake", "Post Malone",
+        "Sabrina Carpenter", "Olivia Rodrigo"
+    ),
+    "🌴 Malayalam" to listOf(
+        "Sushin Shyam", "Vineeth Sreenivasan", "K. S. Harisankar", "Shaan Rahman",
+        "Gopi Sundar", "Jakes Bejoy", "Hesham Abdul Wahab", "Vijay Yesudas",
+        "K. S. Chithra", "Dabzee", "Fejo", "Sithara Krishnakumar"
+    ),
+    "🇮🇳 Hindi" to listOf(
+        "Arijit Singh", "Shreya Ghoshal", "Pritam", "Vishal Mishra", "Jubin Nautiyal",
+        "Sonu Nigam", "Atif Aslam", "Armaan Malik", "Amit Trivedi", "Badshah",
+        "Yo Yo Honey Singh", "Diljit Dosanjh"
+    )
+)
+
+@Composable
+private fun ArtistCircleTile(artist: String, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier.width(88.dp).clickable(onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(76.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.90f),
+                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.72f)
+                        )
+                    )
+                )
+                .border(1.dp, Color.White.copy(alpha = 0.28f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = artist.split(" ").filter { it.isNotBlank() }.take(2)
+                    .joinToString("") { it.first().uppercase() },
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White
+            )
+        }
+        Text(
+            text = artist,
+            style = MaterialTheme.typography.labelMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 6.dp)
+        )
     }
 }
