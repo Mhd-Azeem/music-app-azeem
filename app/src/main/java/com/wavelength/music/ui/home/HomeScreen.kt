@@ -797,7 +797,7 @@ private fun ArtistCircleTile(artist: String, onClick: () -> Unit) {
         modifier = Modifier.width(88.dp).clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val portraitUrl = tamilArtistPortraits[artist]
+        val portraitUrl = artistPortraits[artist]
         Box(
             modifier = Modifier
                 .size(76.dp)
@@ -853,7 +853,8 @@ private fun ArtistCircleTile(artist: String, onClick: () -> Unit) {
  * reusable images. Artists without a verified Commons portrait deliberately fall back
  * to the initials tile until a suitable licensed image is available.
  */
-private val tamilArtistPortraits = mapOf(
+private val artistPortraits = mapOf(
+    // Tamil
     "Anirudh Ravichander" to "https://upload.wikimedia.org/wikipedia/commons/d/d4/Anirudh_Ravichander_at_Audi_Ritz_Style_Awards_2017_%28cropped%29.jpg",
     "A. R. Rahman" to "https://upload.wikimedia.org/wikipedia/commons/0/07/A._R._Rahman.jpg",
     "Yuvan Shankar Raja" to "https://upload.wikimedia.org/wikipedia/commons/b/b6/Yuvan_Shankar_Raja_exclusive_HQ_Photos_Silverscreen.jpg",
@@ -863,5 +864,36 @@ private val tamilArtistPortraits = mapOf(
     "Santhosh Narayanan" to "https://upload.wikimedia.org/wikipedia/commons/9/99/Santhosh_Narayanan.png",
     "Ilaiyaraaja" to "https://upload.wikimedia.org/wikipedia/commons/2/26/Ilaiyaraaja_at_Merku_Thodarchi_Malai_Press_Meet.jpg",
     "Dhanush" to "https://upload.wikimedia.org/wikipedia/commons/8/86/Dhanush_at_the_%E2%80%98Asuran%E2%80%99_Success_Meet.jpg",
-    "Sid Sriram" to "https://upload.wikimedia.org/wikipedia/commons/c/c3/Sid_Sriram.jpg"
+    "Sid Sriram" to "https://upload.wikimedia.org/wikipedia/commons/c/c3/Sid_Sriram.jpg",
+
+    // English
+    "The Weeknd" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/The%20Weeknd%20Jimmy%20Fallon%202025%20(cropped).png",
+    "Taylor Swift" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Taylor%20Swift%20at%20the%202023%20MTV%20Video%20Music%20Awards%204.png",
+    "Bruno Mars" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Bruno%20Mars%20Las%20Vegas%202010.jpg",
+    "Ed Sheeran" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Ed%20Sheeran-6886%20(48712908917).jpg",
+    "Billie Eilish" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Billie%20Eilish%202019%20by%20Glenn%20Francis.jpg",
+    "Ariana Grande" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Ariana%20Grande%20during%20the%20Sweetener%20World%20Tour%20in%202019.png",
+    "Justin Bieber" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Justin%20Bieber%20in%202015.jpg",
+    "Dua Lipa" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/DuaLipaO2020522%20(7%20of%2030)%20(52090543112)%20(cropped).jpg",
+    "Drake" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Drake%20July%202016.jpg",
+    "Post Malone" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Post%20Malone%20June%202018.jpg",
+    "Sabrina Carpenter" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Sabrina%20Carpenter%20Vogue%202025%20(cropped).jpg",
+    "Olivia Rodrigo" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Olivia%20Rodrigo%20@%20Theatre%20at%20Ace%20Hotel%2010%2009%202023%20(53476356280).jpg",
+
+    // Malayalam
+    "Vineeth Sreenivasan" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Vineeth%20Sreenivasan.jpg",
+    "Vijay Yesudas" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Vijay%20Yesudas.jpg",
+    "K. S. Chithra" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/K.%20S.%20Chithra%20at%20Vijay%20Awards.jpg",
+    "Sithara Krishnakumar" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Sithara%20Krishnakumar.jpg",
+
+    // Hindi
+    "Arijit Singh" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Arijit%20Singh%20(cropped).jpg",
+    "Shreya Ghoshal" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Shreya%20Ghoshal%20at%20the%2066th%20Filmfare%20Awards.jpg",
+    "Sonu Nigam" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Sonu%20Nigam%20at%20the%20Mirchi%20Music%20Awards%202016.jpg",
+    "Atif Aslam" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Atif%20Aslam%20at%20Badlapur%20success%20bash.jpg",
+    "Armaan Malik" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Armaan%20Malik%20at%20the%20Global%20Indian%20Music%20Academy%20Awards.jpg",
+    "Amit Trivedi" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Amit%20Trivedi%20at%20the%2061st%20Filmfare%20Awards.jpg",
+    "Badshah" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Badshah%20at%20the%20HT%20Most%20Stylish%20Awards%202018.jpg",
+    "Yo Yo Honey Singh" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Yo%20Yo%20Honey%20Singh%20at%20the%20Mirchi%20Music%20Awards%202014.jpg",
+    "Diljit Dosanjh" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Diljit%20Dosanjh%20at%20the%20trailer%20launch%20of%20Phillauri.jpg"
 )
