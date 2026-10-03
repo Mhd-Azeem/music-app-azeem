@@ -69,8 +69,10 @@ fun TrackListScreen(
             onLoadMore != null && total > 0 && lastVisible >= total - 5
         }
     }
-    LaunchedEffect(shouldLoadMore) {
-        if (shouldLoadMore) onLoadMore?.invoke()
+    // Re-evaluate after each appended page. Keying only on shouldLoadMore meant the effect
+    // stayed true at the bottom and never fired again after the first page finished loading.
+    LaunchedEffect(shouldLoadMore, isLoadingMore, successData?.size) {
+        if (shouldLoadMore && !isLoadingMore) onLoadMore?.invoke()
     }
     val menuTrack = menuTrackIndex?.let { index -> successData?.getOrNull(index) }
 
