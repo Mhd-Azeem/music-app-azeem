@@ -848,14 +848,14 @@ private fun ArtistCircleTile(artist: String, onClick: () -> Unit) {
  * to the initials tile until a suitable licensed image is available.
  */
 private val tamilArtistPortraits = mapOf(
-    "Anirudh Ravichander" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Anirudh%20Ravichander%20at%20Audi%20Ritz%20Style%20Awards%202017%20(cropped).jpg",
-    "A. R. Rahman" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/A.%20R.%20Rahman.jpg",
-    "Yuvan Shankar Raja" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Yuvan%20Shankar%20Raja%20exclusive%20HQ%20Photos%20Silverscreen.jpg",
-    "Hiphop Tamizha" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Hiphop%20Tamizha%20Adhi%20-%20Hiphop%20Tamizha%20Aambala%20audio%20launch%20(cropped).jpg",
-    "G. V. Prakash Kumar" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/GV%20Prakash%20Kumar.webp",
-    "Harris Jayaraj" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Harris%20Jayaraj.jpg",
-    "Santhosh Narayanan" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Santhosh%20Narayanan.png",
-    "Ilaiyaraaja" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Ilaiyaraaja%20at%20Merku%20Thodarchi%20Malai%20Press%20Meet.jpg",
-    "Dhanush" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Dhanush%20at%20the%20%E2%80%98Asuran%E2%80%99%20Success%20Meet.jpg",
-    "Sid Sriram" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Sid%20Sriram.jpg"
+    "Anirudh Ravichander" to "https://upload.wikimedia.org/wikipedia/commons/d/d4/Anirudh_Ravichander_at_Audi_Ritz_Style_Awards_2017_%28cropped%29.jpg",
+    "A. R. Rahman" to "https://upload.wikimedia.org/wikipedia/commons/0/07/A._R._Rahman.jpg",
+    "Yuvan Shankar Raja" to "https://upload.wikimedia.org/wikipedia/commons/b/b6/Yuvan_Shankar_Raja_exclusive_HQ_Photos_Silverscreen.jpg",
+    "Hiphop Tamizha" to "https://upload.wikimedia.org/wikipedia/commons/9/96/Hiphop_Tamizha_Adhi_-_Hiphop_Tamizha_Aambala_audio_launch_%28cropped%29.jpg",
+    "G. V. Prakash Kumar" to "https://upload.wikimedia.org/wikipedia/commons/2/20/GV_Prakash_Kumar.webp",
+    "Harris Jayaraj" to "https://upload.wikimedia.org/wikipedia/commons/9/9d/Harris_Jayaraj.jpg",
+    "Santhosh Narayanan" to "https://upload.wikimedia.org/wikipedia/commons/9/99/Santhosh_Narayanan.png",
+    "Ilaiyaraaja" to "https://upload.wikimedia.org/wikipedia/commons/2/26/Ilaiyaraaja_at_Merku_Thodarchi_Malai_Press_Meet.jpg",
+    "Dhanush" to "https://upload.wikimedia.org/wikipedia/commons/8/86/Dhanush_at_the_%E2%80%98Asuran%E2%80%99_Success_Meet.jpg",
+    "Sid Sriram" to "https://upload.wikimedia.org/wikipedia/commons/c/c3/Sid_Sriram.jpg"
 )
