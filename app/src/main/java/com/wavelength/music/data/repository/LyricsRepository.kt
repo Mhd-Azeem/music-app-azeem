@@ -28,7 +28,12 @@ class LyricsRepository @Inject constructor(
         durationSeconds: Int
     ): Result<List<LyricLine>> = runCatching {
         val cleanTitle = cleanTitle(trackName)
-        val primaryArtist = artistName.substringBefore(',').trim()
+        val primaryArtist = artistName
+            .split(',', '&', ';')
+            .firstOrNull()
+            ?.replace(Regex("\\b(feat\\.?|ft\\.?).*", RegexOption.IGNORE_CASE), "")
+            ?.trim()
+            .orEmpty()
         val cacheKey = "${normalize(cleanTitle)}|${normalize(primaryArtist)}|${durationSeconds.coerceAtLeast(0)}"
 
         lyricsCache.getOrPut(
@@ -106,7 +111,21 @@ class LyricsRepository @Inject constructor(
             api.searchLyrics(cleanTitle, primaryArtist.takeIf { it.isNotBlank() })
         }.getOrDefault(emptyList())
 
-        candidates += searchMatches.sortedByDescending { scoreMatch(it, cleanTitle, primaryArtist, durationSeconds) }
+        // LRCLIB's structured search can miss JioSaavn metadata (movie suffixes, multiple
+        // artists, transliterated names). Retry its free-text endpoint with progressively
+        // looser queries before giving up.
+        val freeTextMatches = buildList {
+            addAll(runCatching {
+                api.searchLyricsByQuery(listOf(cleanTitle, primaryArtist).filter { it.isNotBlank() }.joinToString(" "))
+            }.getOrDefault(emptyList()))
+            if (isEmpty()) {
+                addAll(runCatching { api.searchLyricsByQuery(cleanTitle) }.getOrDefault(emptyList()))
+            }
+        }
+
+        candidates += (searchMatches + freeTextMatches)
+            .distinctBy { it.id ?: (normalize(it.trackName.orEmpty()) + "|" + normalize(it.artistName.orEmpty())) }
+            .sortedByDescending { scoreMatch(it, cleanTitle, primaryArtist, durationSeconds) }
 
         val best = candidates.firstOrNull {
             !it.syncedLyrics.isNullOrBlank() || !it.plainLyrics.isNullOrBlank()
