@@ -1721,7 +1721,7 @@ private fun LyricsOverlay(
                 is ScreenState.Error -> EmptyView(modifier = Modifier.fillMaxSize(), message = lyricsState.message)
                 is ScreenState.Empty -> EmptyView(
                     modifier = Modifier.fillMaxSize(),
-                    message = "No synced lyrics found for this track"
+                    message = "No lyrics found for this track"
                 )
                 is ScreenState.Success -> {
                     val lines = lyricsState.data
