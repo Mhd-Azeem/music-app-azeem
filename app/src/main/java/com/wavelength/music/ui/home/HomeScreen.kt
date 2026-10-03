@@ -72,6 +72,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
 import com.wavelength.music.ui.components.TrackRow
 import com.wavelength.music.ui.design.UiDesignConfig
 import com.wavelength.music.ui.settings.AppSettingsViewModel
@@ -821,7 +823,11 @@ private fun ArtistCircleTile(artist: String, onClick: () -> Unit) {
             )
             if (portraitUrl != null) {
                 AsyncImage(
-                    model = portraitUrl,
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(portraitUrl)
+                        .addHeader("User-Agent", "AzMusic/1.0 (https://github.com/Mhd-Azeem/music-app-azeem)")
+                        .crossfade(true)
+                        .build(),
                     contentDescription = "$artist portrait",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize().clip(CircleShape)
