@@ -481,42 +481,12 @@ fun WavelengthNavHost() {
             contentModifier = contentModifier.haze(state = hazeState)
         }
         Box(modifier = contentModifier) {
-            if (settings.glassmorphismNowPlaying) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    Color(0xFF071A2B),
-                                    Color(settings.customAccentArgb).copy(alpha = 0.42f),
-                                    Color(0xFF10243D),
-                                    Color(0xFF241B3A)
-                                )
-                            )
-                        )
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    Color.White.copy(alpha = 0.13f),
-                                    Color.Transparent
-                                ),
-                                radius = 900f
-                            )
-                        )
-                )
-            } else {
-                AppBackground(
-                    hasCustomBackground = settings.hasCustomBackground,
-                    customBackgroundFile = settingsViewModel.customBackgroundFile,
-                    opacity = settings.backgroundOpacity,
-                    builtInWallpaper = settings.builtInWallpaper
-                )
-            }
+            AppBackground(
+                hasCustomBackground = settings.hasCustomBackground,
+                customBackgroundFile = settingsViewModel.customBackgroundFile,
+                opacity = settings.backgroundOpacity,
+                builtInWallpaper = settings.builtInWallpaper
+            )
             NavHost(
                 navController = navController,
                 startDestination = Screen.Home.route,
