@@ -47,6 +47,10 @@ class FloatingIslandService : Service() {
     private var expanded = false
     private val handler = Handler(Looper.getMainLooper())
     private val longPressRunnable = Runnable { showControls() }
+    private val hideAfterStopRunnable = Runnable {
+        hideControls()
+        root?.visibility = View.GONE
+    }
 
     private lateinit var artwork: ImageView
     private lateinit var title: TextView
@@ -240,18 +244,26 @@ class FloatingIslandService : Service() {
     private fun refresh(player: Player) {
         val appVisible = getSharedPreferences(VISIBILITY_PREFS, MODE_PRIVATE)
             .getBoolean(KEY_APP_VISIBLE, false)
-        // A queued media item alone is not enough: after playback is stopped/dismissed the
-        // controller can still retain the last item. Only show for an active/paused playback session.
-        val hasActivePlayback = player.mediaItemCount > 0 &&
-            player.playbackState != Player.STATE_IDLE &&
-            player.playbackState != Player.STATE_ENDED
-        // Always use AzMusic's original compact Dynamic-Island-style overlay.
-        // Native Android notification bubbles are intentionally not used.
-        root?.visibility = if (hasActivePlayback && !appVisible) View.VISIBLE else View.GONE
-        if (!hasActivePlayback) {
-            hideControls()
+        val hasMedia = player.mediaItemCount > 0
+        val stopped = !hasMedia ||
+            player.playbackState == Player.STATE_IDLE ||
+            player.playbackState == Player.STATE_ENDED
+
+        if (stopped) {
+            // Keep the last media state visible briefly after an explicit stop/end, regardless of
+            // whether it came from AzMusic or Media3 controls. Resuming within the grace period
+            // cancels this pending dismissal.
+            handler.removeCallbacks(hideAfterStopRunnable)
+            if (!appVisible && root?.visibility == View.VISIBLE) {
+                handler.postDelayed(hideAfterStopRunnable, 5_000L)
+            } else if (appVisible) {
+                root?.visibility = View.GONE
+            }
             return
         }
+
+        handler.removeCallbacks(hideAfterStopRunnable)
+        root?.visibility = if (!appVisible) View.VISIBLE else View.GONE
         val metadata: MediaMetadata = player.mediaMetadata
         title.text = metadata.title?.toString().orEmpty().ifBlank { "AzMusic" }
         artist.text = metadata.artist?.toString().orEmpty()
@@ -385,6 +397,7 @@ class FloatingIslandService : Service() {
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        handler.removeCallbacks(hideAfterStopRunnable)
         runCatching { unregisterReceiver(appVisibilityReceiver) }
         controller?.removeListener(listener)
         controllerFuture?.let { MediaController.releaseFuture(it) }
