@@ -16,6 +16,7 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.TextView
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -45,6 +46,11 @@ class FloatingIslandService : Service() {
 
     private lateinit var artwork: ImageView
     private lateinit var title: TextView
+    private lateinit var artist: TextView
+    private lateinit var progress: SeekBar
+    private lateinit var timeRow: LinearLayout
+    private lateinit var elapsed: TextView
+    private lateinit var remaining: TextView
     private lateinit var controls: LinearLayout
     private lateinit var playPause: TextView
 
@@ -103,68 +109,96 @@ class FloatingIslandService : Service() {
         fun dp(value: Int) = (value * density).toInt()
 
         artwork = ImageView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(34), dp(34)).apply {
-                marginEnd = dp(8)
-            }
+            layoutParams = LinearLayout.LayoutParams(dp(36), dp(36)).apply { marginEnd = dp(8) }
             scaleType = ImageView.ScaleType.CENTER_CROP
-            background = rounded(Color.rgb(38, 38, 42), dp(10).toFloat())
+            background = rounded(Color.rgb(38, 38, 42), dp(12).toFloat())
             clipToOutline = true
         }
-
         title = TextView(this).apply {
-            setTextColor(Color.WHITE)
-            textSize = 13f
-            maxLines = 1
+            setTextColor(Color.WHITE); textSize = 13f; maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
         }
+        artist = TextView(this).apply {
+            setTextColor(Color.argb(180, 255, 255, 255)); textSize = 10f; maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            visibility = View.GONE
+        }
         val labels = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_VERTICAL
-            addView(title, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_VERTICAL
+            addView(title, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+            addView(artist, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        }
+        val visualizer = TextView(this).apply {
+            text = "▂▅▇▃▆"; setTextColor(Color.rgb(220, 62, 72)); textSize = 13f
+            gravity = Gravity.CENTER
+        }
+        val topRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            addView(artwork)
+            addView(labels, LinearLayout.LayoutParams(0, dp(36), 1f))
+            addView(visualizer, LinearLayout.LayoutParams(dp(44), dp(36)))
+        }
+
+        progress = SeekBar(this).apply {
+            max = 1000
+            visibility = View.GONE
+            setPadding(0, 0, 0, 0)
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar?, value: Int, fromUser: Boolean) {
+                    if (fromUser) controller?.let { player ->
+                        if (player.duration > 0) player.seekTo(player.duration * value / 1000L)
+                    }
+                }
+                override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
+                override fun onStopTrackingTouch(seekBar: SeekBar?) = Unit
+            })
+        }
+        elapsed = timeLabel(Gravity.START)
+        remaining = timeLabel(Gravity.END)
+        timeRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            visibility = View.GONE
+            addView(elapsed, LinearLayout.LayoutParams(0, dp(20), 1f))
+            addView(remaining, LinearLayout.LayoutParams(0, dp(20), 1f))
         }
 
         playPause = controlButton("▶") { controller?.let { if (it.isPlaying) it.pause() else it.play() } }
         controls = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-            visibility = View.GONE
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; visibility = View.GONE
             addView(controlButton("‹") { controller?.seekToPreviousMediaItem() })
             addView(playPause)
             addView(controlButton("›") { controller?.seekToNextMediaItem() })
         }
 
-        val topRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            addView(artwork)
-            addView(labels, LinearLayout.LayoutParams(dp(92), dp(34)))
-        }
-
         root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(dp(8), dp(6), dp(8), dp(6))
-            background = rounded(Color.argb(242, 8, 8, 10), dp(24).toFloat())
-            elevation = dp(10).toFloat()
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+            setPadding(dp(8), dp(4), dp(8), dp(4))
+            background = islandBackground(dp(24).toFloat())
+            elevation = dp(8).toFloat()
             addView(topRow)
+            addView(progress, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(24)))
+            addView(timeRow, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(20)))
             addView(controls)
             setOnTouchListener(IslandTouchListener())
         }
 
         params = WindowManager.LayoutParams(
-            dp(146),
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            dp(184), dp(44),
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         ).apply {
-            // Anchor directly to the top screen edge.
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             y = 0
         }
         windowManager.addView(root, params)
         root?.visibility = View.GONE
+    }
+
+    private fun timeLabel(gravityValue: Int) = TextView(this).apply {
+        setTextColor(Color.argb(165, 255, 255, 255))
+        textSize = 10f
+        gravity = gravityValue or Gravity.CENTER_VERTICAL
     }
 
     private fun controlButton(symbol: String, action: () -> Unit) = TextView(this).apply {
@@ -215,7 +249,14 @@ class FloatingIslandService : Service() {
         }
         val metadata: MediaMetadata = player.mediaMetadata
         title.text = metadata.title?.toString().orEmpty().ifBlank { "AzMusic" }
+        artist.text = metadata.artist?.toString().orEmpty()
         metadata.artworkUri?.let { artwork.load(it) }
+        val duration = player.duration.takeIf { it > 0 } ?: 0L
+        val position = player.currentPosition.coerceAtLeast(0L)
+        progress.progress = if (duration > 0) ((position * 1000L) / duration).toInt() else 0
+        elapsed.text = formatTime(position)
+        remaining.text = formatTime(duration)
+
         playPause.text = if (player.isPlaying) "Ⅱ" else "▶"
         playPause.contentDescription = if (player.isPlaying) "Pause" else "Play"
     }
@@ -230,21 +271,35 @@ class FloatingIslandService : Service() {
 
     private fun showControls() {
         expanded = true
+        artist.visibility = View.VISIBLE
+        progress.visibility = View.VISIBLE
+        timeRow.visibility = View.VISIBLE
         controls.visibility = View.VISIBLE
         updateSize()
     }
 
     private fun hideControls() {
         expanded = false
+        artist.visibility = View.GONE
+        progress.visibility = View.GONE
+        timeRow.visibility = View.GONE
         controls.visibility = View.GONE
         updateSize()
     }
 
     private fun updateSize() {
         val p = params ?: return
-        p.height = WindowManager.LayoutParams.WRAP_CONTENT
-        p.width = dp(if (expanded) 224 else 146)
+        p.height = if (expanded) WindowManager.LayoutParams.WRAP_CONTENT else dp(44)
+        p.width = dp(if (expanded) 360 else 184)
         root?.let { windowManager.updateViewLayout(it, p) }
+    }
+
+    private fun formatTime(ms: Long): String { val total = (ms / 1000L).coerceAtLeast(0L); return "%d:%02d".format(total / 60L, total % 60L) }
+
+    private fun islandBackground(radius: Float) = GradientDrawable().apply {
+        setColor(Color.argb(248, 4, 4, 6))
+        cornerRadius = radius
+        setStroke(dp(1), Color.argb(90, 255, 255, 255))
     }
 
     private fun rounded(color: Int, radius: Float) = GradientDrawable().apply {
