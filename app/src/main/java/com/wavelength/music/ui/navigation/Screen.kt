@@ -12,6 +12,10 @@ sealed class Screen(val route: String) {
     data object AdminActivation : Screen("activation_admin")
     data object Statistics : Screen("statistics")
 
+    data object Artist : Screen("artist/{tag}/{label}") {
+        fun createRoute(artist: String) = "artist/${Uri.encode(artist)}/${Uri.encode(artist)}"
+    }
+
     data object Genre : Screen("genre/{tag}/{label}") {
         fun createRoute(tag: String, label: String) = "genre/${Uri.encode(tag)}/${Uri.encode(label)}"
     }
