@@ -498,6 +498,9 @@ fun WavelengthNavHost() {
                         onGenreClick = { tag, label ->
                             navController.navigate(Screen.Genre.createRoute(tag, label))
                         },
+                        onArtistClick = { artist ->
+                            navController.navigate(Screen.Artist.createRoute(artist))
+                        },
                         onSettingsClick = { navController.navigate(Screen.Settings.route) },
                         onStatisticsClick = { navController.navigate(Screen.Statistics.route) },
                         onPlaylistClick = { id ->
@@ -617,6 +620,19 @@ composable(
                     StatisticsScreen(
                         onBack = { navController.popBackStack() },
                         onOpenAdmin = { navController.navigate(Screen.AdminActivation.route) }
+                    )
+                }
+                composable(
+                    route = Screen.Artist.route,
+                    arguments = listOf(
+                        navArgument("tag") { type = NavType.StringType },
+                        navArgument("label") { type = NavType.StringType }
+                    )
+                ) {
+                    GenreScreen(
+                        onBack = { navController.popBackStack() },
+                        onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
+                        isArtistPage = true
                     )
                 }
                 composable(
