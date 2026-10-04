@@ -5,6 +5,8 @@ import android.content.ComponentName
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.IBinder
@@ -13,6 +15,8 @@ import android.provider.Settings
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
+import android.view.WindowInsets
+import android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
 import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -53,6 +57,7 @@ class FloatingIslandService : Service() {
     private lateinit var remaining: TextView
     private lateinit var controls: LinearLayout
     private lateinit var playPause: TextView
+    private lateinit var visualizer: WaveformView
 
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) = refresh(player)
@@ -128,10 +133,7 @@ class FloatingIslandService : Service() {
             addView(title, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
             addView(artist, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         }
-        val visualizer = TextView(this).apply {
-            text = "▂▅▇▃▆"; setTextColor(Color.rgb(220, 62, 72)); textSize = 13f
-            gravity = Gravity.CENTER
-        }
+        visualizer = WaveformView(this)
         val topRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             addView(artwork)
@@ -185,11 +187,14 @@ class FloatingIslandService : Service() {
         params = WindowManager.LayoutParams(
             dp(184), dp(44),
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             y = 0
+            layoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         }
         windowManager.addView(root, params)
         root?.visibility = View.GONE
@@ -257,6 +262,7 @@ class FloatingIslandService : Service() {
         elapsed.text = formatTime(position)
         remaining.text = formatTime(duration)
 
+        visualizer.setPlaying(player.isPlaying)
         playPause.text = if (player.isPlaying) "Ⅱ" else "▶"
         playPause.contentDescription = if (player.isPlaying) "Pause" else "Play"
     }
@@ -271,6 +277,7 @@ class FloatingIslandService : Service() {
 
     private fun showControls() {
         expanded = true
+        params?.flags = (params?.flags ?: 0) or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
         artist.visibility = View.VISIBLE
         progress.visibility = View.VISIBLE
         timeRow.visibility = View.VISIBLE
@@ -280,6 +287,7 @@ class FloatingIslandService : Service() {
 
     private fun hideControls() {
         expanded = false
+        params?.flags = (params?.flags ?: 0) and WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH.inv()
         artist.visibility = View.GONE
         progress.visibility = View.GONE
         timeRow.visibility = View.GONE
@@ -317,6 +325,10 @@ class FloatingIslandService : Service() {
         override fun onTouch(v: View, event: MotionEvent): Boolean {
             val p = params ?: return false
             when (event.actionMasked) {
+                MotionEvent.ACTION_OUTSIDE -> {
+                    if (expanded) hideControls()
+                    return true
+                }
                 MotionEvent.ACTION_DOWN -> {
                     downX = event.rawX
                     downY = event.rawY
@@ -384,6 +396,53 @@ class FloatingIslandService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    private inner class WaveformView(context: android.content.Context) : View(context) {
+        private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.rgb(224, 58, 70)
+            strokeCap = Paint.Cap.ROUND
+            strokeWidth = dp(3).toFloat()
+        }
+        private val heights = floatArrayOf(.30f, .62f, .42f, .82f, .48f, .70f, .34f)
+        private var phase = 0f
+        private var playing = false
+        private val animate = object : Runnable {
+            override fun run() {
+                if (!playing) return
+                phase += .42f
+                invalidate()
+                postDelayed(this, 90L)
+            }
+        }
+
+        fun setPlaying(value: Boolean) {
+            if (playing == value) return
+            playing = value
+            removeCallbacks(animate)
+            if (playing) post(animate) else invalidate()
+        }
+
+        override fun onDraw(canvas: Canvas) {
+            super.onDraw(canvas)
+            val count = heights.size
+            val gap = width.toFloat() / (count + 1)
+            val center = height / 2f
+            for (i in 0 until count) {
+                val motion = if (playing) {
+                    (kotlin.math.sin(phase + i * .85f) + 1f) * .22f
+                } else 0f
+                val fraction = (heights[i] + motion).coerceIn(.18f, .96f)
+                val half = height * fraction * .36f
+                val x = gap * (i + 1)
+                canvas.drawLine(x, center - half, x, center + half, paint)
+            }
+        }
+
+        override fun onDetachedFromWindow() {
+            removeCallbacks(animate)
+            super.onDetachedFromWindow()
+        }
+    }
 
     companion object {
         const val ACTION_APP_FOREGROUND = "com.wavelength.music.APP_FOREGROUND"
