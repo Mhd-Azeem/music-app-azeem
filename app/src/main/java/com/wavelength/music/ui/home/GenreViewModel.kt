@@ -33,10 +33,21 @@ class GenreViewModel @Inject constructor(
     private var hasMore = true
     private val pageSize = 20
     private val hiddenTrackIds = mutableSetOf<String>()
+    private val _selectedLanguage = MutableStateFlow("All")
+    val selectedLanguage: StateFlow<String> = _selectedLanguage.asStateFlow()
 
     init {
         load()
     }
+
+    fun setLanguage(language: String) {
+        if (_selectedLanguage.value == language) return
+        _selectedLanguage.value = language
+        load()
+    }
+
+    private fun matchesLanguage(track: Track): Boolean =
+        _selectedLanguage.value == "All" || track.language.equals(_selectedLanguage.value, ignoreCase = true)
 
     fun load() {
         currentPage = 0
@@ -49,8 +60,10 @@ class GenreViewModel @Inject constructor(
                     val unique = list
                         .distinctBy { it.id }
                         .filterNot { it.id in hiddenTrackIds }
+                        .filter(::matchesLanguage)
                     _tracks.value = if (unique.isEmpty()) ScreenState.Empty else ScreenState.Success(unique)
                     hasMore = list.isNotEmpty()
+                    if (unique.isEmpty() && hasMore && _selectedLanguage.value != "All") loadMore()
                 },
                 onFailure = { e -> _tracks.value = ScreenState.Error(e.message ?: "Something went wrong") }
             )
@@ -84,7 +97,7 @@ class GenreViewModel @Inject constructor(
                     val existingIds = current.map { it.id }.toHashSet()
                     val newTracks = incoming.filterNot {
                         it.id in existingIds || it.id in hiddenTrackIds
-                    }
+                    }.filter(::matchesLanguage)
                     if (newTracks.isNotEmpty()) {
                         _tracks.value = ScreenState.Success(current + newTracks)
                         break
