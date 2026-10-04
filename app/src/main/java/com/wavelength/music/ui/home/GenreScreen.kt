@@ -12,6 +12,7 @@ import com.wavelength.music.ui.components.TrackListScreen
 fun GenreScreen(
     onBack: () -> Unit,
     onTrackClick: () -> Unit,
+    isArtistPage: Boolean = false,
     viewModel: GenreViewModel = hiltViewModel()
 ) {
     val state by viewModel.tracks.collectAsStateWithLifecycle()
@@ -19,7 +20,7 @@ fun GenreScreen(
 
     TrackListScreen(
         title = viewModel.label,
-        subtitle = null,
+        subtitle = if (isArtistPage) "Top songs" else null,
         imageUrl = null,
         state = state,
         onBack = onBack,
