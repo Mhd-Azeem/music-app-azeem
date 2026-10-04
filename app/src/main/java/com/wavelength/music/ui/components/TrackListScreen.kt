@@ -56,6 +56,7 @@ fun TrackListScreen(
     isLoadingMore: Boolean = false,
     onRemoveFromPlaylist: ((Track) -> Unit)? = null,
     onReorder: ((from: Int, to: Int) -> Unit)? = null,
+    headerExtra: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     var menuTrackIndex by remember { mutableStateOf<Int?>(null) }
@@ -147,6 +148,7 @@ fun TrackListScreen(
                                 modifier = Modifier.padding(top = 8.dp)
                             )
                         }
+                        headerExtra?.invoke()
                         Row(
                             modifier = Modifier.padding(top = 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
