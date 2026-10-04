@@ -264,6 +264,13 @@ class FloatingIslandService : Service() {
 
         handler.removeCallbacks(hideAfterStopRunnable)
         root?.visibility = if (!appVisible) View.VISIBLE else View.GONE
+
+        // Pause gets the same five-second grace period as stop/end. If playback resumes before
+        // the delay expires, the callback above is cancelled and the island remains visible.
+        if (!player.isPlaying && !appVisible) {
+            handler.postDelayed(hideAfterStopRunnable, 5_000L)
+        }
+
         val metadata: MediaMetadata = player.mediaMetadata
         title.text = metadata.title?.toString().orEmpty().ifBlank { "AzMusic" }
         artist.text = metadata.artist?.toString().orEmpty()
