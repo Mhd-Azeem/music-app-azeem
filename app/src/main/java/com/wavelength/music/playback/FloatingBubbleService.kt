@@ -109,6 +109,9 @@ class FloatingBubbleService : Service() {
         if (expanded) return
         expanded = true
         root?.apply {
+            // The artwork lives inside the collapsed bubble. Detach it before reusing the same
+            // ImageView in the expanded header; a View cannot belong to two ViewGroups.
+            (art.parent as? android.view.ViewGroup)?.removeView(art)
             removeAllViews()
             setPadding(dp(16), dp(14), dp(16), dp(14))
             val header = LinearLayout(this@FloatingBubbleService).apply {
