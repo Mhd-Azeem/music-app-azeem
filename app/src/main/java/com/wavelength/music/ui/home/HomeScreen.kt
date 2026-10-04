@@ -855,6 +855,7 @@ private fun ArtistCircleTile(artist: String, onClick: () -> Unit) {
  */
 private val artistPortraits = mapOf(
     // Tamil
+    "Sai Abhyankkar" to "https://i.redd.it/tds8hhr9fzng1.jpeg",
     "Anirudh Ravichander" to "https://upload.wikimedia.org/wikipedia/commons/d/d4/Anirudh_Ravichander_at_Audi_Ritz_Style_Awards_2017_%28cropped%29.jpg",
     "A. R. Rahman" to "https://upload.wikimedia.org/wikipedia/commons/0/07/A._R._Rahman.jpg",
     "Yuvan Shankar Raja" to "https://upload.wikimedia.org/wikipedia/commons/b/b6/Yuvan_Shankar_Raja_exclusive_HQ_Photos_Silverscreen.jpg",
