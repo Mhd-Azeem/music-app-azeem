@@ -219,6 +219,10 @@
             android:name=".playback.FloatingIslandService"
             android:exported="false" />
 
+        <service
+            android:name=".playback.FloatingBubbleService"
+            android:exported="false" />
+
         <receiver
             android:name=".widget.MusicWidgetProvider"
             android:exported="false">
