@@ -43,11 +43,15 @@ class FloatingIslandService : Service() {
     private var controller: MediaController? = null
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var expanded = false
+    /** Once the 5s pause/stop grace period expires, stale Media3 callbacks must not resurrect it. */
+    private var dismissedForInactivePlayback = false
+    private var appWasVisible = true
     private val handler = Handler(Looper.getMainLooper())
     private val longPressRunnable = Runnable { showControls() }
     private val hideAfterStopRunnable = Runnable {
         hideControls()
         root?.visibility = View.GONE
+        dismissedForInactivePlayback = true
     }
 
     private lateinit var artwork: ImageView
@@ -96,9 +100,17 @@ class FloatingIslandService : Service() {
         override fun onReceive(context: android.content.Context?, intent: Intent?) {
             when (intent?.action) {
                 ACTION_APP_FOREGROUND -> {
+                    appWasVisible = true
+                    root?.animate()?.cancel()
                     root?.visibility = View.GONE
                 }
-                ACTION_APP_BACKGROUND -> controller?.let { refresh(it) }
+                ACTION_APP_BACKGROUND -> controller?.let {
+                    val shouldAnimate = appWasVisible && it.mediaItemCount > 0 &&
+                        it.playbackState != Player.STATE_IDLE &&
+                        it.playbackState != Player.STATE_ENDED
+                    appWasVisible = false
+                    refresh(it, animateEntrance = shouldAnimate)
+                }
             }
         }
     }
@@ -237,7 +249,7 @@ class FloatingIslandService : Service() {
         }, MoreExecutors.directExecutor())
     }
 
-    private fun refresh(player: Player) {
+    private fun refresh(player: Player, animateEntrance: Boolean = false) {
         val appVisible = getSharedPreferences(VISIBILITY_PREFS, MODE_PRIVATE)
             .getBoolean(KEY_APP_VISIBLE, false)
         val hasMedia = player.mediaItemCount > 0
@@ -246,24 +258,31 @@ class FloatingIslandService : Service() {
             player.playbackState == Player.STATE_ENDED
 
         if (stopped) {
-            // Keep the last media state visible briefly after an explicit stop/end, regardless of
-            // whether it came from AzMusic or Media3 controls. Resuming within the grace period
-            // cancels this pending dismissal.
             handler.removeCallbacks(hideAfterStopRunnable)
-            if (!appVisible && root?.visibility == View.VISIBLE) {
+            if (appVisible) {
+                root?.visibility = View.GONE
+            } else if (!dismissedForInactivePlayback && root?.visibility == View.VISIBLE) {
                 handler.postDelayed(hideAfterStopRunnable, 5_000L)
-            } else if (appVisible) {
+            } else {
                 root?.visibility = View.GONE
             }
             return
         }
 
+        // A real AzMusic playback item becoming active again is the only thing that clears the
+        // stale-session guard. This prevents unrelated audio apps from reviving our old island.
+        if (player.isPlaying) dismissedForInactivePlayback = false
         handler.removeCallbacks(hideAfterStopRunnable)
-        root?.visibility = if (!appVisible) View.VISIBLE else View.GONE
 
-        // Pause gets the same five-second grace period as stop/end. If playback resumes before
-        // the delay expires, the callback above is cancelled and the island remains visible.
-        if (!player.isPlaying && !appVisible) {
+        if (appVisible) {
+            root?.visibility = View.GONE
+        } else if (player.isPlaying || !dismissedForInactivePlayback) {
+            showCollapsedIsland(animateEntrance)
+        } else {
+            root?.visibility = View.GONE
+        }
+
+        if (!player.isPlaying && !appVisible && !dismissedForInactivePlayback) {
             handler.postDelayed(hideAfterStopRunnable, 5_000L)
         }
 
@@ -280,6 +299,25 @@ class FloatingIslandService : Service() {
         visualizer.setPlaying(player.isPlaying)
         playPause.text = if (player.isPlaying) "Ⅱ" else "▶"
         playPause.contentDescription = if (player.isPlaying) "Pause" else "Play"
+    }
+
+    private fun showCollapsedIsland(animateEntrance: Boolean) {
+        val view = root ?: return
+        hideControls()
+        view.visibility = View.VISIBLE
+        if (!animateEntrance) return
+        view.animate().cancel()
+        view.pivotX = view.width / 2f
+        view.pivotY = 0f
+        view.scaleX = 1.32f
+        view.scaleY = 1.32f
+        view.alpha = 0f
+        view.animate()
+            .alpha(1f)
+            .scaleX(1f)
+            .scaleY(1f)
+            .setDuration(280L)
+            .start()
     }
 
     private fun openAzMusic() {
