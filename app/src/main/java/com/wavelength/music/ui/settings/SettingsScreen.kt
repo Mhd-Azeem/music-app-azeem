@@ -82,6 +82,7 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 import com.wavelength.music.playback.EqualizerMode
 import com.wavelength.music.playback.FloatingIslandService
+import com.wavelength.music.playback.FloatingBubbleService
 import com.wavelength.music.playback.EqualizerPreset
 import com.wavelength.music.ui.components.CircularKnob
 import com.wavelength.music.ui.components.ImageCropDialog
@@ -669,6 +670,44 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                     )
+                }
+            }
+
+            item {
+                SettingsSection(title = "Floating Bubble") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Android-style playback bubble")
+                            Text(
+                                "Tap the circle to open AzMusic. Hold it for Now Playing, timeline and five Up Next songs.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = settings.floatingBubbleEnabled,
+                            onCheckedChange = { enabled ->
+                                if (!enabled) {
+                                    viewModel.setFloatingBubbleEnabled(false)
+                                    context.stopService(Intent(context, FloatingBubbleService::class.java))
+                                } else if (Settings.canDrawOverlays(context)) {
+                                    viewModel.setFloatingBubbleEnabled(true)
+                                    context.startService(Intent(context, FloatingBubbleService::class.java))
+                                } else {
+                                    Toast.makeText(context, "Enable Display over other apps first", Toast.LENGTH_LONG).show()
+                                    floatingIslandPermissionLauncher.launch(
+                                        Intent(
+                                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                            Uri.parse("package:${context.packageName}")
+                                        )
+                                    )
+                                }
+                            }
+                        )
+                    }
                 }
             }
 
