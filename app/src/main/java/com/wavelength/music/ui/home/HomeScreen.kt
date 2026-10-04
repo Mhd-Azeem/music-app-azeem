@@ -96,6 +96,7 @@ fun HomeScreen(
     val suggested by viewModel.suggested.collectAsStateWithLifecycle()
     val dailyMix by viewModel.dailyMix.collectAsStateWithLifecycle()
     val topCharts by viewModel.topCharts.collectAsStateWithLifecycle()
+    val topArtistTracks by viewModel.topArtistTracks.collectAsStateWithLifecycle()
     val mostPlayed by viewModel.mostPlayed.collectAsStateWithLifecycle()
     val recentlyAdded by viewModel.recentlyAdded.collectAsStateWithLifecycle()
     val recentlyPlayed by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
@@ -339,6 +340,7 @@ fun HomeScreen(
                     suggestedTracks = (suggested as? ScreenState.Success)?.data.orEmpty(),
                     dailyMixTracks = (dailyMix as? ScreenState.Success)?.data.orEmpty(),
                     topCharts = topCharts,
+                    topArtistTracks = topArtistTracks,
                     mostPlayed = mostPlayed,
                     recentlyAdded = recentlyAdded,
                     recentlyPlayed = recentlyPlayed,
@@ -369,6 +371,7 @@ private fun HomeContent(
     suggestedTracks: List<Track>,
     dailyMixTracks: List<Track>,
     topCharts: Map<String, List<Track>>,
+    topArtistTracks: Pair<String, List<Track>>?,
     mostPlayed: List<Track>,
     recentlyAdded: List<Track>,
     recentlyPlayed: List<Track>,
@@ -589,6 +592,31 @@ private fun HomeContent(
                             onAddToPlaylistClick = { trackForQuickAdd = track },
                             onMoreClick = { trackForMenu = track }
                         )
+                    }
+                }
+            }
+        }
+
+        topArtistTracks?.let { (artistName, tracks) ->
+            if (tracks.isNotEmpty()) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Top 10 $artistName", style = MaterialTheme.typography.titleMedium)
+                        Spacer(Modifier.weight(1f))
+                        TextButton(onClick = { onArtistClick(artistName) }) { Text("See all") }
+                    }
+                }
+                item {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        itemsIndexed(tracks, key = { _, track -> "topArtist:" + track.id }) { index, track ->
+                            TrackCard(track = track, onClick = { onTrackClick(index, tracks) })
+                        }
                     }
                 }
             }
