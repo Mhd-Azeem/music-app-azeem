@@ -83,6 +83,7 @@ import com.wavelength.music.ui.settings.AppSettingsViewModel
 fun HomeScreen(
     onTrackClick: () -> Unit,
     onGenreClick: (tag: String, label: String) -> Unit,
+    onArtistClick: (String) -> Unit,
     onSettingsClick: () -> Unit,
     onStatisticsClick: () -> Unit,
     onPlaylistClick: (Long) -> Unit,
@@ -348,6 +349,7 @@ fun HomeScreen(
                         onTrackClick()
                     },
                     onGenreClick = onGenreClick,
+                    onArtistClick = onArtistClick,
                     onPlaylistClick = onPlaylistClick,
                     onSearchHistoryClick = { query ->
                         viewModel.prepareSearch(query)
@@ -374,6 +376,7 @@ private fun HomeContent(
     searchHistory: List<String>,
     onTrackClick: (Int, List<Track>) -> Unit,
     onGenreClick: (String, String) -> Unit,
+    onArtistClick: (String) -> Unit,
     onPlaylistClick: (Long) -> Unit,
     onSearchHistoryClick: (String) -> Unit,
     onStartListeningViewAll: () -> Unit
@@ -521,7 +524,7 @@ private fun HomeContent(
                     items(artists, key = { language + ":" + it }) { artist ->
                         ArtistCircleTile(
                             artist = artist,
-                            onClick = { onGenreClick(artist, artist) }
+                            onClick = { onArtistClick(artist) }
                         )
                     }
                 }
