@@ -71,6 +71,9 @@ class HomeViewModel @Inject constructor(
         .map { it.take(15) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    private val _topArtistTracks = MutableStateFlow<Pair<String, List<Track>>?>(null)
+    val topArtistTracks: StateFlow<Pair<String, List<Track>>?> = _topArtistTracks.asStateFlow()
+
     private val _dailyMix = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Loading)
     val dailyMix: StateFlow<ScreenState<List<Track>>> = _dailyMix.asStateFlow()
 
@@ -98,6 +101,7 @@ class HomeViewModel @Inject constructor(
             repository.observeTopArtists(2).collectLatest { artists ->
                 latestTopArtists = artists
                 loadDailyMix(artists)
+                loadTopArtistTracks(artists.firstOrNull())
             }
         }
     }
@@ -203,6 +207,24 @@ class HomeViewModel @Inject constructor(
                 .take(24)
             _suggested.value = if (filtered.isEmpty()) ScreenState.Empty else ScreenState.Success(filtered)
         }
+    }
+
+    private suspend fun loadTopArtistTracks(topArtist: ArtistStat?) {
+        if (topArtist == null || topArtist.artistName.isBlank()) {
+            _topArtistTracks.value = null
+            return
+        }
+        val tracks = repository.searchTracks(topArtist.artistName, limit = 20)
+            .getOrDefault(emptyList())
+            .filter { track ->
+                track.artistName.split(',').any { name ->
+                    name.trim().contains(topArtist.artistName, ignoreCase = true) ||
+                        topArtist.artistName.contains(name.trim(), ignoreCase = true)
+                }
+            }
+            .distinctBy { it.id }
+            .take(10)
+        _topArtistTracks.value = if (tracks.isEmpty()) null else topArtist.artistName to tracks
     }
 
     /** Mixes tracks from whichever 2 artists have the most plays across your whole listening
