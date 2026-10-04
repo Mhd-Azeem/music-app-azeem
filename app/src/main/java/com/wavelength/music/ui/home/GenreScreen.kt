@@ -2,6 +2,15 @@ package com.wavelength.music.ui.home
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -17,6 +26,8 @@ fun GenreScreen(
 ) {
     val state by viewModel.tracks.collectAsStateWithLifecycle()
     val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
+    val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
+    val artistLanguages = listOf("All", "Tamil", "Malayalam", "Hindi", "English", "Telugu", "Kannada")
 
     TrackListScreen(
         title = viewModel.label,
@@ -40,6 +51,24 @@ fun GenreScreen(
         emptyMessage = stringResource(R.string.search_empty_hint),
         onLoadMore = viewModel::loadMore,
         isLoadingMore = isLoadingMore,
-        onRemoveFromPlaylist = viewModel::hideTrack
+        onRemoveFromPlaylist = viewModel::hideTrack,
+        headerExtra = if (isArtistPage) {
+            {
+                Row(
+                    modifier = Modifier
+                        .padding(top = 12.dp)
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    artistLanguages.forEach { language ->
+                        FilterChip(
+                            selected = selectedLanguage == language,
+                            onClick = { viewModel.setLanguage(language) },
+                            label = { Text(language) }
+                        )
+                    }
+                }
+            }
+        } else null
     )
 }
