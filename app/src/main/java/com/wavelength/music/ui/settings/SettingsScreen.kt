@@ -139,6 +139,19 @@ fun SettingsScreen(
         }
     }
 
+    val floatingBubblePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        if (Settings.canDrawOverlays(context)) {
+            viewModel.setFloatingBubbleEnabled(true)
+            context.startService(Intent(context, FloatingBubbleService::class.java))
+            Toast.makeText(context, "Floating Bubble enabled", Toast.LENGTH_SHORT).show()
+        } else {
+            viewModel.setFloatingBubbleEnabled(false)
+            Toast.makeText(context, "Display over other apps permission is required", Toast.LENGTH_LONG).show()
+        }
+    }
+
     val eqSupported by equalizerViewModel.isSupported.collectAsStateWithLifecycle()
     val eqEnabled by equalizerViewModel.enabled.collectAsStateWithLifecycle()
     val eqBands by equalizerViewModel.bands.collectAsStateWithLifecycle()
@@ -698,7 +711,7 @@ fun SettingsScreen(
                                     context.startService(Intent(context, FloatingBubbleService::class.java))
                                 } else {
                                     Toast.makeText(context, "Enable Display over other apps first", Toast.LENGTH_LONG).show()
-                                    floatingIslandPermissionLauncher.launch(
+                                    floatingBubblePermissionLauncher.launch(
                                         Intent(
                                             Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                                             Uri.parse("package:${context.packageName}")
