@@ -579,7 +579,7 @@ composable(
                     NowPlayingScreen(
                         onCollapse = { navController.popBackStack() },
                         onBrowseArtist = { artist ->
-                            navController.navigate(Screen.Genre.createRoute(artist, artist))
+                            navController.navigate(Screen.Artist.createRoute(artist))
                         },
                         onBrowseAlbum = { album ->
                             navController.navigate(Screen.Genre.createRoute(album, album))
