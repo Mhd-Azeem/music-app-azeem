@@ -31,7 +31,7 @@ class GenreViewModel @Inject constructor(
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
     private var hasMore = true
-    private val pageSize = 30
+    private val pageSize = 20
     private val hiddenTrackIds = mutableSetOf<String>()
 
     init {
