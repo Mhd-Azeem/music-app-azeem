@@ -94,7 +94,9 @@ class FloatingBubbleService : Service() {
         }
         params = WindowManager.LayoutParams(
             dp(62), dp(62), WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.END
@@ -139,6 +141,10 @@ class FloatingBubbleService : Service() {
         if (!expanded) return
         expanded = false
         root?.apply {
+            // Detach the artwork from the expanded header before rebuilding the collapsed bubble.
+            // Android Views may only have one parent; adding it while still attached can crash
+            // the overlay service and take the app process down with it.
+            (art.parent as? android.view.ViewGroup)?.removeView(art)
             removeAllViews()
             setPadding(dp(5), dp(5), dp(5), dp(5))
             addView(art, LinearLayout.LayoutParams(dp(52), dp(52)))
@@ -208,6 +214,10 @@ class FloatingBubbleService : Service() {
         override fun onTouch(v: View, e: MotionEvent): Boolean {
             val p = params ?: return false
             when (e.actionMasked) {
+                MotionEvent.ACTION_OUTSIDE -> {
+                    if (expanded) collapse()
+                    return true
+                }
                 MotionEvent.ACTION_DOWN -> {
                     downX=e.rawX; downY=e.rawY; startX=p.x; startY=p.y; moved=false; held=false
                     handler.postDelayed(hold, 450L); return true
@@ -220,7 +230,14 @@ class FloatingBubbleService : Service() {
                 }
                 MotionEvent.ACTION_UP -> {
                     handler.removeCallbacks(hold)
-                    if (!moved && !held) { if (expanded) collapse() else openApp() }
+                    if (!moved && !held) {
+                        if (expanded) {
+                            // A short tap on the expanded surface simply collapses it safely.
+                            collapse()
+                        } else {
+                            openApp()
+                        }
+                    }
                     return true
                 }
                 MotionEvent.ACTION_CANCEL -> { handler.removeCallbacks(hold); return true }
