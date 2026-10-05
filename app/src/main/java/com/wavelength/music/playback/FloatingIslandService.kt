@@ -105,6 +105,15 @@ class FloatingIslandService : Service() {
                     root?.visibility = View.GONE
                 }
                 ACTION_APP_BACKGROUND -> controller?.let {
+                    // A paused player must stay silent when AzMusic leaves the foreground.
+                    // The island is an active-playback surface, not a paused-session reminder.
+                    if (!it.isPlaying) {
+                        appWasVisible = false
+                        handler.removeCallbacks(hideAfterStopRunnable)
+                        hideControls()
+                        root?.visibility = View.GONE
+                        return@let
+                    }
                     val shouldAnimate = appWasVisible && it.mediaItemCount > 0 &&
                         it.playbackState != Player.STATE_IDLE &&
                         it.playbackState != Player.STATE_ENDED
