@@ -646,6 +646,7 @@ composable(
                     GenreScreen(
                         onBack = { navController.popBackStack() },
                         onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
+                        onBrowseAlbum = { album -> navController.navigate(Screen.Genre.createRoute(album, album)) },
                         isArtistPage = true
                     )
                 }
@@ -658,7 +659,8 @@ composable(
                 ) {
                     GenreScreen(
                         onBack = { navController.popBackStack() },
-                        onTrackClick = { navController.navigate(Screen.NowPlaying.route) }
+                        onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
+                        onBrowseAlbum = { album -> navController.navigate(Screen.Genre.createRoute(album, album)) }
                     )
                 }
                 composable(
@@ -667,7 +669,8 @@ composable(
                 ) {
                     PlaylistDetailScreen(
                         onBack = { navController.popBackStack() },
-                        onTrackClick = { navController.navigate(Screen.NowPlaying.route) }
+                        onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
+                        onBrowseAlbum = { album -> navController.navigate(Screen.Genre.createRoute(album, album)) }
                     )
                 }
             }
