@@ -511,6 +511,9 @@ fun WavelengthNavHost() {
                         onPlaylistClick = { id ->
                             navController.navigate(Screen.PlaylistDetail.createRoute(id))
                         },
+                        onBrowseAlbum = { album ->
+                            navController.navigate(Screen.Genre.createRoute(album, album))
+                        },
                         onStartListeningViewAll = {
                             navController.navigate(Screen.Genre.createRoute("latest songs", "Start listening"))
                         },
@@ -534,6 +537,9 @@ fun WavelengthNavHost() {
                     SearchScreen(
                         onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
                         focusRequestSequence = searchFocusRequestSequence.toInt(),
+                        onBrowseAlbum = { album ->
+                            navController.navigate(Screen.Genre.createRoute(album, album))
+                        },
                         onSwipeToLibrary = {
                             navController.navigate(Screen.Library.route) {
                                 popUpTo(navController.graph.startDestinationId) { saveState = true }
@@ -555,6 +561,9 @@ fun WavelengthNavHost() {
                         onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
                         onPlaylistClick = { id ->
                             navController.navigate(Screen.PlaylistDetail.createRoute(id))
+                        },
+                        onBrowseAlbum = { album ->
+                            navController.navigate(Screen.Genre.createRoute(album, album))
                         },
                         onSwipeToSearch = {
                             navController.navigate(Screen.Search.route) {
