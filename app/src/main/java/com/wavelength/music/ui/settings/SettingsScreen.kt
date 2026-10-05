@@ -82,7 +82,6 @@ import com.wavelength.music.BuildConfig
 import com.wavelength.music.R
 import com.wavelength.music.playback.EqualizerMode
 import com.wavelength.music.playback.FloatingIslandService
-import com.wavelength.music.playback.FloatingBubbleService
 import com.wavelength.music.playback.EqualizerPreset
 import com.wavelength.music.ui.components.CircularKnob
 import com.wavelength.music.ui.components.ImageCropDialog
@@ -135,19 +134,6 @@ fun SettingsScreen(
             Toast.makeText(context, "Floating Island enabled", Toast.LENGTH_SHORT).show()
         } else {
             viewModel.setFloatingIslandEnabled(false)
-            Toast.makeText(context, "Display over other apps permission is required", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    val floatingBubblePermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) {
-        if (Settings.canDrawOverlays(context)) {
-            viewModel.setFloatingBubbleEnabled(true)
-            context.startService(Intent(context, FloatingBubbleService::class.java))
-            Toast.makeText(context, "Floating Bubble enabled", Toast.LENGTH_SHORT).show()
-        } else {
-            viewModel.setFloatingBubbleEnabled(false)
             Toast.makeText(context, "Display over other apps permission is required", Toast.LENGTH_LONG).show()
         }
     }
@@ -686,43 +672,7 @@ fun SettingsScreen(
                 }
             }
 
-            item {
-                SettingsSection(title = "Floating Bubble") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Android-style playback bubble")
-                            Text(
-                                "Tap the circle to open AzMusic. Hold it for Now Playing, timeline and five Up Next songs.",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = settings.floatingBubbleEnabled,
-                            onCheckedChange = { enabled ->
-                                if (!enabled) {
-                                    viewModel.setFloatingBubbleEnabled(false)
-                                    context.stopService(Intent(context, FloatingBubbleService::class.java))
-                                } else if (Settings.canDrawOverlays(context)) {
-                                    viewModel.setFloatingBubbleEnabled(true)
-                                    context.startService(Intent(context, FloatingBubbleService::class.java))
-                                } else {
-                                    Toast.makeText(context, "Enable Display over other apps first", Toast.LENGTH_LONG).show()
-                                    floatingBubblePermissionLauncher.launch(
-                                        Intent(
-                                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                            Uri.parse("package:${context.packageName}")
-                                        )
-                                    )
-                                }
-                            }
-                        )
-                    }
-                }
-            }
+
 
             item {
                 SettingsSection(title = "Favorite Wallpapers") {
