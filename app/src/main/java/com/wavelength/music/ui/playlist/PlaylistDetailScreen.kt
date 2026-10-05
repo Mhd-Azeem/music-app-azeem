@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 fun PlaylistDetailScreen(
     onBack: () -> Unit,
     onTrackClick: () -> Unit,
+    onBrowseArtist: (String) -> Unit = {},
     onBrowseAlbum: (String) -> Unit = {},
     viewModel: PlaylistDetailViewModel = hiltViewModel()
 ) {
@@ -84,6 +85,7 @@ fun PlaylistDetailScreen(
             onTrackClick()
         },
         onRemoveFromPlaylist = viewModel::removeTrack,
+        onBrowseArtist = onBrowseArtist,
         onBrowseAlbum = onBrowseAlbum,
         onReorder = viewModel::moveTrack,
         actions = {
