@@ -511,6 +511,7 @@ fun WavelengthNavHost() {
                         onPlaylistClick = { id ->
                             navController.navigate(Screen.PlaylistDetail.createRoute(id))
                         },
+                        onBrowseArtist = { artist -> navController.navigate(Screen.Artist.createRoute(artist)) },
                         onBrowseAlbum = { album ->
                             navController.navigate(Screen.Genre.createRoute(album, album))
                         },
@@ -537,6 +538,7 @@ fun WavelengthNavHost() {
                     SearchScreen(
                         onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
                         focusRequestSequence = searchFocusRequestSequence.toInt(),
+                        onBrowseArtist = { artist -> navController.navigate(Screen.Artist.createRoute(artist)) },
                         onBrowseAlbum = { album ->
                             navController.navigate(Screen.Genre.createRoute(album, album))
                         },
@@ -562,6 +564,7 @@ fun WavelengthNavHost() {
                         onPlaylistClick = { id ->
                             navController.navigate(Screen.PlaylistDetail.createRoute(id))
                         },
+                        onBrowseArtist = { artist -> navController.navigate(Screen.Artist.createRoute(artist)) },
                         onBrowseAlbum = { album ->
                             navController.navigate(Screen.Genre.createRoute(album, album))
                         },
@@ -595,6 +598,7 @@ composable(
                         onBrowseArtist = { artist ->
                             navController.navigate(Screen.Artist.createRoute(artist))
                         },
+                        onBrowseArtist = { artist -> navController.navigate(Screen.Artist.createRoute(artist)) },
                         onBrowseAlbum = { album ->
                             navController.navigate(Screen.Genre.createRoute(album, album))
                         },
@@ -646,6 +650,7 @@ composable(
                     GenreScreen(
                         onBack = { navController.popBackStack() },
                         onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
+                        onBrowseArtist = { artist -> navController.navigate(Screen.Artist.createRoute(artist)) },
                         onBrowseAlbum = { album -> navController.navigate(Screen.Genre.createRoute(album, album)) },
                         isArtistPage = true
                     )
@@ -660,6 +665,7 @@ composable(
                     GenreScreen(
                         onBack = { navController.popBackStack() },
                         onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
+                        onBrowseArtist = { artist -> navController.navigate(Screen.Artist.createRoute(artist)) },
                         onBrowseAlbum = { album -> navController.navigate(Screen.Genre.createRoute(album, album)) }
                     )
                 }
@@ -670,6 +676,7 @@ composable(
                     PlaylistDetailScreen(
                         onBack = { navController.popBackStack() },
                         onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
+                        onBrowseArtist = { artist -> navController.navigate(Screen.Artist.createRoute(artist)) },
                         onBrowseAlbum = { album -> navController.navigate(Screen.Genre.createRoute(album, album)) }
                     )
                 }
