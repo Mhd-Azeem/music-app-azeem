@@ -55,6 +55,7 @@ fun TrackListScreen(
     onLoadMore: (() -> Unit)? = null,
     isLoadingMore: Boolean = false,
     onRemoveFromPlaylist: ((Track) -> Unit)? = null,
+    onBrowseAlbum: ((String) -> Unit)? = null,
     onReorder: ((from: Int, to: Int) -> Unit)? = null,
     headerExtra: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
@@ -83,6 +84,7 @@ fun TrackListScreen(
         TrackOptionsSheet(
             track = menuTrack,
             onDismiss = { menuTrackIndex = null },
+            onBrowseAlbum = onBrowseAlbum?.let { browse -> { browse(menuTrack.albumName) } },
             onRemoveFromPlaylist = onRemoveFromPlaylist?.let {
                 {
                     it(menuTrack)
