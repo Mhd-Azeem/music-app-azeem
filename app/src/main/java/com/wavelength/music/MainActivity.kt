@@ -51,12 +51,14 @@ import androidx.lifecycle.lifecycleScope
 import com.wavelength.music.ui.components.OfflineBanner
 import com.wavelength.music.playback.FloatingIslandService
 import com.wavelength.music.data.repository.VisualThemeMode
+import com.wavelength.music.data.repository.SettingsRepository
 import com.wavelength.music.ui.nowplaying.PlayerViewModel
 import com.wavelength.music.ui.navigation.WavelengthNavHost
 import com.wavelength.music.ui.settings.AppSettingsViewModel
 import com.wavelength.music.ui.splash.AzMusicSplashScreen
 import com.wavelength.music.ui.theme.WavelengthTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -67,6 +69,8 @@ import org.json.JSONObject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject lateinit var settingsRepository: SettingsRepository
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -97,6 +101,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        // The preference survives process/Recents removal, but an overlay Service does not.
+        // Recreate Live Island whenever AzMusic itself is launched again.
+        if (settingsRepository.state.value.floatingIslandEnabled && Settings.canDrawOverlays(this)) {
+            startService(Intent(this, FloatingIslandService::class.java))
+        }
 
         setContent {
             val settingsViewModel: AppSettingsViewModel = hiltViewModel()
