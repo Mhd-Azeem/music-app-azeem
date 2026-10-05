@@ -87,6 +87,7 @@ fun HomeScreen(
     onSettingsClick: () -> Unit,
     onStatisticsClick: () -> Unit,
     onPlaylistClick: (Long) -> Unit,
+    onBrowseAlbum: (String) -> Unit,
     onSearchClick: () -> Unit,
     onStartListeningViewAll: () -> Unit,
     onSwipeToSearch: () -> Unit = {},
@@ -390,7 +391,7 @@ private fun HomeContent(
     var trackForQuickAdd by remember { mutableStateOf<Track?>(null) }
 
     trackForMenu?.let { track ->
-        TrackOptionsSheet(track = track, onDismiss = { trackForMenu = null })
+        TrackOptionsSheet(track = track, onDismiss = { trackForMenu = null }, onBrowseAlbum = { onBrowseAlbum(track.albumName) })
     }
     trackForQuickAdd?.let { track ->
         QuickAddToPlaylistDialog(track = track, onDismiss = { trackForQuickAdd = null })
