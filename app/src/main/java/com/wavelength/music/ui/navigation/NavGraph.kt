@@ -224,14 +224,16 @@ fun WavelengthNavHost() {
                                             dragIndex = targetIndex.toFloat()
 
                                             val target = bottomNavScreens[targetIndex]
-                                            if (currentRoute != target.route) {
-                                                navController.navigate(target.route) {
-                                                    popUpTo(navController.graph.startDestinationId) {
-                                                        saveState = true
-                                                    }
-                                                    launchSingleTop = true
-                                                    restoreState = true
+                                            navController.navigate(target.route) {
+                                                popUpTo(navController.graph.startDestinationId) {
+                                                    inclusive = false
+                                                    saveState = false
                                                 }
+                                                launchSingleTop = true
+                                                restoreState = false
+                                            }
+                                            if (target.route == Screen.Search.route) {
+                                                searchFocusRequestSequence += 1f
                                             }
                                         }
                                     )
@@ -343,16 +345,19 @@ fun WavelengthNavHost() {
                                                 tileShape
                                             )
                                             .clickable {
-                                                if (selected && screen.route == Screen.Search.route) {
-                                                    searchFocusRequestSequence += 1f
-                                                } else if (!selected) {
-                                                    navController.navigate(screen.route) {
-                                                        popUpTo(navController.graph.startDestinationId) {
-                                                            saveState = true
-                                                        }
-                                                        launchSingleTop = true
-                                                        restoreState = true
+                                                // Bottom tabs are root destinations: wherever the user is
+                                                // (artist, genre/language, playlist, search result, etc.),
+                                                // tapping a tab always returns directly to that tab's root.
+                                                navController.navigate(screen.route) {
+                                                    popUpTo(navController.graph.startDestinationId) {
+                                                        inclusive = false
+                                                        saveState = false
                                                     }
+                                                    launchSingleTop = true
+                                                    restoreState = false
+                                                }
+                                                if (screen.route == Screen.Search.route) {
+                                                    searchFocusRequestSequence += 1f
                                                 }
                                             }
                                     ) {
