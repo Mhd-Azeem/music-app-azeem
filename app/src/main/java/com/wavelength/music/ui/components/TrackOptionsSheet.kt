@@ -202,7 +202,7 @@ fun TrackOptionsSheet(
                 }
             }
             if (onRemoveFromPlaylist != null) {
-                TrackOptionRow(Icons.Filled.Close, "Hide in this playlist") {
+                TrackOptionRow(Icons.Filled.Close, "Remove from playlist") {
                     onRemoveFromPlaylist()
                     onDismiss()
                 }
