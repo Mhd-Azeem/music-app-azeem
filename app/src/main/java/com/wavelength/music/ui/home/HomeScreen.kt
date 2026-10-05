@@ -915,6 +915,9 @@ private val artistPortraits = mapOf(
     "Pradeep Kumar" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Pradeep%20Kumar%20Indian%20singer.jpg",
 
     // Malayalam
+    "Sushin Shyam" to "https://www.easterneye.biz/media-library/sushin-shyam.jpg?coordinates=145%2C0%2C145%2C0&height=1200&id=61509880&width=1200",
+    "Jakes Bejoy" to "https://cinetown.s3.ap-south-1.amazonaws.com/people/profile_img/1714639872.jpeg",
+    "Dabzee" to "https://i.scdn.co/image/ab6761610000e5ebeee6b36a30f005d193731773",
     "K. S. Harisankar" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/K%20S%20HARISANKAR.jpg",
     "Hesham Abdul Wahab" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Hesham-Wahab.jpg",
     "Fejo" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Fejo%20Mallu%20Rapper.jpg",
