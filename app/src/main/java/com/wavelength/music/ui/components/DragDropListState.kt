@@ -117,7 +117,13 @@ fun rememberDragDropListState(
     onMove: (from: Int, to: Int) -> Unit
 ): DragDropListState {
     val scope = rememberCoroutineScope()
-    val state = remember(listState) { DragDropListState(listState, scope, onMove) }
+    // The caller's index translation can change while this composable stays alive (most notably
+    // when the currently-playing queue index advances). Keeping the first lambda forever makes
+    // drag reorder operate on stale absolute indices and move completely different songs.
+    val latestOnMove = rememberUpdatedState(onMove)
+    val state = remember(listState) {
+        DragDropListState(listState, scope) { from, to -> latestOnMove.value(from, to) }
+    }
     LaunchedEffect(state) {
         while (true) {
             val diff = state.scrollChannel.receive()
