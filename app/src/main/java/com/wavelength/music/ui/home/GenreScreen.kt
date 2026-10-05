@@ -26,6 +26,7 @@ import com.wavelength.music.ui.components.TrackListScreen
 fun GenreScreen(
     onBack: () -> Unit,
     onTrackClick: () -> Unit,
+    onBrowseAlbum: (String) -> Unit = {},
     isArtistPage: Boolean = false,
     viewModel: GenreViewModel = hiltViewModel()
 ) {
@@ -62,6 +63,7 @@ fun GenreScreen(
         onLoadMore = viewModel::loadMore,
         isLoadingMore = isLoadingMore,
         onRemoveFromPlaylist = viewModel::hideTrack,
+        onBrowseAlbum = onBrowseAlbum,
         headerExtra = if (isArtistPage) {
             {
                 Row(
