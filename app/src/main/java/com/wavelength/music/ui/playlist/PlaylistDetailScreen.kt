@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 fun PlaylistDetailScreen(
     onBack: () -> Unit,
     onTrackClick: () -> Unit,
+    onBrowseAlbum: (String) -> Unit = {},
     viewModel: PlaylistDetailViewModel = hiltViewModel()
 ) {
     val name by viewModel.name.collectAsStateWithLifecycle()
@@ -83,6 +84,7 @@ fun PlaylistDetailScreen(
             onTrackClick()
         },
         onRemoveFromPlaylist = viewModel::removeTrack,
+        onBrowseAlbum = onBrowseAlbum,
         onReorder = viewModel::moveTrack,
         actions = {
             IconButton(onClick = {
