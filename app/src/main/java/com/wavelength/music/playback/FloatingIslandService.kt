@@ -278,10 +278,17 @@ class FloatingIslandService : Service() {
             return
         }
 
-        // A real AzMusic playback item becoming active again is the only thing that clears the
-        // stale-session guard. This prevents unrelated audio apps from reviving our old island.
-        if (player.isPlaying) dismissedForInactivePlayback = false
-        handler.removeCallbacks(hideAfterStopRunnable)
+        // Resuming AzMusic from the notification, headset/Bluetooth controls, lock screen,
+        // or any other MediaSession controller must revive the island after its paused-state
+        // timeout hid it. MediaController is attached only to AzMusic's PlaybackService, so this
+        // cannot be triggered by unrelated audio apps.
+        if (player.isPlaying) {
+            dismissedForInactivePlayback = false
+            handler.removeCallbacks(hideAfterStopRunnable)
+            if (!appVisible) root?.visibility = View.VISIBLE
+        } else {
+            handler.removeCallbacks(hideAfterStopRunnable)
+        }
 
         if (appVisible) {
             root?.visibility = View.GONE
