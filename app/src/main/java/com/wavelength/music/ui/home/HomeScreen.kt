@@ -344,7 +344,8 @@ fun HomeScreen(
                     mostPlayed = mostPlayed,
                     recentlyAdded = recentlyAdded,
                     recentlyPlayed = recentlyPlayed,
-                    playlists = playlists.filter { !it.isFolder },
+                    playlists = playlists.filter { !it.isFolder && !it.name.startsWith("★ Favorite Album · ") },
+                    favoriteAlbums = playlists.filter { !it.isFolder && it.name.startsWith("★ Favorite Album · ") },
                     searchHistory = searchHistory,
                     onTrackClick = { index, queue ->
                         viewModel.playTrack(queue, index)
@@ -376,6 +377,7 @@ private fun HomeContent(
     recentlyAdded: List<Track>,
     recentlyPlayed: List<Track>,
     playlists: List<PlaylistSummary>,
+    favoriteAlbums: List<PlaylistSummary>,
     searchHistory: List<String>,
     onTrackClick: (Int, List<Track>) -> Unit,
     onGenreClick: (String, String) -> Unit,
@@ -560,6 +562,23 @@ private fun HomeContent(
                 items(genreShortcuts, key = { it }) { tag ->
                     val label = tag.replaceFirstChar { it.uppercase() }
                     AssistChip(onClick = { onGenreClick(tag, label) }, label = { Text(label) })
+                }
+            }
+        }
+
+        if (favoriteAlbums.isNotEmpty()) {
+            item { SectionHeader("Favorite Albums") }
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(favoriteAlbums, key = { "favoriteAlbum:" + it.id }) { album ->
+                        PlaylistCard(
+                            playlist = album.copy(name = album.name.removePrefix("★ Favorite Album · ")),
+                            onClick = { onPlaylistClick(album.id) }
+                        )
+                    }
                 }
             }
         }
