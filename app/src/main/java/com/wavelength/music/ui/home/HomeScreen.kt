@@ -87,6 +87,7 @@ fun HomeScreen(
     onSettingsClick: () -> Unit,
     onStatisticsClick: () -> Unit,
     onPlaylistClick: (Long) -> Unit,
+    onBrowseArtist: (String) -> Unit,
     onBrowseAlbum: (String) -> Unit,
     onSearchClick: () -> Unit,
     onStartListeningViewAll: () -> Unit,
@@ -355,6 +356,7 @@ fun HomeScreen(
                     onGenreClick = onGenreClick,
                     onArtistClick = onArtistClick,
                     onPlaylistClick = onPlaylistClick,
+                    onBrowseArtist = onBrowseArtist,
                     onBrowseAlbum = onBrowseAlbum,
                     onSearchHistoryClick = { query ->
                         viewModel.prepareSearch(query)
@@ -385,6 +387,7 @@ private fun HomeContent(
     onGenreClick: (String, String) -> Unit,
     onArtistClick: (String) -> Unit,
     onPlaylistClick: (Long) -> Unit,
+    onBrowseArtist: (String) -> Unit,
     onBrowseAlbum: (String) -> Unit,
     onSearchHistoryClick: (String) -> Unit,
     onStartListeningViewAll: () -> Unit
@@ -393,7 +396,7 @@ private fun HomeContent(
     var trackForQuickAdd by remember { mutableStateOf<Track?>(null) }
 
     trackForMenu?.let { track ->
-        TrackOptionsSheet(track = track, onDismiss = { trackForMenu = null }, onBrowseAlbum = { onBrowseAlbum(track.albumName) })
+        TrackOptionsSheet(track = track, onDismiss = { trackForMenu = null }, onBrowseArtist = { onBrowseArtist(track.artistName) }, onBrowseAlbum = { onBrowseAlbum(track.albumName) })
     }
     trackForQuickAdd?.let { track ->
         QuickAddToPlaylistDialog(track = track, onDismiss = { trackForQuickAdd = null })
