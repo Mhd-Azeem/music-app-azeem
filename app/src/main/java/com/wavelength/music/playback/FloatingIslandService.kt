@@ -277,7 +277,13 @@ class FloatingIslandService : Service() {
         if (appVisible) {
             root?.visibility = View.GONE
         } else if (player.isPlaying || !dismissedForInactivePlayback) {
-            showCollapsedIsland(animateEntrance)
+            // Player callbacks (pause/next/previous/seek) update the contents in-place. They must
+            // never collapse an island the user deliberately expanded.
+            if (root?.visibility != View.VISIBLE) {
+                showCollapsedIsland(animateEntrance)
+            } else if (animateEntrance && !expanded) {
+                showCollapsedIsland(true)
+            }
         } else {
             root?.visibility = View.GONE
         }
@@ -415,7 +421,7 @@ class FloatingIslandService : Service() {
                     when {
                         dragged -> Unit
                         longPressed -> Unit
-                        expanded -> hideControls()
+                        expanded -> Unit // keep expanded; only ACTION_OUTSIDE collapses it
                         else -> openAzMusic()
                     }
                     return true
