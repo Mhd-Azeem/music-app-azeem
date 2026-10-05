@@ -81,6 +81,7 @@ private val audioPermission: String
 fun LibraryScreen(
     onTrackClick: () -> Unit,
     onPlaylistClick: (Long) -> Unit,
+    onBrowseAlbum: (String) -> Unit,
     onSwipeToSearch: () -> Unit = {},
     viewModel: LibraryViewModel = hiltViewModel()
 ) {
@@ -190,7 +191,7 @@ fun LibraryScreen(
     }
 
     trackForMenu?.let { track ->
-        TrackOptionsSheet(track = track, onDismiss = { trackForMenu = null })
+        TrackOptionsSheet(track = track, onDismiss = { trackForMenu = null }, onBrowseAlbum = { onBrowseAlbum(track.albumName) })
     }
 
     trackForQuickAdd?.let { track ->
