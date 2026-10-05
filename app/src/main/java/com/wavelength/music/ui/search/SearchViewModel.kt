@@ -339,7 +339,32 @@ class SearchViewModel @Inject constructor(
     }
 
     fun playTrack(queue: List<Track>, index: Int) {
-        playerController.playQueue(queue, index)
+        val selected = queue.getOrNull(index) ?: return
+        // Search is discovery, not a queue definition. Start the selected song immediately and
+        // build Up Next from its album/artist instead of dumping every search result into it.
+        playerController.playQueue(listOf(selected), 0)
+        viewModelScope.launch {
+            val albumMatches = if (selected.albumName.isNotBlank()) {
+                repository.searchTracks(selected.albumName, limit = 15).getOrDefault(emptyList())
+            } else emptyList()
+            val artistMatches = if (selected.artistName.isNotBlank()) {
+                repository.searchTracks(selected.artistName.substringBefore(',').trim(), limit = 20)
+                    .getOrDefault(emptyList())
+            } else emptyList()
+            val seen = linkedSetOf(selected.id)
+            (albumMatches + artistMatches)
+                .filter { candidate ->
+                    candidate.id != selected.id && seen.add(candidate.id) &&
+                        (candidate.albumName.equals(selected.albumName, ignoreCase = true) ||
+                            candidate.artistName.split(',').any { artist ->
+                                selected.artistName.split(',').any { selectedArtist ->
+                                    artist.trim().equals(selectedArtist.trim(), ignoreCase = true)
+                                }
+                            })
+                }
+                .take(15)
+                .forEach(playerController::addToQueue)
+        }
     }
 
     fun commitSearch() {
