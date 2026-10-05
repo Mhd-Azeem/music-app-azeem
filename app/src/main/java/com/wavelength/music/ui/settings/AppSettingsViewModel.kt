@@ -144,9 +144,6 @@ class AppSettingsViewModel @Inject constructor(
     fun setFloatingIslandEnabled(enabled: Boolean) =
         settingsRepository.setFloatingIslandEnabled(enabled)
 
-    fun setFloatingBubbleEnabled(enabled: Boolean) =
-        settingsRepository.setFloatingBubbleEnabled(enabled)
-
     fun setStreamCacheLimitMb(limitMb: Int) =
         settingsRepository.setStreamCacheLimitMb(limitMb)
 
