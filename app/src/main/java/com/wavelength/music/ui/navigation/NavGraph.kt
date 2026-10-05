@@ -511,6 +511,9 @@ fun WavelengthNavHost() {
                         onPlaylistClick = { id ->
                             navController.navigate(Screen.PlaylistDetail.createRoute(id))
                         },
+                        onBrowseArtist = { artist ->
+                            navController.navigate(Screen.Artist.createRoute(artist))
+                        },
                         onBrowseAlbum = { album ->
                             navController.navigate(Screen.Genre.createRoute(album, album))
                         },
@@ -597,7 +600,6 @@ composable(
                         onBrowseArtist = { artist ->
                             navController.navigate(Screen.Artist.createRoute(artist))
                         },
-                        onBrowseArtist = { artist -> navController.navigate(Screen.Artist.createRoute(artist)) },
                         onBrowseAlbum = { album ->
                             navController.navigate(Screen.Genre.createRoute(album, album))
                         },
