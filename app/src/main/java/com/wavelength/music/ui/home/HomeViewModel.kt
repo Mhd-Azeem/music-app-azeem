@@ -146,7 +146,7 @@ class HomeViewModel @Inject constructor(
     private suspend fun fetchFeatured(forceRefresh: Boolean = false) {
         repository.getFeaturedTracks(20, forceRefresh = forceRefresh).fold(
             onSuccess = { tracks ->
-                val deduped = tracks.distinctBy { it.id }
+                val deduped = tracks.distinctBy(::songIdentity)
                 _featured.value = if (deduped.isEmpty()) ScreenState.Empty else ScreenState.Success(deduped)
             },
             onFailure = { e ->
@@ -201,7 +201,7 @@ class HomeViewModel @Inject constructor(
             val excludeIds = recentTracks.map { it.id }.toSet()
             val filtered = results
                 .flatMap { it.getOrDefault(emptyList()) }
-                .distinctBy { it.id }
+                .distinctBy(::songIdentity)
                 .filterNot { it.id in excludeIds }
                 .shuffled()
                 .take(24)
@@ -222,7 +222,7 @@ class HomeViewModel @Inject constructor(
                         topArtist.artistName.contains(name.trim(), ignoreCase = true)
                 }
             }
-            .distinctBy { it.id }
+            .distinctBy(::songIdentity)
             .take(10)
         _topArtistTracks.value = if (tracks.isEmpty()) null else topArtist.artistName to tracks
     }
@@ -244,9 +244,22 @@ class HomeViewModel @Inject constructor(
             val results = topArtists
                 .map { artist -> async { repository.searchTracks(artist.artistName, limit = 15, forceRefresh = forceRefresh) } }
                 .awaitAll()
-            val combined = results.flatMap { it.getOrDefault(emptyList()) }.distinctBy { it.id }.shuffled()
+            val combined = results.flatMap { it.getOrDefault(emptyList()) }.distinctBy(::songIdentity).shuffled()
             _dailyMix.value = if (combined.isEmpty()) ScreenState.Empty else ScreenState.Success(combined)
         }
+    }
+
+    private fun songIdentity(track: Track): String {
+        val title = track.name.lowercase()
+            .replace(Regex("""\([^)]*(from|movie|film|soundtrack|version|single|original)[^)]*\)""", RegexOption.IGNORE_CASE), " ")
+            .replace(Regex("""\[[^]]*(from|movie|film|soundtrack|version|single|original)[^]]*]""", RegexOption.IGNORE_CASE), " ")
+            .replace(Regex("""\s*[-–—:]\s*(from|soundtrack|ost|single|song|version).*""", RegexOption.IGNORE_CASE), " ")
+            .replace("&", " and ")
+            .replace(Regex("""[^a-z0-9\p{L}]+"""), " ")
+            .trim()
+        val artist = track.artistName.substringBefore(',').lowercase()
+            .replace(Regex("""[^a-z0-9\p{L}]+"""), " ").trim()
+        return "$title|$artist"
     }
 
     fun playTrack(queue: List<Track>, index: Int) {
