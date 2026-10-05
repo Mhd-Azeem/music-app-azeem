@@ -77,6 +77,7 @@ import kotlinx.coroutines.delay
 fun SearchScreen(
     onTrackClick: () -> Unit,
     focusRequestSequence: Int = 0,
+    onBrowseAlbum: (String) -> Unit = {},
     onSwipeToHome: () -> Unit = {},
     onSwipeToLibrary: () -> Unit = {},
     viewModel: SearchViewModel = hiltViewModel()
@@ -108,7 +109,7 @@ fun SearchScreen(
     }
 
     trackForMenu?.let { track ->
-        TrackOptionsSheet(track = track, onDismiss = { trackForMenu = null })
+        TrackOptionsSheet(track = track, onDismiss = { trackForMenu = null }, onBrowseAlbum = { onBrowseAlbum(track.albumName) })
     }
     trackForQuickAdd?.let { track ->
         QuickAddToPlaylistDialog(track = track, onDismiss = { trackForQuickAdd = null })
