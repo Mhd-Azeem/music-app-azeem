@@ -355,6 +355,7 @@ fun HomeScreen(
                     onGenreClick = onGenreClick,
                     onArtistClick = onArtistClick,
                     onPlaylistClick = onPlaylistClick,
+                    onBrowseAlbum = onBrowseAlbum,
                     onSearchHistoryClick = { query ->
                         viewModel.prepareSearch(query)
                         onSearchClick()
@@ -384,6 +385,7 @@ private fun HomeContent(
     onGenreClick: (String, String) -> Unit,
     onArtistClick: (String) -> Unit,
     onPlaylistClick: (Long) -> Unit,
+    onBrowseAlbum: (String) -> Unit,
     onSearchHistoryClick: (String) -> Unit,
     onStartListeningViewAll: () -> Unit
 ) {
