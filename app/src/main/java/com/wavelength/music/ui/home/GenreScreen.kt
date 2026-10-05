@@ -48,7 +48,11 @@ fun GenreScreen(
             viewModel.playTrack(index)
             onTrackClick()
         },
-        emptyMessage = stringResource(R.string.search_empty_hint),
+        emptyMessage = if (isArtistPage && selectedLanguage != "All") {
+            "No songs found in this language"
+        } else {
+            stringResource(R.string.search_empty_hint)
+        },
         onLoadMore = viewModel::loadMore,
         isLoadingMore = isLoadingMore,
         onRemoveFromPlaylist = viewModel::hideTrack,
