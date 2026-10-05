@@ -9,6 +9,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
@@ -27,6 +32,7 @@ fun GenreScreen(
     val state by viewModel.tracks.collectAsStateWithLifecycle()
     val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
     val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
+    val isFavoriteAlbum by viewModel.isFavoriteAlbum.collectAsStateWithLifecycle()
     val artistLanguages = listOf("All", "Tamil", "Malayalam", "Hindi", "English", "Telugu", "Kannada")
 
     TrackListScreen(
@@ -73,6 +79,16 @@ fun GenreScreen(
                     }
                 }
             }
-        } else null
+        } else null,
+        actions = {
+            if (!isArtistPage) {
+                IconButton(onClick = viewModel::toggleFavoriteAlbum) {
+                    Icon(
+                        if (isFavoriteAlbum) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = if (isFavoriteAlbum) "Remove favorite album" else "Add favorite album"
+                    )
+                }
+            }
+        }
     )
 }
