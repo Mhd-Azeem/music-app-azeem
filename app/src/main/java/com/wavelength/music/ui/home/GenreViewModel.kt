@@ -35,6 +35,7 @@ class GenreViewModel @Inject constructor(
     private val hiddenTrackIds = mutableSetOf<String>()
     private val _selectedLanguage = MutableStateFlow("All")
     val selectedLanguage: StateFlow<String> = _selectedLanguage.asStateFlow()
+    private var languageSearchSawSuccessfulPage = false
 
     init {
         load()
@@ -52,11 +53,13 @@ class GenreViewModel @Inject constructor(
     fun load() {
         currentPage = 0
         hasMore = true
+        languageSearchSawSuccessfulPage = false
         _isLoadingMore.value = false
         viewModelScope.launch {
             _tracks.value = ScreenState.Loading
             repository.getTracksByTag(tag, page = 0, limit = pageSize).fold(
                 onSuccess = { list ->
+                    languageSearchSawSuccessfulPage = true
                     val unique = list
                         .distinctBy { it.id }
                         .filterNot { it.id in hiddenTrackIds }
@@ -65,7 +68,17 @@ class GenreViewModel @Inject constructor(
                     hasMore = list.isNotEmpty()
                     if (unique.isEmpty() && hasMore && _selectedLanguage.value != "All") loadMore()
                 },
-                onFailure = { e -> _tracks.value = ScreenState.Error(e.message ?: "Something went wrong") }
+                onFailure = { e ->
+                    // A language filter can legitimately exhaust the artist search without a
+                    // matching track. Once the artist endpoint has already returned successfully,
+                    // don't replace that valid empty result with a backend/configuration error.
+                    if (_selectedLanguage.value != "All" && languageSearchSawSuccessfulPage) {
+                        _tracks.value = ScreenState.Empty
+                        hasMore = false
+                    } else {
+                        _tracks.value = ScreenState.Error(e.message ?: "Something went wrong")
+                    }
+                }
             )
         }
     }
@@ -81,9 +94,16 @@ class GenreViewModel @Inject constructor(
                     val nextPage = currentPage + 1
                     val result = repository.getTracksByTag(tag, page = nextPage, limit = pageSize)
                     val incoming = result.getOrElse {
-                        // Keep what is already visible and allow a later scroll to retry.
+                        val current = (_tracks.value as? ScreenState.Success)?.data.orEmpty()
+                        if (_selectedLanguage.value != "All" && current.isEmpty() && languageSearchSawSuccessfulPage) {
+                            _tracks.value = ScreenState.Empty
+                            hasMore = false
+                        }
+                        // Keep existing songs for real pagination failures; an empty filtered
+                        // artist is handled above as a normal no-results state.
                         return@launch
                     }
+                    languageSearchSawSuccessfulPage = true
 
                     currentPage = nextPage
                     if (incoming.isEmpty()) {
