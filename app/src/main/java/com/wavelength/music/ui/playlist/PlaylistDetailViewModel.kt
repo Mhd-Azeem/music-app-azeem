@@ -38,7 +38,7 @@ class PlaylistDetailViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            repository.getPlaylistName(playlistId)?.let { _name.value = it }
+            repository.getPlaylistName(playlistId)?.let { _name.value = it.removePrefix("★ Favorite Album · ") }
         }
     }
 
