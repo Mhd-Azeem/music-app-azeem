@@ -88,6 +88,7 @@ fun LibraryScreen(
     val recentlyPlayed by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
     val localSongs by viewModel.localSongs.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+    val visiblePlaylists = playlists.filterNot { it.name.startsWith("★ Favorite Album · ") }
     val downloadedTracks by viewModel.downloadedTracks.collectAsStateWithLifecycle()
     val isScanning by viewModel.isScanning.collectAsStateWithLifecycle()
 
@@ -178,7 +179,7 @@ fun LibraryScreen(
 
     if (showBulkAddToPlaylist) {
         AddToPlaylistDialog(
-            playlists = playlists,
+            playlists = visiblePlaylists,
             onDismiss = {
                 showBulkAddToPlaylist = false
                 exitSelection()
@@ -194,7 +195,7 @@ fun LibraryScreen(
 
     trackForQuickAdd?.let { track ->
         AddToPlaylistDialog(
-            playlists = playlists,
+            playlists = visiblePlaylists,
             onDismiss = { trackForQuickAdd = null },
             onSelect = { playlistId -> viewModel.addTracksToPlaylist(playlistId, listOf(track)) },
             onCreateNew = { name -> viewModel.createPlaylistWithTracks(name, listOf(track)) }
@@ -347,7 +348,7 @@ fun LibraryScreen(
                     onEnterSelection = ::onEnterSelection
                 )
                 2 -> PlaylistList(
-                    playlists = playlists,
+                    playlists = visiblePlaylists,
                     currentFolderId = currentFolderId,
                     onPlaylistClick = onPlaylistClick,
                     onFolderClick = { folderId -> currentFolderId = folderId },
