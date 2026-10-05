@@ -463,6 +463,7 @@ fun NowPlayingScreen(
         TrackOptionsSheet(
             track = menuTrack,
             onDismiss = { menuQueueIndex = null },
+            onBrowseAlbum = { onBrowseAlbum(menuTrack.albumName) },
             onRemoveFromQueue = { viewModel.removeQueueItem(queueIndex) },
             onMoveUp = if (queueIndex > state.currentIndex + 1) {
                 { viewModel.moveQueueItem(queueIndex, queueIndex - 1) }
