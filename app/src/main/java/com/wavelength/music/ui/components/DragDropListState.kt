@@ -100,10 +100,18 @@ class DragDropListState internal constructor(
             onMove(draggingItem.index, targetItem.index)
             draggingItemIndex = targetItem.index
         } else {
-            val viewport = listState.layoutInfo.viewportEndOffset - listState.layoutInfo.viewportStartOffset
+            val layout = listState.layoutInfo
+            val topEdge = layout.viewportStartOffset.toFloat()
+            val bottomEdge = layout.viewportEndOffset.toFloat()
+            // Auto-scroll based on the dragged row's actual position at the viewport edge.
+            // Using total drag delta here stopped scrolling after swaps because that delta is not
+            // the same coordinate space as the LazyColumn viewport.
+            val edgeZone = 72f
             val overscroll = when {
-                draggingItemDraggedDelta > 0 -> (endOffset - viewport).coerceAtLeast(0f)
-                draggingItemDraggedDelta < 0 -> startOffset.coerceAtMost(0f)
+                endOffset > bottomEdge - edgeZone ->
+                    ((endOffset - (bottomEdge - edgeZone)) / edgeZone).coerceIn(0f, 1f) * 28f
+                startOffset < topEdge + edgeZone ->
+                    -(((topEdge + edgeZone) - startOffset) / edgeZone).coerceIn(0f, 1f) * 28f
                 else -> 0f
             }
             if (overscroll != 0f) scrollChannel.trySend(overscroll)
