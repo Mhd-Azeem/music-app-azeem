@@ -11,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -33,12 +34,41 @@ class GenreViewModel @Inject constructor(
     private var hasMore = true
     private val pageSize = 20
     private val hiddenTrackIds = mutableSetOf<String>()
+    private val favoriteAlbumPrefix = "★ Favorite Album · "
+    private val _favoriteAlbumId = MutableStateFlow<Long?>(null)
+    val isFavoriteAlbum: StateFlow<Boolean> = kotlinx.coroutines.flow.combine(
+        _favoriteAlbumId, repository.observePlaylists()
+    ) { id, playlists -> id != null && playlists.any { it.id == id } }
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), false)
     private val _selectedLanguage = MutableStateFlow("All")
     val selectedLanguage: StateFlow<String> = _selectedLanguage.asStateFlow()
     private var languageSearchSawSuccessfulPage = false
 
     init {
         load()
+        viewModelScope.launch {
+            repository.observePlaylists().collectLatest { playlists ->
+                _favoriteAlbumId.value = playlists.firstOrNull {
+                    it.name == favoriteAlbumPrefix + label
+                }?.id
+            }
+        }
+    }
+
+    fun toggleFavoriteAlbum() {
+        viewModelScope.launch {
+            val existing = _favoriteAlbumId.value
+            if (existing != null) {
+                repository.deletePlaylist(existing)
+                _favoriteAlbumId.value = null
+                return@launch
+            }
+            val current = (_tracks.value as? ScreenState.Success)?.data.orEmpty()
+            if (current.isEmpty()) return@launch
+            val id = repository.createPlaylist(favoriteAlbumPrefix + label)
+            current.distinctBy { it.id }.forEach { repository.addTrackToPlaylist(id, it) }
+            _favoriteAlbumId.value = id
+        }
     }
 
     fun setLanguage(language: String) {
