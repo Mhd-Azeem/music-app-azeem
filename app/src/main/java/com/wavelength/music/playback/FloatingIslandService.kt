@@ -1,5 +1,6 @@
 package com.wavelength.music.playback
 
+import android.animation.ValueAnimator
 import android.app.Service
 import android.content.ComponentName
 import android.content.Intent
@@ -16,6 +17,7 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -45,13 +47,14 @@ class FloatingIslandService : Service() {
     private var controller: MediaController? = null
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var expanded = false
+    private var sizeAnimator: ValueAnimator? = null
     /** Once the 5s pause/stop grace period expires, stale Media3 callbacks must not resurrect it. */
     private var dismissedForInactivePlayback = false
     private var appWasVisible = true
     private val handler = Handler(Looper.getMainLooper())
     private val longPressRunnable = Runnable { showControls() }
     private val hideAfterStopRunnable = Runnable {
-        hideControls()
+        hideControls(animate = false)
         root?.visibility = View.GONE
         dismissedForInactivePlayback = true
     }
@@ -113,7 +116,7 @@ class FloatingIslandService : Service() {
                     if (!it.isPlaying) {
                         appWasVisible = false
                         handler.removeCallbacks(hideAfterStopRunnable)
-                        hideControls()
+                        hideControls(animate = false)
                         root?.visibility = View.GONE
                         return@let
                     }
@@ -345,7 +348,7 @@ class FloatingIslandService : Service() {
 
     private fun showCollapsedIsland(animateEntrance: Boolean) {
         val view = root ?: return
-        hideControls()
+        hideControls(animate = false)
         view.visibility = View.VISIBLE
         if (!animateEntrance) return
         view.animate().cancel()
@@ -375,58 +378,124 @@ class FloatingIslandService : Service() {
         val view = root ?: return
         expanded = true
         params?.flags = (params?.flags ?: 0) or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
+
         artist.visibility = View.VISIBLE
         progress.visibility = View.VISIBLE
         timeRow.visibility = View.VISIBLE
         controls.visibility = View.VISIBLE
-        updateSize()
+        listOf(artist, progress, timeRow, controls).forEach {
+            it.alpha = 0f
+            it.scaleX = 0.94f
+            it.scaleY = 0.94f
+        }
 
-        // Grow naturally from the collapsed island into the expanded island.
-        view.animate().cancel()
-        view.pivotX = view.width / 2f
-        view.pivotY = 0f
-        view.scaleX = 0.72f
-        view.scaleY = 0.72f
-        view.alpha = 0.88f
-        view.animate()
-            .scaleX(1f)
-            .scaleY(1f)
-            .alpha(1f)
-            .setDuration(260L)
-            .start()
+        animateIslandSize(
+            fromWidth = params?.width ?: dp(220),
+            fromHeight = params?.height ?: dp(44),
+            toWidth = resources.displayMetrics.widthPixels,
+            toHeight = dp(136),
+            duration = 280L
+        ) { fraction ->
+            val contentFraction = ((fraction - 0.16f) / 0.84f).coerceIn(0f, 1f)
+            listOf(artist, progress, timeRow, controls).forEach {
+                it.alpha = contentFraction
+                it.scaleX = 0.94f + (0.06f * contentFraction)
+                it.scaleY = 0.94f + (0.06f * contentFraction)
+            }
+        }
     }
 
-    private fun hideControls() {
-        if (!expanded) return
-        val view = root ?: return
-        // Shrink the expanded island first, then switch its layout back to collapsed size.
-        view.animate().cancel()
-        view.pivotX = view.width / 2f
-        view.pivotY = 0f
-        view.animate()
-            .scaleX(0.72f)
-            .scaleY(0.72f)
-            .alpha(0.88f)
-            .setDuration(220L)
-            .withEndAction {
-                expanded = false
-                params?.flags = (params?.flags ?: 0) and WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH.inv()
-                artist.visibility = View.GONE
-                progress.visibility = View.GONE
-                timeRow.visibility = View.GONE
-                controls.visibility = View.GONE
-                updateSize()
-                view.scaleX = 1f
-                view.scaleY = 1f
-                view.alpha = 1f
+    private fun hideControls(animate: Boolean = true) {
+        if (!expanded) {
+            if (!animate) updateSize()
+            return
+        }
+
+        sizeAnimator?.cancel()
+        if (!animate) {
+            expanded = false
+            params?.flags = (params?.flags ?: 0) and WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH.inv()
+            artist.visibility = View.GONE
+            progress.visibility = View.GONE
+            timeRow.visibility = View.GONE
+            controls.visibility = View.GONE
+            listOf(artist, progress, timeRow, controls).forEach {
+                it.alpha = 1f
+                it.scaleX = 1f
+                it.scaleY = 1f
             }
-            .start()
+            updateSize()
+            return
+        }
+
+        val startWidth = params?.width ?: resources.displayMetrics.widthPixels
+        val startHeight = params?.height ?: dp(136)
+        animateIslandSize(
+            fromWidth = startWidth,
+            fromHeight = startHeight,
+            toWidth = dp(220),
+            toHeight = dp(44),
+            duration = 240L
+        ) { fraction ->
+            val contentFraction = 1f - fraction
+            listOf(artist, progress, timeRow, controls).forEach {
+                it.alpha = contentFraction
+                it.scaleX = 0.94f + (0.06f * contentFraction)
+                it.scaleY = 0.94f + (0.06f * contentFraction)
+            }
+        }.doOnEnd {
+            expanded = false
+            params?.flags = (params?.flags ?: 0) and WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH.inv()
+            artist.visibility = View.GONE
+            progress.visibility = View.GONE
+            timeRow.visibility = View.GONE
+            controls.visibility = View.GONE
+            listOf(artist, progress, timeRow, controls).forEach {
+                it.alpha = 1f
+                it.scaleX = 1f
+                it.scaleY = 1f
+            }
+            updateSize()
+        }
+    }
+
+    private fun animateIslandSize(
+        fromWidth: Int,
+        fromHeight: Int,
+        toWidth: Int,
+        toHeight: Int,
+        duration: Long,
+        onFrame: (Float) -> Unit
+    ): ValueAnimator {
+        sizeAnimator?.cancel()
+        return ValueAnimator.ofFloat(0f, 1f).apply {
+            this.duration = duration
+            interpolator = DecelerateInterpolator()
+            addUpdateListener { animator ->
+                val fraction = animator.animatedValue as Float
+                val p = params ?: return@addUpdateListener
+                p.width = (fromWidth + (toWidth - fromWidth) * fraction).toInt()
+                p.height = (fromHeight + (toHeight - fromHeight) * fraction).toInt()
+                p.x = 0
+                p.y = 0
+                root?.let { windowManager.updateViewLayout(it, p) }
+                onFrame(fraction)
+            }
+            sizeAnimator = this
+            start()
+        }
+    }
+
+    private fun ValueAnimator.doOnEnd(block: () -> Unit) {
+        addListener(object : android.animation.AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: android.animation.Animator) = block()
+        })
     }
 
     private fun updateSize() {
         val p = params ?: return
-        p.height = if (expanded) WindowManager.LayoutParams.WRAP_CONTENT else dp(44)
-        p.width = if (expanded) WindowManager.LayoutParams.MATCH_PARENT else dp(220)
+        p.height = if (expanded) dp(136) else dp(44)
+        p.width = if (expanded) resources.displayMetrics.widthPixels else dp(220)
         p.x = 0
         p.y = 0
         root?.let { windowManager.updateViewLayout(it, p) }
@@ -460,7 +529,7 @@ class FloatingIslandService : Service() {
         override fun onTouch(v: View, event: MotionEvent): Boolean {
             when (event.actionMasked) {
                 MotionEvent.ACTION_OUTSIDE -> {
-                    if (expanded) hideControls()
+                    if (expanded) hideControls(animate = true)
                     return true
                 }
                 MotionEvent.ACTION_DOWN -> {
@@ -510,6 +579,8 @@ class FloatingIslandService : Service() {
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
         handler.removeCallbacks(hideAfterStopRunnable)
+        sizeAnimator?.cancel()
+        sizeAnimator = null
         runCatching { unregisterReceiver(appVisibilityReceiver) }
         controller?.removeListener(listener)
         controllerFuture?.let { MediaController.releaseFuture(it) }
