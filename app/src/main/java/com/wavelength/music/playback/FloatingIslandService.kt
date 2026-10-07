@@ -58,6 +58,15 @@ class FloatingIslandService : Service() {
         root?.visibility = View.GONE
         dismissedForInactivePlayback = true
     }
+    private val progressTicker = object : Runnable {
+        override fun run() {
+            val player = controller ?: return
+            updatePlaybackProgress(player)
+            if (player.isPlaying) {
+                handler.postDelayed(this, 500L)
+            }
+        }
+    }
 
     private lateinit var artwork: ImageView
     private lateinit var bufferingIndicator: ProgressBar
@@ -331,11 +340,11 @@ class FloatingIslandService : Service() {
         title.text = metadata.title?.toString().orEmpty().ifBlank { "AzMusic" }
         artist.text = metadata.artist?.toString().orEmpty()
         metadata.artworkUri?.let { artwork.load(it) }
-        val duration = player.duration.takeIf { it > 0 } ?: 0L
-        val position = player.currentPosition.coerceAtLeast(0L)
-        progress.progress = if (duration > 0) ((position * 1000L) / duration).toInt() else 0
-        elapsed.text = formatTime(position)
-        remaining.text = formatTime(duration)
+        updatePlaybackProgress(player)
+        handler.removeCallbacks(progressTicker)
+        if (player.isPlaying) {
+            handler.post(progressTicker)
+        }
 
         val buffering = player.playbackState == Player.STATE_BUFFERING
         bufferingIndicator.visibility = if (buffering) View.VISIBLE else View.GONE
@@ -501,7 +510,22 @@ class FloatingIslandService : Service() {
         root?.let { windowManager.updateViewLayout(it, p) }
     }
 
-    private fun formatTime(ms: Long): String { val total = (ms / 1000L).coerceAtLeast(0L); return "%d:%02d".format(total / 60L, total % 60L) }
+    private fun updatePlaybackProgress(player: Player) {
+        val duration = player.duration.takeIf { it > 0 } ?: 0L
+        val position = player.currentPosition.coerceAtLeast(0L)
+        progress.progress = if (duration > 0) {
+            ((position * 1000L) / duration).toInt().coerceIn(0, 1000)
+        } else {
+            0
+        }
+        elapsed.text = formatTime(position)
+        remaining.text = formatTime(duration)
+    }
+
+    private fun formatTime(ms: Long): String {
+        val total = (ms / 1000L).coerceAtLeast(0L)
+        return "%d:%02d".format(total / 60L, total % 60L)
+    }
 
     private fun islandBackground(radius: Float) = GradientDrawable().apply {
         setColor(Color.argb(248, 4, 4, 6))
@@ -579,6 +603,7 @@ class FloatingIslandService : Service() {
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
         handler.removeCallbacks(hideAfterStopRunnable)
+        handler.removeCallbacks(progressTicker)
         sizeAnimator?.cancel()
         sizeAnimator = null
         runCatching { unregisterReceiver(appVisibilityReceiver) }
