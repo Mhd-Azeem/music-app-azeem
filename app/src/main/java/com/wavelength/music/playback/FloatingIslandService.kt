@@ -16,8 +16,10 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.media3.common.MediaMetadata
@@ -55,6 +57,7 @@ class FloatingIslandService : Service() {
     }
 
     private lateinit var artwork: ImageView
+    private lateinit var bufferingIndicator: ProgressBar
     private lateinit var title: TextView
     private lateinit var artist: TextView
     private lateinit var progress: SeekBar
@@ -137,10 +140,23 @@ class FloatingIslandService : Service() {
         fun dp(value: Int) = (value * density).toInt()
 
         artwork = ImageView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(36), dp(36)).apply { marginEnd = dp(8) }
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
             scaleType = ImageView.ScaleType.CENTER_CROP
             background = rounded(Color.rgb(38, 38, 42), dp(12).toFloat())
             clipToOutline = true
+        }
+        bufferingIndicator = ProgressBar(this).apply {
+            isIndeterminate = true
+            visibility = View.GONE
+            layoutParams = FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER)
+        }
+        val artworkFrame = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(36), dp(36)).apply { marginEnd = dp(8) }
+            addView(artwork)
+            addView(bufferingIndicator)
         }
         title = TextView(this).apply {
             setTextColor(Color.WHITE); textSize = 13f; maxLines = 1
@@ -159,7 +175,7 @@ class FloatingIslandService : Service() {
         visualizer = WaveformView(this)
         val topRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            addView(artwork)
+            addView(artworkFrame)
             addView(labels, LinearLayout.LayoutParams(0, dp(36), 1f))
             addView(visualizer, LinearLayout.LayoutParams(dp(44), dp(36)))
         }
@@ -208,7 +224,7 @@ class FloatingIslandService : Service() {
         }
 
         params = WindowManager.LayoutParams(
-            dp(184), dp(44),
+            dp(220), dp(44),
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
@@ -318,7 +334,11 @@ class FloatingIslandService : Service() {
         elapsed.text = formatTime(position)
         remaining.text = formatTime(duration)
 
-        visualizer.setPlaying(player.isPlaying)
+        val buffering = player.playbackState == Player.STATE_BUFFERING
+        bufferingIndicator.visibility = if (buffering) View.VISIBLE else View.GONE
+        artwork.alpha = if (buffering) 0.45f else 1f
+
+        visualizer.setPlaying(player.isPlaying && !buffering)
         playPause.text = if (player.isPlaying) "Ⅱ" else "▶"
         playPause.contentDescription = if (player.isPlaying) "Pause" else "Play"
     }
@@ -406,7 +426,9 @@ class FloatingIslandService : Service() {
     private fun updateSize() {
         val p = params ?: return
         p.height = if (expanded) WindowManager.LayoutParams.WRAP_CONTENT else dp(44)
-        p.width = dp(if (expanded) 360 else 184)
+        p.width = if (expanded) WindowManager.LayoutParams.MATCH_PARENT else dp(220)
+        p.x = 0
+        p.y = 0
         root?.let { windowManager.updateViewLayout(it, p) }
     }
 
@@ -426,12 +448,16 @@ class FloatingIslandService : Service() {
     private inner class IslandTouchListener : View.OnTouchListener {
         private var downX = 0f
         private var downY = 0f
-        private var startX = 0
-        private var dragged = false
+        private var moved = false
         private var longPressed = false
+        private val expandRunnable = Runnable {
+            if (!moved) {
+                longPressed = true
+                showControls()
+            }
+        }
 
         override fun onTouch(v: View, event: MotionEvent): Boolean {
-            val p = params ?: return false
             when (event.actionMasked) {
                 MotionEvent.ACTION_OUTSIDE -> {
                     if (expanded) hideControls()
@@ -440,35 +466,25 @@ class FloatingIslandService : Service() {
                 MotionEvent.ACTION_DOWN -> {
                     downX = event.rawX
                     downY = event.rawY
-                    startX = p.x
-                    dragged = false
+                    moved = false
                     longPressed = false
-                    handler.postDelayed({
-                        if (!dragged) {
-                            longPressed = true
-                            showControls()
-                        }
-                    }, 450L)
+                    handler.postDelayed(expandRunnable, 450L)
                     return true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    val dx = (event.rawX - downX).toInt()
-                    val dy = (event.rawY - downY).toInt()
-                    if (kotlin.math.abs(dx) > 12 || kotlin.math.abs(dy) > 12) {
-                        dragged = true
-                        handler.removeCallbacksAndMessages(null)
+                    val dx = kotlin.math.abs(event.rawX - downX)
+                    val dy = kotlin.math.abs(event.rawY - downY)
+                    if (dx > 12f || dy > 12f) {
+                        moved = true
+                        handler.removeCallbacks(expandRunnable)
                     }
-                    if (dragged) {
-                        p.x = startX + dx
-                        p.y = 0
-                        root?.let { windowManager.updateViewLayout(it, p) }
-                    }
+                    // The island is deliberately fixed at the top-center; dragging never moves it.
                     return true
                 }
                 MotionEvent.ACTION_UP -> {
-                    handler.removeCallbacksAndMessages(null)
+                    handler.removeCallbacks(expandRunnable)
                     when {
-                        dragged -> Unit
+                        moved -> Unit
                         longPressed -> Unit
                         expanded -> Unit // keep expanded; only ACTION_OUTSIDE collapses it
                         else -> openAzMusic()
@@ -476,7 +492,7 @@ class FloatingIslandService : Service() {
                     return true
                 }
                 MotionEvent.ACTION_CANCEL -> {
-                    handler.removeCallbacksAndMessages(null)
+                    handler.removeCallbacks(expandRunnable)
                     return true
                 }
             }
