@@ -351,6 +351,8 @@ class FloatingIslandService : Service() {
     }
 
     private fun showControls() {
+        if (expanded) return
+        val view = root ?: return
         expanded = true
         params?.flags = (params?.flags ?: 0) or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
         artist.visibility = View.VISIBLE
@@ -358,16 +360,47 @@ class FloatingIslandService : Service() {
         timeRow.visibility = View.VISIBLE
         controls.visibility = View.VISIBLE
         updateSize()
+
+        // Grow naturally from the collapsed island into the expanded island.
+        view.animate().cancel()
+        view.pivotX = view.width / 2f
+        view.pivotY = 0f
+        view.scaleX = 0.72f
+        view.scaleY = 0.72f
+        view.alpha = 0.88f
+        view.animate()
+            .scaleX(1f)
+            .scaleY(1f)
+            .alpha(1f)
+            .setDuration(260L)
+            .start()
     }
 
     private fun hideControls() {
-        expanded = false
-        params?.flags = (params?.flags ?: 0) and WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH.inv()
-        artist.visibility = View.GONE
-        progress.visibility = View.GONE
-        timeRow.visibility = View.GONE
-        controls.visibility = View.GONE
-        updateSize()
+        if (!expanded) return
+        val view = root ?: return
+        // Shrink the expanded island first, then switch its layout back to collapsed size.
+        view.animate().cancel()
+        view.pivotX = view.width / 2f
+        view.pivotY = 0f
+        view.animate()
+            .scaleX(0.72f)
+            .scaleY(0.72f)
+            .alpha(0.88f)
+            .setDuration(220L)
+            .withEndAction {
+                expanded = false
+                params?.flags = (params?.flags ?: 0) and WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH.inv()
+                artist.visibility = View.GONE
+                progress.visibility = View.GONE
+                timeRow.visibility = View.GONE
+                controls.visibility = View.GONE
+                updateSize()
+                view.scaleX = 1f
+                view.scaleY = 1f
+                view.alpha = 1f
+            }
+            .start()
     }
 
     private fun updateSize() {
