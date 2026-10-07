@@ -43,7 +43,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -111,7 +111,7 @@ fun WavelengthNavHost() {
         currentRoute != Screen.AdminActivation.route
     val activationRequiredSequence by playerViewModel.activationRequiredSequence.collectAsStateWithLifecycle()
     var showActivationPrompt by remember { mutableStateOf(false) }
-    var searchFocusRequestSequence by remember { mutableFloatStateOf(0f) }
+    var searchFocusRequestSequence by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(activationRequiredSequence) {
         if (activationRequiredSequence > 0L && activation.status != ActivationStatus.ACTIVE) {
@@ -232,9 +232,8 @@ fun WavelengthNavHost() {
                                                 launchSingleTop = true
                                                 restoreState = false
                                             }
-                                            if (target.route == Screen.Search.route) {
-                                                searchFocusRequestSequence += 1f
-                                            }
+                                            // Swiping to Search only navigates there; the keyboard is opened
+                                            // by tapping the Search tab again while Search is already active.
                                         }
                                     )
                                 }
@@ -345,19 +344,25 @@ fun WavelengthNavHost() {
                                                 tileShape
                                             )
                                             .clickable {
-                                                // Bottom tabs are root destinations: wherever the user is
-                                                // (artist, genre/language, playlist, search result, etc.),
-                                                // tapping a tab always returns directly to that tab's root.
-                                                navController.navigate(screen.route) {
-                                                    popUpTo(navController.graph.startDestinationId) {
-                                                        inclusive = false
-                                                        saveState = false
+                                                // Search uses a true second-tap action: first tap opens
+                                                // Search, tapping Search again while already there focuses
+                                                // the field and opens the keyboard without recreating the screen.
+                                                if (screen.route == Screen.Search.route &&
+                                                    currentRoute == Screen.Search.route
+                                                ) {
+                                                    searchFocusRequestSequence += 1
+                                                } else {
+                                                    // Bottom tabs are root destinations: wherever the user is
+                                                    // (artist, genre/language, playlist, search result, etc.),
+                                                    // tapping a tab returns directly to that tab's root.
+                                                    navController.navigate(screen.route) {
+                                                        popUpTo(navController.graph.startDestinationId) {
+                                                            inclusive = false
+                                                            saveState = false
+                                                        }
+                                                        launchSingleTop = true
+                                                        restoreState = false
                                                     }
-                                                    launchSingleTop = true
-                                                    restoreState = false
-                                                }
-                                                if (screen.route == Screen.Search.route) {
-                                                    searchFocusRequestSequence += 1f
                                                 }
                                             }
                                     ) {
@@ -539,7 +544,7 @@ fun WavelengthNavHost() {
                 composable(Screen.Search.route) {
                     SearchScreen(
                         onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
-                        focusRequestSequence = searchFocusRequestSequence.toInt(),
+                        focusRequestSequence = searchFocusRequestSequence,
                         onBrowseArtist = { artist -> navController.navigate(Screen.Artist.createRoute(artist)) },
                         onBrowseAlbum = { album ->
                             navController.navigate(Screen.Genre.createRoute(album, album))
