@@ -39,6 +39,11 @@ val featuredArtists = listOf(
     "A.R. Rahman", "Thaman S"
 )
 
+data class RecentListeningMix(
+    val seedArtist: String,
+    val tracks: List<Track>
+)
+
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val repository: MusicRepository,
@@ -51,6 +56,9 @@ class HomeViewModel @Inject constructor(
 
     private val _suggested = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Loading)
     val suggested: StateFlow<ScreenState<List<Track>>> = _suggested.asStateFlow()
+
+    private val _recentListeningMixes = MutableStateFlow<List<RecentListeningMix>>(emptyList())
+    val recentListeningMixes: StateFlow<List<RecentListeningMix>> = _recentListeningMixes.asStateFlow()
 
     val recentlyPlayed: StateFlow<List<Track>> = repository.observeRecentlyPlayed(10)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -191,16 +199,39 @@ class HomeViewModel @Inject constructor(
             .take(3)
         if (topArtists.isEmpty()) {
             _suggested.value = ScreenState.Empty
+            _recentListeningMixes.value = emptyList()
             return
         }
         if (showLoading) _suggested.value = ScreenState.Loading
         coroutineScope {
             val results = topArtists.map { artist ->
-                async { repository.searchTracks(artist, limit = 12, forceRefresh = forceRefresh) }
+                async {
+                    artist to repository.searchTracks(
+                        artist,
+                        limit = 18,
+                        forceRefresh = forceRefresh
+                    ).getOrDefault(emptyList())
+                }
             }.awaitAll()
             val excludeIds = recentTracks.map { it.id }.toSet()
+
+            val mixes = results.mapNotNull { (artist, tracks) ->
+                val mixTracks = tracks
+                    .distinctBy(::songIdentity)
+                    .filterNot { it.id in excludeIds }
+                    .filter { candidate ->
+                        candidate.artistName.split(',').any { name ->
+                            name.trim().contains(artist, ignoreCase = true) ||
+                                artist.contains(name.trim(), ignoreCase = true)
+                        }
+                    }
+                    .take(15)
+                if (mixTracks.size >= 3) RecentListeningMix(artist, mixTracks) else null
+            }
+            _recentListeningMixes.value = mixes.take(3)
+
             val filtered = results
-                .flatMap { it.getOrDefault(emptyList()) }
+                .flatMap { it.second }
                 .distinctBy(::songIdentity)
                 .filterNot { it.id in excludeIds }
                 .shuffled()
@@ -264,6 +295,10 @@ class HomeViewModel @Inject constructor(
 
     fun playTrack(queue: List<Track>, index: Int) {
         playerController.playQueue(queue, index)
+    }
+
+    fun addMixToQueue(tracks: List<Track>) {
+        tracks.forEach(playerController::addToQueue)
     }
 
     fun prepareSearch(query: String) {
