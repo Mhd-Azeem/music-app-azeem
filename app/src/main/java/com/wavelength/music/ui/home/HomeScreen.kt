@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AssistChip
@@ -96,6 +98,7 @@ fun HomeScreen(
 ) {
     val featured by viewModel.featured.collectAsStateWithLifecycle()
     val suggested by viewModel.suggested.collectAsStateWithLifecycle()
+    val recentListeningMixes by viewModel.recentListeningMixes.collectAsStateWithLifecycle()
     val dailyMix by viewModel.dailyMix.collectAsStateWithLifecycle()
     val topCharts by viewModel.topCharts.collectAsStateWithLifecycle()
     val topArtistTracks by viewModel.topArtistTracks.collectAsStateWithLifecycle()
@@ -340,6 +343,7 @@ fun HomeScreen(
                     padding = padding,
                     featuredTracks = state.data,
                     suggestedTracks = (suggested as? ScreenState.Success)?.data.orEmpty(),
+                    recentListeningMixes = recentListeningMixes,
                     dailyMixTracks = (dailyMix as? ScreenState.Success)?.data.orEmpty(),
                     topCharts = topCharts,
                     topArtistTracks = topArtistTracks,
@@ -353,6 +357,7 @@ fun HomeScreen(
                         viewModel.playTrack(queue, index)
                         onTrackClick()
                     },
+                    onAddMixToQueue = viewModel::addMixToQueue,
                     onGenreClick = onGenreClick,
                     onArtistClick = onArtistClick,
                     onPlaylistClick = onPlaylistClick,
@@ -374,6 +379,7 @@ private fun HomeContent(
     padding: PaddingValues,
     featuredTracks: List<Track>,
     suggestedTracks: List<Track>,
+    recentListeningMixes: List<RecentListeningMix>,
     dailyMixTracks: List<Track>,
     topCharts: Map<String, List<Track>>,
     topArtistTracks: Pair<String, List<Track>>?,
@@ -384,6 +390,7 @@ private fun HomeContent(
     favoriteAlbums: List<PlaylistSummary>,
     searchHistory: List<String>,
     onTrackClick: (Int, List<Track>) -> Unit,
+    onAddMixToQueue: (List<Track>) -> Unit,
     onGenreClick: (String, String) -> Unit,
     onArtistClick: (String) -> Unit,
     onPlaylistClick: (Long) -> Unit,
@@ -668,7 +675,20 @@ private fun HomeContent(
             }
         }
 
-        if (suggestedTracks.isNotEmpty()) {
+        if (recentListeningMixes.isNotEmpty()) {
+            item { SectionHeader("Based on your recent listening") }
+            itemsIndexed(
+                recentListeningMixes,
+                key = { index, mix -> "recentMix:" + index + ":" + mix.seedArtist }
+            ) { index, mix ->
+                RecentListeningMixCard(
+                    mix = mix,
+                    index = index,
+                    onPlay = { onTrackClick(0, mix.tracks) },
+                    onAddToQueue = { onAddMixToQueue(mix.tracks) }
+                )
+            }
+        } else if (suggestedTracks.isNotEmpty()) {
             item { SectionHeader("Based on your recent listening") }
             item {
                 LazyRow(
@@ -745,6 +765,120 @@ private fun HomeContent(
         }
 
         item { Spacer(modifier = Modifier.height(96.dp)) }
+    }
+}
+
+@Composable
+private fun RecentListeningMixCard(
+    mix: RecentListeningMix,
+    index: Int,
+    onPlay: () -> Unit,
+    onAddToQueue: () -> Unit
+) {
+    val tracks = mix.tracks
+    val artwork = tracks.firstOrNull()?.albumArtUrl.orEmpty()
+    val artists = tracks
+        .flatMap { it.artistName.split(',') }
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .distinct()
+        .take(5)
+        .joinToString(", ")
+    val containerColor = when (index % 3) {
+        0 -> MaterialTheme.colorScheme.primaryContainer
+        1 -> MaterialTheme.colorScheme.secondaryContainer
+        else -> MaterialTheme.colorScheme.tertiaryContainer
+    }
+    val contentColor = when (index % 3) {
+        0 -> MaterialTheme.colorScheme.onPrimaryContainer
+        1 -> MaterialTheme.colorScheme.onSecondaryContainer
+        else -> MaterialTheme.colorScheme.onTertiaryContainer
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable(onClick = onPlay),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AsyncImage(
+                    model = artwork,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(112.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 14.dp)
+                ) {
+                    Text(
+                        text = mix.seedArtist.substringBefore(',').trim() + " Mix",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = contentColor,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "AzMusic",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = contentColor.copy(alpha = 0.72f),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = tracks.size.toString() + " songs" + if (artists.isNotBlank()) " • " + artists else "",
+                style = MaterialTheme.typography.bodyMedium,
+                color = contentColor.copy(alpha = 0.82f),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 14.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Made from your recent listening",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = contentColor.copy(alpha = 0.70f),
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = onAddToQueue) {
+                    Icon(
+                        Icons.Filled.AddCircle,
+                        contentDescription = "Add mix to queue",
+                        tint = contentColor
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(contentColor),
+                    contentAlignment = Alignment.Center
+                ) {
+                    IconButton(onClick = onPlay) {
+                        Icon(
+                            Icons.Filled.PlayArrow,
+                            contentDescription = "Play mix",
+                            tint = containerColor
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
