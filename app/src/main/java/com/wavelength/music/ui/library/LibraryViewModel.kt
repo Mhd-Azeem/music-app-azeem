@@ -10,11 +10,18 @@ import com.wavelength.music.playback.PlayerController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+enum class DeviceSongSort {
+    NAME,
+    SIZE,
+    MODIFIED_DATE
+}
 
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
@@ -31,6 +38,40 @@ class LibraryViewModel @Inject constructor(
 
     val localSongs: StateFlow<List<Track>> = repository.observeLocalSongs()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _deviceSearchQuery = MutableStateFlow("")
+    val deviceSearchQuery: StateFlow<String> = _deviceSearchQuery.asStateFlow()
+
+    private val _deviceSort = MutableStateFlow(DeviceSongSort.NAME)
+    val deviceSort: StateFlow<DeviceSongSort> = _deviceSort.asStateFlow()
+
+    private val _deviceSortAscending = MutableStateFlow(true)
+    val deviceSortAscending: StateFlow<Boolean> = _deviceSortAscending.asStateFlow()
+
+    val deviceSongs: StateFlow<List<Track>> = combine(
+        localSongs,
+        _deviceSearchQuery,
+        _deviceSort,
+        _deviceSortAscending
+    ) { tracks, query, sort, ascending ->
+        val normalizedQuery = query.trim()
+        val filtered = if (normalizedQuery.isBlank()) {
+            tracks
+        } else {
+            tracks.filter { track ->
+                track.name.contains(normalizedQuery, ignoreCase = true) ||
+                    track.artistName.contains(normalizedQuery, ignoreCase = true) ||
+                    track.albumName.contains(normalizedQuery, ignoreCase = true)
+            }
+        }
+
+        val comparator = when (sort) {
+            DeviceSongSort.NAME -> compareBy<Track> { it.name.lowercase() }
+            DeviceSongSort.SIZE -> compareBy { it.fileSizeBytes }
+            DeviceSongSort.MODIFIED_DATE -> compareBy { it.modifiedAtSeconds }
+        }
+        if (ascending) filtered.sortedWith(comparator) else filtered.sortedWith(comparator.reversed())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val playlists: StateFlow<List<PlaylistSummary>> = repository.observePlaylists()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -86,6 +127,18 @@ class LibraryViewModel @Inject constructor(
 
     /** Re-scans MediaStore for on-device audio. Call once permission is granted, and whenever
      * the user taps "Rescan library" afterwards. */
+    fun setDeviceSearchQuery(query: String) {
+        _deviceSearchQuery.value = query
+    }
+
+    fun setDeviceSort(sort: DeviceSongSort) {
+        _deviceSort.value = sort
+    }
+
+    fun setDeviceSortAscending(ascending: Boolean) {
+        _deviceSortAscending.value = ascending
+    }
+
     fun rescanLocalLibrary() {
         if (_isScanning.value) return
         viewModelScope.launch {
