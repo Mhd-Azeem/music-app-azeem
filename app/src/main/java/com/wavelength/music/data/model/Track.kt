@@ -15,5 +15,7 @@ data class Track(
     val audioUrl: String,
     val durationSeconds: Int,
     val source: TrackSource = TrackSource.JIOSAAVN,
-    val language: String = ""
+    val language: String = "",
+    val fileSizeBytes: Long = 0L,
+    val modifiedAtSeconds: Long = 0L
 )
