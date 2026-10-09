@@ -28,15 +28,21 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -89,6 +95,10 @@ fun LibraryScreen(
     val favorites by viewModel.favorites.collectAsStateWithLifecycle()
     val recentlyPlayed by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
     val localSongs by viewModel.localSongs.collectAsStateWithLifecycle()
+    val deviceSongs by viewModel.deviceSongs.collectAsStateWithLifecycle()
+    val deviceSearchQuery by viewModel.deviceSearchQuery.collectAsStateWithLifecycle()
+    val deviceSort by viewModel.deviceSort.collectAsStateWithLifecycle()
+    val deviceSortAscending by viewModel.deviceSortAscending.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     val visiblePlaylists = playlists.filterNot { it.name.startsWith("★ Favorite Album · ") }
     val downloadedTracks by viewModel.downloadedTracks.collectAsStateWithLifecycle()
@@ -135,7 +145,7 @@ fun LibraryScreen(
     val currentTracks = when (selectedTab) {
         0 -> favorites
         1 -> recentlyPlayed
-        3 -> localSongs
+        3 -> deviceSongs
         4 -> downloadedTracks
         else -> emptyList()
     }
@@ -309,6 +319,17 @@ fun LibraryScreen(
                 }
             }
 
+            if (selectedTab == 3 && hasPermission) {
+                DeviceLibraryControls(
+                    query = deviceSearchQuery,
+                    onQueryChange = viewModel::setDeviceSearchQuery,
+                    sort = deviceSort,
+                    ascending = deviceSortAscending,
+                    onSortChange = viewModel::setDeviceSort,
+                    onAscendingChange = viewModel::setDeviceSortAscending
+                )
+            }
+
             fun onToggleSelect(track: Track) {
                 selectedIds = if (track.id in selectedIds) selectedIds - track.id else selectedIds + track.id
             }
@@ -367,10 +388,10 @@ fun LibraryScreen(
                         CircularProgressIndicator()
                     }
                     else -> TrackList(
-                        tracks = localSongs,
+                        tracks = deviceSongs,
                         isFavoriteTab = false,
                         onTrackClick = { index ->
-                            viewModel.playFrom(localSongs, index)
+                            viewModel.playFrom(deviceSongs, index)
                             onTrackClick()
                         },
                         onFavoriteClick = null,
@@ -401,6 +422,93 @@ fun LibraryScreen(
             }
         }
     }
+    }
+}
+
+@Composable
+private fun DeviceLibraryControls(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    sort: DeviceSongSort,
+    ascending: Boolean,
+    onSortChange: (DeviceSongSort) -> Unit,
+    onAscendingChange: (Boolean) -> Unit
+) {
+    var sortMenuExpanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            leadingIcon = {
+                Icon(Icons.Filled.Search, contentDescription = null)
+            },
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = { onQueryChange("") }) {
+                        Icon(Icons.Filled.Close, contentDescription = "Clear device search")
+                    }
+                }
+            },
+            placeholder = { Text("Search device songs") }
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box {
+                TextButton(onClick = { sortMenuExpanded = true }) {
+                    Icon(Icons.Filled.Sort, contentDescription = null)
+                    Text(
+                        text = when (sort) {
+                            DeviceSongSort.NAME -> " Name"
+                            DeviceSongSort.SIZE -> " Size"
+                            DeviceSongSort.MODIFIED_DATE -> " Modified date"
+                        }
+                    )
+                }
+                DropdownMenu(
+                    expanded = sortMenuExpanded,
+                    onDismissRequest = { sortMenuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Name") },
+                        onClick = {
+                            onSortChange(DeviceSongSort.NAME)
+                            sortMenuExpanded = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Size") },
+                        onClick = {
+                            onSortChange(DeviceSongSort.SIZE)
+                            sortMenuExpanded = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Modified date") },
+                        onClick = {
+                            onSortChange(DeviceSongSort.MODIFIED_DATE)
+                            sortMenuExpanded = false
+                        }
+                    )
+                }
+            }
+
+            TextButton(onClick = { onAscendingChange(!ascending) }) {
+                Text(if (ascending) "Ascending ↑" else "Descending ↓")
+            }
+        }
     }
 }
 
