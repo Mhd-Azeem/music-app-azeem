@@ -11,6 +11,7 @@ import com.wavelength.music.data.model.TrackSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -27,7 +28,18 @@ class LocalSongRepository @Inject constructor(
 ) {
 
     fun observeLocalSongs(): Flow<List<Track>> =
-        localSongDao.observeAll().map { entities -> entities.map { it.toTrack() } }
+        localSongDao.observeAll()
+            .map { entities ->
+                val metadata = queryLocalSongMetadata()
+                entities.map { entity ->
+                    val extra = metadata[entity.mediaStoreId]
+                    entity.toTrack(
+                        fileSizeBytes = extra?.first ?: 0L,
+                        modifiedAtSeconds = extra?.second ?: 0L
+                    )
+                }
+            }
+            .flowOn(Dispatchers.IO)
 
     suspend fun rescanLibrary(): Result<Int> = runCatching {
         withContext(Dispatchers.IO) {
@@ -79,12 +91,36 @@ class LocalSongRepository @Inject constructor(
         return songs
     }
 
+    private fun queryLocalSongMetadata(): Map<Long, Pair<Long, Long>> {
+        val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+        val projection = arrayOf(
+            MediaStore.Audio.Media._ID,
+            MediaStore.Audio.Media.SIZE,
+            MediaStore.Audio.Media.DATE_MODIFIED
+        )
+        val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
+        val metadata = mutableMapOf<Long, Pair<Long, Long>>()
+        context.contentResolver.query(collection, projection, selection, null, null)?.use { cursor ->
+            val idCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+            val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
+            val modifiedCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_MODIFIED)
+            while (cursor.moveToNext()) {
+                metadata[cursor.getLong(idCol)] =
+                    cursor.getLong(sizeCol) to cursor.getLong(modifiedCol)
+            }
+        }
+        return metadata
+    }
+
     private companion object {
         val ALBUM_ART_URI: Uri = Uri.parse("content://media/external/audio/albumart")
     }
 }
 
-private fun LocalSongEntity.toTrack(): Track = Track(
+private fun LocalSongEntity.toTrack(
+    fileSizeBytes: Long = 0L,
+    modifiedAtSeconds: Long = 0L
+): Track = Track(
     id = "local_$mediaStoreId",
     name = title,
     artistId = "",
@@ -94,5 +130,7 @@ private fun LocalSongEntity.toTrack(): Track = Track(
     albumArtUrl = albumArtUri.orEmpty(),
     audioUrl = contentUri,
     durationSeconds = (durationMs / 1000).toInt(),
-    source = TrackSource.LOCAL
+    source = TrackSource.LOCAL,
+    fileSizeBytes = fileSizeBytes,
+    modifiedAtSeconds = modifiedAtSeconds
 )
