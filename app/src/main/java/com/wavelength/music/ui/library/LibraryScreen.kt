@@ -51,6 +51,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -104,7 +105,9 @@ fun LibraryScreen(
     val downloadedTracks by viewModel.downloadedTracks.collectAsStateWithLifecycle()
     val isScanning by viewModel.isScanning.collectAsStateWithLifecycle()
 
-    var selectedTab by remember { mutableIntStateOf(0) }
+    // Keep the active Library tab when Now Playing is opened and then collapsed/backed out.
+    // Navigation Compose disposes inactive destinations, so plain remember would reset to Favorites.
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var showCreateFolderDialog by remember { mutableStateOf(false) }
     var currentFolderId by remember { mutableStateOf<Long?>(null) }
