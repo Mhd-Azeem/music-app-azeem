@@ -215,12 +215,17 @@ class FloatingIslandService : Service() {
             addView(remaining, LinearLayout.LayoutParams(0, dp(20), 1f))
         }
 
-        playPause = controlButton("▶") { controller?.let { if (it.isPlaying) it.pause() else it.play() } }
+        playPause = controlButton("▶", primary = true) {
+            controller?.let { if (it.isPlaying) it.pause() else it.play() }
+        }
         controls = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; visibility = View.GONE
-            addView(controlButton("‹") { controller?.seekToPreviousMediaItem() })
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            visibility = View.GONE
+            setPadding(0, dp(4), 0, dp(6))
+            addView(controlButton("‹", primary = false) { controller?.seekToPreviousMediaItem() })
             addView(playPause)
-            addView(controlButton("›") { controller?.seekToNextMediaItem() })
+            addView(controlButton("›", primary = false) { controller?.seekToNextMediaItem() })
         }
 
         root = LinearLayout(this).apply {
@@ -255,22 +260,52 @@ class FloatingIslandService : Service() {
         gravity = gravityValue or Gravity.CENTER_VERTICAL
     }
 
-    private fun controlButton(symbol: String, action: () -> Unit) = TextView(this).apply {
-        layoutParams = LinearLayout.LayoutParams(dp(62), dp(48)).apply {
-            marginStart = dp(3)
-            marginEnd = dp(3)
+    private fun controlButton(
+        symbol: String,
+        primary: Boolean,
+        action: () -> Unit
+    ) = TextView(this).apply {
+        val size = if (primary) dp(64) else dp(52)
+        layoutParams = LinearLayout.LayoutParams(size, size).apply {
+            marginStart = dp(if (primary) 14 else 8)
+            marginEnd = dp(if (primary) 14 else 8)
         }
         text = symbol
-        setTextColor(Color.WHITE)
-        textSize = 30f
         gravity = Gravity.CENTER
+        includeFontPadding = false
+        textSize = if (primary) 31f else 36f
+        typeface = android.graphics.Typeface.DEFAULT_BOLD
+        setTextColor(if (primary) Color.rgb(18, 18, 20) else Color.WHITE)
         contentDescription = when (symbol) {
             "‹" -> "Previous"
             "›" -> "Next"
             else -> "Play or pause"
         }
-        background = rounded(Color.rgb(42, 42, 46), dp(20).toFloat())
-        setOnClickListener { action() }
+        background = controlBackground(primary)
+        elevation = dp(if (primary) 8 else 4).toFloat()
+        isClickable = true
+        isFocusable = true
+        setOnTouchListener { view, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    view.animate().cancel()
+                    view.animate().scaleX(0.90f).scaleY(0.90f).alpha(0.82f)
+                        .setDuration(90L).start()
+                }
+                MotionEvent.ACTION_UP -> {
+                    view.animate().cancel()
+                    view.animate().scaleX(1f).scaleY(1f).alpha(1f)
+                        .setDuration(130L).start()
+                    action()
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    view.animate().cancel()
+                    view.animate().scaleX(1f).scaleY(1f).alpha(1f)
+                        .setDuration(130L).start()
+                }
+            }
+            true
+        }
     }
 
     private fun connectController() {
@@ -531,6 +566,17 @@ class FloatingIslandService : Service() {
         setColor(Color.argb(248, 4, 4, 6))
         cornerRadius = radius
         setStroke(dp(1), Color.argb(90, 255, 255, 255))
+    }
+
+    private fun controlBackground(primary: Boolean) = GradientDrawable().apply {
+        shape = GradientDrawable.OVAL
+        if (primary) {
+            setColor(Color.rgb(244, 244, 247))
+            setStroke(dp(1), Color.argb(90, 255, 255, 255))
+        } else {
+            setColor(Color.argb(235, 34, 34, 39))
+            setStroke(dp(1), Color.argb(85, 255, 255, 255))
+        }
     }
 
     private fun rounded(color: Int, radius: Float) = GradientDrawable().apply {
