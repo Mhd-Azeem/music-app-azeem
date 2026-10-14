@@ -232,6 +232,7 @@ class FloatingIslandService : Service() {
             addView(controlButton("›", primary = false) { controller?.seekToNextMediaItem() })
         }
 
+        val islandTouchListener = IslandTouchListener()
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
             setPadding(dp(8), dp(4), dp(8), dp(4))
@@ -241,7 +242,7 @@ class FloatingIslandService : Service() {
             addView(progress, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(24)))
             addView(timeRow, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(20)))
             addView(controls)
-            setOnTouchListener(IslandTouchListener())
+            setOnTouchListener(islandTouchListener)
         }
 
         overlayContainer = FrameLayout(this).apply {
@@ -251,6 +252,9 @@ class FloatingIslandService : Service() {
                 root,
                 FrameLayout.LayoutParams(dp(220), dp(44), Gravity.CENTER)
             )
+            // ACTION_OUTSIDE is dispatched to the overlay window's top-level view.
+            // Listening here guarantees a tap below/around the expanded island collapses it.
+            setOnTouchListener(islandTouchListener)
         }
 
         val screenWidth = resources.displayMetrics.widthPixels
@@ -449,6 +453,7 @@ class FloatingIslandService : Service() {
         p.flags = p.flags or
             WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+        overlayContainer?.let { windowManager.updateViewLayout(it, p) }
 
         artist.visibility = View.VISIBLE
         progress.visibility = View.VISIBLE
