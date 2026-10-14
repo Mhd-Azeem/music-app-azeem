@@ -42,8 +42,12 @@ import com.wavelength.music.R
  */
 class FloatingIslandService : Service() {
     private lateinit var windowManager: WindowManager
+    private var overlayContainer: FrameLayout? = null
     private var root: LinearLayout? = null
     private var params: WindowManager.LayoutParams? = null
+    private var collapsedEdge = IslandEdge.TOP
+    private var collapsedX = 0
+    private var collapsedY = 0
     private var controller: MediaController? = null
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var expanded = false
@@ -55,7 +59,7 @@ class FloatingIslandService : Service() {
     private val longPressRunnable = Runnable { showControls() }
     private val hideAfterStopRunnable = Runnable {
         hideControls(animate = false)
-        root?.visibility = View.GONE
+        overlayContainer?.visibility = View.GONE
         dismissedForInactivePlayback = true
     }
     private val progressTicker = object : Runnable {
@@ -117,7 +121,7 @@ class FloatingIslandService : Service() {
                 ACTION_APP_FOREGROUND -> {
                     appWasVisible = true
                     root?.animate()?.cancel()
-                    root?.visibility = View.GONE
+                    overlayContainer?.visibility = View.GONE
                 }
                 ACTION_APP_BACKGROUND -> controller?.let {
                     // A paused player must stay silent when AzMusic leaves the foreground.
@@ -126,7 +130,7 @@ class FloatingIslandService : Service() {
                         appWasVisible = false
                         handler.removeCallbacks(hideAfterStopRunnable)
                         hideControls(animate = false)
-                        root?.visibility = View.GONE
+                        overlayContainer?.visibility = View.GONE
                         return@let
                     }
                     val shouldAnimate = appWasVisible && it.mediaItemCount > 0 &&
@@ -240,6 +244,18 @@ class FloatingIslandService : Service() {
             setOnTouchListener(IslandTouchListener())
         }
 
+        overlayContainer = FrameLayout(this).apply {
+            clipChildren = false
+            clipToPadding = false
+            addView(
+                root,
+                FrameLayout.LayoutParams(dp(220), dp(44), Gravity.CENTER)
+            )
+        }
+
+        val screenWidth = resources.displayMetrics.widthPixels
+        collapsedX = ((screenWidth - dp(220)) / 2).coerceAtLeast(0)
+        collapsedY = 0
         params = WindowManager.LayoutParams(
             dp(220), dp(44),
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
@@ -247,11 +263,12 @@ class FloatingIslandService : Service() {
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            y = 0
+            gravity = Gravity.TOP or Gravity.START
+            x = collapsedX
+            y = collapsedY
         }
-        windowManager.addView(root, params)
-        root?.visibility = View.GONE
+        windowManager.addView(overlayContainer, params)
+        overlayContainer?.visibility = View.GONE
     }
 
     private fun timeLabel(gravityValue: Int) = TextView(this).apply {
@@ -332,11 +349,11 @@ class FloatingIslandService : Service() {
         if (stopped) {
             handler.removeCallbacks(hideAfterStopRunnable)
             if (appVisible) {
-                root?.visibility = View.GONE
-            } else if (!dismissedForInactivePlayback && root?.visibility == View.VISIBLE) {
+                overlayContainer?.visibility = View.GONE
+            } else if (!dismissedForInactivePlayback && overlayContainer?.visibility == View.VISIBLE) {
                 handler.postDelayed(hideAfterStopRunnable, 5_000L)
             } else {
-                root?.visibility = View.GONE
+                overlayContainer?.visibility = View.GONE
             }
             return
         }
@@ -348,23 +365,23 @@ class FloatingIslandService : Service() {
         if (player.isPlaying) {
             dismissedForInactivePlayback = false
             handler.removeCallbacks(hideAfterStopRunnable)
-            if (!appVisible) root?.visibility = View.VISIBLE
+            if (!appVisible) overlayContainer?.visibility = View.VISIBLE
         } else {
             handler.removeCallbacks(hideAfterStopRunnable)
         }
 
         if (appVisible) {
-            root?.visibility = View.GONE
+            overlayContainer?.visibility = View.GONE
         } else if (player.isPlaying || !dismissedForInactivePlayback) {
             // Player callbacks (pause/next/previous/seek) update the contents in-place. They must
             // never collapse an island the user deliberately expanded.
-            if (root?.visibility != View.VISIBLE) {
+            if (overlayContainer?.visibility != View.VISIBLE) {
                 showCollapsedIsland(animateEntrance)
             } else if (animateEntrance && !expanded) {
                 showCollapsedIsland(true)
             }
         } else {
-            root?.visibility = View.GONE
+            overlayContainer?.visibility = View.GONE
         }
 
         if (!player.isPlaying && !appVisible && !dismissedForInactivePlayback) {
@@ -393,19 +410,20 @@ class FloatingIslandService : Service() {
     private fun showCollapsedIsland(animateEntrance: Boolean) {
         val view = root ?: return
         hideControls(animate = false)
-        view.visibility = View.VISIBLE
+        applyCollapsedPlacement()
+        overlayContainer?.visibility = View.VISIBLE
         if (!animateEntrance) return
         view.animate().cancel()
         view.pivotX = view.width / 2f
-        view.pivotY = 0f
-        view.scaleX = 1.32f
-        view.scaleY = 1.32f
+        view.pivotY = view.height / 2f
+        view.scaleX = 1.20f
+        view.scaleY = 1.20f
         view.alpha = 0f
         view.animate()
             .alpha(1f)
             .scaleX(1f)
             .scaleY(1f)
-            .setDuration(280L)
+            .setDuration(260L)
             .start()
     }
 
@@ -420,8 +438,15 @@ class FloatingIslandService : Service() {
     private fun showControls() {
         if (expanded) return
         val view = root ?: return
+        val p = params ?: return
+        val startX = p.x
+        val startY = p.y
+        val startWidth = p.width
+        val startHeight = p.height
+        val startRotation = view.rotation
+
         expanded = true
-        params?.flags = (params?.flags ?: 0) or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
+        p.flags = p.flags or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
 
         artist.visibility = View.VISIBLE
         progress.visibility = View.VISIBLE
@@ -434,11 +459,17 @@ class FloatingIslandService : Service() {
         }
 
         animateIslandSize(
-            fromWidth = params?.width ?: dp(220),
-            fromHeight = params?.height ?: dp(44),
+            fromWidth = startWidth,
+            fromHeight = startHeight,
             toWidth = resources.displayMetrics.widthPixels,
             toHeight = dp(136),
-            duration = 280L
+            fromX = startX,
+            fromY = startY,
+            toX = 0,
+            toY = 0,
+            fromRotation = startRotation,
+            toRotation = 0f,
+            duration = 300L
         ) { fraction ->
             val contentFraction = ((fraction - 0.16f) / 0.84f).coerceIn(0f, 1f)
             listOf(artist, progress, timeRow, controls).forEach {
@@ -474,12 +505,19 @@ class FloatingIslandService : Service() {
 
         val startWidth = params?.width ?: resources.displayMetrics.widthPixels
         val startHeight = params?.height ?: dp(136)
+        val target = collapsedWindowGeometry()
         animateIslandSize(
             fromWidth = startWidth,
             fromHeight = startHeight,
-            toWidth = dp(220),
-            toHeight = dp(44),
-            duration = 240L
+            toWidth = target.width,
+            toHeight = target.height,
+            fromX = params?.x ?: 0,
+            fromY = params?.y ?: 0,
+            toX = target.x,
+            toY = target.y,
+            fromRotation = root?.rotation ?: 0f,
+            toRotation = target.rotation,
+            duration = 260L
         ) { fraction ->
             val contentFraction = 1f - fraction
             listOf(artist, progress, timeRow, controls).forEach {
@@ -508,6 +546,12 @@ class FloatingIslandService : Service() {
         fromHeight: Int,
         toWidth: Int,
         toHeight: Int,
+        fromX: Int = params?.x ?: 0,
+        fromY: Int = params?.y ?: 0,
+        toX: Int = 0,
+        toY: Int = 0,
+        fromRotation: Float = root?.rotation ?: 0f,
+        toRotation: Float = 0f,
         duration: Long,
         onFrame: (Float) -> Unit
     ): ValueAnimator {
@@ -520,9 +564,11 @@ class FloatingIslandService : Service() {
                 val p = params ?: return@addUpdateListener
                 p.width = (fromWidth + (toWidth - fromWidth) * fraction).toInt()
                 p.height = (fromHeight + (toHeight - fromHeight) * fraction).toInt()
-                p.x = 0
-                p.y = 0
-                root?.let { windowManager.updateViewLayout(it, p) }
+                p.x = (fromX + (toX - fromX) * fraction).toInt()
+                p.y = (fromY + (toY - fromY) * fraction).toInt()
+                root?.rotation = fromRotation + (toRotation - fromRotation) * fraction
+                syncRootToWindow(expandedLayout = true)
+                overlayContainer?.let { windowManager.updateViewLayout(it, p) }
                 onFrame(fraction)
             }
             sizeAnimator = this
@@ -538,11 +584,119 @@ class FloatingIslandService : Service() {
 
     private fun updateSize() {
         val p = params ?: return
-        p.height = if (expanded) dp(136) else dp(44)
-        p.width = if (expanded) resources.displayMetrics.widthPixels else dp(220)
-        p.x = 0
-        p.y = 0
-        root?.let { windowManager.updateViewLayout(it, p) }
+        if (expanded) {
+            p.height = dp(136)
+            p.width = resources.displayMetrics.widthPixels
+            p.x = 0
+            p.y = 0
+            root?.rotation = 0f
+            syncRootToWindow(expandedLayout = true)
+        } else {
+            applyCollapsedPlacement(updateWindow = false)
+        }
+        overlayContainer?.let { windowManager.updateViewLayout(it, p) }
+    }
+
+    private data class IslandGeometry(
+        val x: Int,
+        val y: Int,
+        val width: Int,
+        val height: Int,
+        val rotation: Float
+    )
+
+    private fun collapsedWindowGeometry(): IslandGeometry {
+        val screenWidth = resources.displayMetrics.widthPixels
+        val screenHeight = resources.displayMetrics.heightPixels
+        val horizontalWidth = dp(220)
+        val horizontalHeight = dp(44)
+        val verticalWidth = dp(44)
+        val verticalHeight = dp(220)
+
+        return when (collapsedEdge) {
+            IslandEdge.TOP -> IslandGeometry(
+                collapsedX.coerceIn(0, (screenWidth - horizontalWidth).coerceAtLeast(0)),
+                0,
+                horizontalWidth,
+                horizontalHeight,
+                0f
+            )
+            IslandEdge.BOTTOM -> IslandGeometry(
+                collapsedX.coerceIn(0, (screenWidth - horizontalWidth).coerceAtLeast(0)),
+                (screenHeight - horizontalHeight).coerceAtLeast(0),
+                horizontalWidth,
+                horizontalHeight,
+                0f
+            )
+            IslandEdge.LEFT -> IslandGeometry(
+                0,
+                collapsedY.coerceIn(0, (screenHeight - verticalHeight).coerceAtLeast(0)),
+                verticalWidth,
+                verticalHeight,
+                -90f
+            )
+            IslandEdge.RIGHT -> IslandGeometry(
+                (screenWidth - verticalWidth).coerceAtLeast(0),
+                collapsedY.coerceIn(0, (screenHeight - verticalHeight).coerceAtLeast(0)),
+                verticalWidth,
+                verticalHeight,
+                90f
+            )
+        }
+    }
+
+    private fun applyCollapsedPlacement(updateWindow: Boolean = true) {
+        val p = params ?: return
+        val geometry = collapsedWindowGeometry()
+        p.width = geometry.width
+        p.height = geometry.height
+        p.x = geometry.x
+        p.y = geometry.y
+        root?.rotation = geometry.rotation
+        syncRootToWindow(expandedLayout = false)
+        if (updateWindow) {
+            overlayContainer?.let { windowManager.updateViewLayout(it, p) }
+        }
+    }
+
+    private fun syncRootToWindow(expandedLayout: Boolean) {
+        val view = root ?: return
+        val lp = view.layoutParams as? FrameLayout.LayoutParams ?: return
+        if (expandedLayout) {
+            lp.width = FrameLayout.LayoutParams.MATCH_PARENT
+            lp.height = FrameLayout.LayoutParams.MATCH_PARENT
+            lp.gravity = Gravity.CENTER
+        } else {
+            lp.width = dp(220)
+            lp.height = dp(44)
+            lp.gravity = Gravity.CENTER
+        }
+        view.layoutParams = lp
+    }
+
+    private fun updateCollapsedDrag(rawX: Float, rawY: Float) {
+        if (expanded) return
+        val screenWidth = resources.displayMetrics.widthPixels
+        val screenHeight = resources.displayMetrics.heightPixels
+        val edgeDistances = mapOf(
+            IslandEdge.TOP to rawY,
+            IslandEdge.BOTTOM to (screenHeight - rawY),
+            IslandEdge.LEFT to rawX,
+            IslandEdge.RIGHT to (screenWidth - rawX)
+        )
+        collapsedEdge = edgeDistances.minByOrNull { it.value }?.key ?: collapsedEdge
+
+        when (collapsedEdge) {
+            IslandEdge.TOP, IslandEdge.BOTTOM -> {
+                collapsedX = (rawX - dp(110)).toInt()
+                    .coerceIn(0, (screenWidth - dp(220)).coerceAtLeast(0))
+            }
+            IslandEdge.LEFT, IslandEdge.RIGHT -> {
+                collapsedY = (rawY - dp(110)).toInt()
+                    .coerceIn(0, (screenHeight - dp(220)).coerceAtLeast(0))
+            }
+        }
+        applyCollapsedPlacement()
     }
 
     private fun updatePlaybackProgress(player: Player) {
@@ -590,7 +744,7 @@ class FloatingIslandService : Service() {
         private var moved = false
         private var longPressed = false
         private val expandRunnable = Runnable {
-            if (!moved) {
+            if (!moved && !expanded) {
                 longPressed = true
                 showControls()
             }
@@ -607,31 +761,35 @@ class FloatingIslandService : Service() {
                     downY = event.rawY
                     moved = false
                     longPressed = false
-                    handler.postDelayed(expandRunnable, 450L)
+                    if (!expanded) handler.postDelayed(expandRunnable, 450L)
                     return true
                 }
                 MotionEvent.ACTION_MOVE -> {
+                    if (expanded) return true
                     val dx = kotlin.math.abs(event.rawX - downX)
                     val dy = kotlin.math.abs(event.rawY - downY)
                     if (dx > 12f || dy > 12f) {
                         moved = true
                         handler.removeCallbacks(expandRunnable)
                     }
-                    // The island is deliberately fixed at the top-center; dragging never moves it.
+                    if (moved) {
+                        updateCollapsedDrag(event.rawX, event.rawY)
+                    }
                     return true
                 }
                 MotionEvent.ACTION_UP -> {
                     handler.removeCallbacks(expandRunnable)
                     when {
-                        moved -> Unit
+                        moved -> applyCollapsedPlacement()
                         longPressed -> Unit
-                        expanded -> Unit // keep expanded; only ACTION_OUTSIDE collapses it
+                        expanded -> Unit
                         else -> openAzMusic()
                     }
                     return true
                 }
                 MotionEvent.ACTION_CANCEL -> {
                     handler.removeCallbacks(expandRunnable)
+                    if (moved && !expanded) applyCollapsedPlacement()
                     return true
                 }
             }
@@ -641,7 +799,7 @@ class FloatingIslandService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         // Swiping AzMusic away from Recents must not leave a stale overlay on screen.
-        root?.visibility = View.GONE
+        overlayContainer?.visibility = View.GONE
         stopSelf()
         super.onTaskRemoved(rootIntent)
     }
@@ -657,7 +815,8 @@ class FloatingIslandService : Service() {
         controllerFuture?.let { MediaController.releaseFuture(it) }
         controller = null
         controllerFuture = null
-        root?.let { runCatching { windowManager.removeView(it) } }
+        overlayContainer?.let { runCatching { windowManager.removeView(it) } }
+        overlayContainer = null
         root = null
         super.onDestroy()
     }
@@ -710,6 +869,8 @@ class FloatingIslandService : Service() {
             super.onDetachedFromWindow()
         }
     }
+
+    private enum class IslandEdge { TOP, RIGHT, BOTTOM, LEFT }
 
     companion object {
         const val ACTION_APP_FOREGROUND = "com.wavelength.music.APP_FOREGROUND"
