@@ -446,7 +446,9 @@ class FloatingIslandService : Service() {
         val startRotation = view.rotation
 
         expanded = true
-        p.flags = p.flags or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
+        p.flags = p.flags or
+            WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
 
         artist.visibility = View.VISIBLE
         progress.visibility = View.VISIBLE
@@ -489,7 +491,9 @@ class FloatingIslandService : Service() {
         sizeAnimator?.cancel()
         if (!animate) {
             expanded = false
-            params?.flags = (params?.flags ?: 0) and WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH.inv()
+            params?.flags = (params?.flags ?: 0) and
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH.inv() and
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL.inv()
             artist.visibility = View.GONE
             progress.visibility = View.GONE
             timeRow.visibility = View.GONE
@@ -527,7 +531,9 @@ class FloatingIslandService : Service() {
             }
         }.doOnEnd {
             expanded = false
-            params?.flags = (params?.flags ?: 0) and WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH.inv()
+            params?.flags = (params?.flags ?: 0) and
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH.inv() and
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL.inv()
             artist.visibility = View.GONE
             progress.visibility = View.GONE
             timeRow.visibility = View.GONE
