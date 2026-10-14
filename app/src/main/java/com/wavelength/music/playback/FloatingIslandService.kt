@@ -627,13 +627,6 @@ class FloatingIslandService : Service() {
                 horizontalHeight,
                 0f
             )
-            IslandEdge.BOTTOM -> IslandGeometry(
-                collapsedX.coerceIn(0, (screenWidth - horizontalWidth).coerceAtLeast(0)),
-                (screenHeight - horizontalHeight).coerceAtLeast(0),
-                horizontalWidth,
-                horizontalHeight,
-                0f
-            )
             IslandEdge.LEFT -> IslandGeometry(
                 0,
                 collapsedY.coerceIn(0, (screenHeight - verticalHeight).coerceAtLeast(0)),
@@ -686,14 +679,13 @@ class FloatingIslandService : Service() {
         val screenHeight = resources.displayMetrics.heightPixels
         val edgeDistances = mapOf(
             IslandEdge.TOP to rawY,
-            IslandEdge.BOTTOM to (screenHeight - rawY),
             IslandEdge.LEFT to rawX,
             IslandEdge.RIGHT to (screenWidth - rawX)
         )
         collapsedEdge = edgeDistances.minByOrNull { it.value }?.key ?: collapsedEdge
 
         when (collapsedEdge) {
-            IslandEdge.TOP, IslandEdge.BOTTOM -> {
+            IslandEdge.TOP -> {
                 collapsedX = (rawX - dp(110)).toInt()
                     .coerceIn(0, (screenWidth - dp(220)).coerceAtLeast(0))
             }
@@ -876,7 +868,7 @@ class FloatingIslandService : Service() {
         }
     }
 
-    private enum class IslandEdge { TOP, RIGHT, BOTTOM, LEFT }
+    private enum class IslandEdge { TOP, RIGHT, LEFT }
 
     companion object {
         const val ACTION_APP_FOREGROUND = "com.wavelength.music.APP_FOREGROUND"
