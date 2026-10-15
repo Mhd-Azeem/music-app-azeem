@@ -50,7 +50,16 @@ class DragDropListState internal constructor(
 
     val draggingItemOffset: Float
         get() = draggingItemLayoutInfo?.let { item ->
-            draggingItemInitialOffset + draggingItemDraggedDelta - item.offset
+            val rawOffset = draggingItemInitialOffset + draggingItemDraggedDelta - item.offset
+            val layout = listState.layoutInfo
+
+            // Keep the dragged row physically inside the visible Up Next viewport. Without this,
+            // the first queue item can be pulled above the top while the list itself cannot scroll
+            // any farther, making the handle feel loose/uncontrolled and allowing the row to escape
+            // the user's finger. The same protection applies at the bottom edge.
+            val minOffset = (layout.viewportStartOffset - item.offset).toFloat()
+            val maxOffset = (layout.viewportEndOffset - item.size - item.offset).toFloat()
+            rawOffset.coerceIn(minOffset, maxOffset.coerceAtLeast(minOffset))
         } ?: 0f
 
     private val draggingItemLayoutInfo
@@ -108,9 +117,9 @@ class DragDropListState internal constructor(
             // the same coordinate space as the LazyColumn viewport.
             val edgeZone = 72f
             val overscroll = when {
-                endOffset > bottomEdge - edgeZone ->
+                endOffset > bottomEdge - edgeZone && listState.canScrollForward ->
                     ((endOffset - (bottomEdge - edgeZone)) / edgeZone).coerceIn(0f, 1f) * 28f
-                startOffset < topEdge + edgeZone ->
+                startOffset < topEdge + edgeZone && listState.canScrollBackward ->
                     -(((topEdge + edgeZone) - startOffset) / edgeZone).coerceIn(0f, 1f) * 28f
                 else -> 0f
             }
