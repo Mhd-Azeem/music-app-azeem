@@ -47,6 +47,8 @@ class DragDropListState internal constructor(
 
     private var draggingItemDraggedDelta by mutableFloatStateOf(0f)
     private var draggingItemInitialOffset by mutableIntStateOf(0)
+    private var dragStartIndex: Int? = null
+    private var dragTargetIndex: Int? = null
 
     val draggingItemOffset: Float
         get() = draggingItemLayoutInfo?.let { item ->
@@ -72,10 +74,15 @@ class DragDropListState internal constructor(
     internal fun onDragStart(index: Int) {
         val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index } ?: return
         draggingItemIndex = index
+        dragStartIndex = index
+        dragTargetIndex = index
         draggingItemInitialOffset = item.offset
+        draggingItemDraggedDelta = 0f
     }
 
     internal fun onDragInterrupted() {
+        val startIndex = dragStartIndex
+        val targetIndex = dragTargetIndex
         if (draggingItemIndex != null) {
             previousIndexOfDraggedItem = draggingItemIndex
             val startOffset = draggingItemOffset
@@ -88,9 +95,19 @@ class DragDropListState internal constructor(
                 previousIndexOfDraggedItem = null
             }
         }
+
+        // Commit exactly one queue move when the finger is released. Mutating the backing queue
+        // on every crossed row caused recomposition to reshuffle item indices underneath the
+        // pointer, which is what made the first Up Next rows jump and overlap uncontrollably.
+        if (startIndex != null && targetIndex != null && startIndex != targetIndex) {
+            onMove(startIndex, targetIndex)
+        }
+
         draggingItemDraggedDelta = 0f
         draggingItemIndex = null
         draggingItemInitialOffset = 0
+        dragStartIndex = null
+        dragTargetIndex = null
     }
 
     internal fun onDrag(offset: Offset) {
@@ -106,8 +123,9 @@ class DragDropListState internal constructor(
         }
 
         if (targetItem != null) {
-            onMove(draggingItem.index, targetItem.index)
-            draggingItemIndex = targetItem.index
+            // Keep the list itself stable during the gesture. Only remember where the user is
+            // aiming; the queue is reordered once on release.
+            dragTargetIndex = targetItem.index
         } else {
             val layout = listState.layoutInfo
             val topEdge = layout.viewportStartOffset.toFloat()
