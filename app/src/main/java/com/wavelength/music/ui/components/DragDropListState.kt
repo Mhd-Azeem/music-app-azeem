@@ -21,7 +21,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -43,7 +44,8 @@ class DragDropListState internal constructor(
     var draggingItemIndex by mutableStateOf<Int?>(null)
         private set
 
-    internal val scrollChannel = Channel<Float>()
+    private var edgeScrollJob: Job? = null
+    private var edgeScrollSpeed = 0f
 
     private var draggingItemDraggedDelta by mutableFloatStateOf(0f)
     private var draggingItemInitialOffset by mutableIntStateOf(0)
@@ -103,6 +105,7 @@ class DragDropListState internal constructor(
             onMove(startIndex, targetIndex)
         }
 
+        stopEdgeAutoScroll()
         draggingItemDraggedDelta = 0f
         draggingItemIndex = null
         draggingItemInitialOffset = 0
@@ -136,13 +139,46 @@ class DragDropListState internal constructor(
             val edgeZone = 72f
             val overscroll = when {
                 endOffset > bottomEdge - edgeZone && listState.canScrollForward ->
-                    ((endOffset - (bottomEdge - edgeZone)) / edgeZone).coerceIn(0f, 1f) * 28f
+                    ((endOffset - (bottomEdge - edgeZone)) / edgeZone).coerceIn(0f, 1f) * 32f
                 startOffset < topEdge + edgeZone && listState.canScrollBackward ->
-                    -(((topEdge + edgeZone) - startOffset) / edgeZone).coerceIn(0f, 1f) * 28f
+                    -(((topEdge + edgeZone) - startOffset) / edgeZone).coerceIn(0f, 1f) * 32f
                 else -> 0f
             }
-            if (overscroll != 0f) scrollChannel.trySend(overscroll)
+            updateEdgeAutoScroll(overscroll)
         }
+    }
+
+    private fun updateEdgeAutoScroll(speed: Float) {
+        edgeScrollSpeed = speed
+        if (speed == 0f) {
+            stopEdgeAutoScroll()
+            return
+        }
+        if (edgeScrollJob?.isActive == true) return
+
+        edgeScrollJob = scope.launch {
+            while (true) {
+                val currentSpeed = edgeScrollSpeed
+                if (currentSpeed == 0f || draggingItemIndex == null) break
+
+                val canScroll = if (currentSpeed > 0f) {
+                    listState.canScrollForward
+                } else {
+                    listState.canScrollBackward
+                }
+                if (!canScroll) break
+
+                listState.scrollBy(currentSpeed)
+                delay(16L)
+            }
+            edgeScrollJob = null
+        }
+    }
+
+    private fun stopEdgeAutoScroll() {
+        edgeScrollSpeed = 0f
+        edgeScrollJob?.cancel()
+        edgeScrollJob = null
     }
 }
 
@@ -158,12 +194,6 @@ fun rememberDragDropListState(
     val latestOnMove = rememberUpdatedState(onMove)
     val state = remember(listState) {
         DragDropListState(listState, scope) { from, to -> latestOnMove.value(from, to) }
-    }
-    LaunchedEffect(state) {
-        while (true) {
-            val diff = state.scrollChannel.receive()
-            listState.scrollBy(diff)
-        }
     }
     return state
 }
