@@ -129,23 +129,30 @@ class DragDropListState internal constructor(
             // Keep the list itself stable during the gesture. Only remember where the user is
             // aiming; the queue is reordered once on release.
             dragTargetIndex = targetItem.index
-        } else {
-            val layout = listState.layoutInfo
-            val topEdge = layout.viewportStartOffset.toFloat()
-            val bottomEdge = layout.viewportEndOffset.toFloat()
-            // Auto-scroll based on the dragged row's actual position at the viewport edge.
-            // Using total drag delta here stopped scrolling after swaps because that delta is not
-            // the same coordinate space as the LazyColumn viewport.
-            val edgeZone = 72f
-            val overscroll = when {
-                endOffset > bottomEdge - edgeZone && listState.canScrollForward ->
-                    ((endOffset - (bottomEdge - edgeZone)) / edgeZone).coerceIn(0f, 1f) * 32f
-                startOffset < topEdge + edgeZone && listState.canScrollBackward ->
-                    -(((topEdge + edgeZone) - startOffset) / edgeZone).coerceIn(0f, 1f) * 32f
-                else -> 0f
-            }
-            updateEdgeAutoScroll(overscroll)
         }
+
+        // Edge scrolling must be evaluated on EVERY drag event, even while the dragged row is
+        // still overlapping another visible item. Previously this lived in the targetItem == null
+        // branch, so reaching the top/bottom almost always found a row underneath the finger and
+        // therefore never started auto-scroll.
+        val layout = listState.layoutInfo
+        val topEdge = layout.viewportStartOffset.toFloat()
+        val bottomEdge = layout.viewportEndOffset.toFloat()
+        val viewportHeight = (bottomEdge - topEdge).coerceAtLeast(1f)
+        val edgeZone = (viewportHeight * 0.22f).coerceIn(72f, 180f)
+
+        val overscroll = when {
+            endOffset >= bottomEdge - edgeZone && listState.canScrollForward -> {
+                val penetration = (endOffset - (bottomEdge - edgeZone)) / edgeZone
+                penetration.coerceIn(0f, 1f) * 38f
+            }
+            startOffset <= topEdge + edgeZone && listState.canScrollBackward -> {
+                val penetration = ((topEdge + edgeZone) - startOffset) / edgeZone
+                -penetration.coerceIn(0f, 1f) * 38f
+            }
+            else -> 0f
+        }
+        updateEdgeAutoScroll(overscroll)
     }
 
     private fun updateEdgeAutoScroll(speed: Float) {
@@ -168,7 +175,21 @@ class DragDropListState internal constructor(
                 }
                 if (!canScroll) break
 
-                listState.scrollBy(currentSpeed)
+                val consumed = listState.scrollBy(currentSpeed)
+
+                // As the list moves underneath a stationary finger, advance the intended drop
+                // destination as well. This makes holding at an edge useful: the queue keeps
+                // travelling and the eventual drop position follows the rows revealed by scrolling.
+                val visible = listState.layoutInfo.visibleItemsInfo
+                if (visible.isNotEmpty()) {
+                    dragTargetIndex = if (currentSpeed > 0f) {
+                        visible.last().index
+                    } else {
+                        visible.first().index
+                    }
+                }
+
+                if (consumed == 0f) break
                 delay(16L)
             }
             edgeScrollJob = null
