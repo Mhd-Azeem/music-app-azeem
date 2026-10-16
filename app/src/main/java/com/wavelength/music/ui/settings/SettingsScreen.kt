@@ -452,13 +452,16 @@ fun SettingsScreen(
                                     .clip(RoundedCornerShape(8.dp))
                             )
                         } else {
-                            Image(
-                                painter = painterResource(R.drawable.bg_default),
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
+                            Box(
                                 modifier = Modifier
                                     .size(64.dp)
                                     .clip(RoundedCornerShape(8.dp))
+                                    .background(wallpaperBrush(BuiltInWallpaper.DEFAULT))
+                                    .border(
+                                        1.dp,
+                                        Color(0xFF22D3EE).copy(alpha = 0.5f),
+                                        RoundedCornerShape(8.dp)
+                                    )
                             )
                         }
                         Column(modifier = Modifier.weight(1f)) {
@@ -517,13 +520,7 @@ fun SettingsScreen(
                                     modifier = Modifier
                                         .size(width = 92.dp, height = 132.dp)
                                         .clip(RoundedCornerShape(12.dp))
-                                        .then(
-                                            if (wallpaper == BuiltInWallpaper.DEFAULT) {
-                                                Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
-                                            } else {
-                                                Modifier.background(wallpaperBrush(wallpaper))
-                                            }
-                                        )
+                                        .background(wallpaperBrush(wallpaper))
                                         .border(
                                             width = if (!settings.hasCustomBackground && settings.builtInWallpaper == wallpaper) 2.dp else 1.dp,
                                             color = if (!settings.hasCustomBackground && settings.builtInWallpaper == wallpaper) {
@@ -535,14 +532,6 @@ fun SettingsScreen(
                                         ),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    if (wallpaper == BuiltInWallpaper.DEFAULT) {
-                                        Image(
-                                            painter = painterResource(R.drawable.bg_default),
-                                            contentDescription = null,
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    }
                                     if (!settings.hasCustomBackground && settings.builtInWallpaper == wallpaper) {
                                         Icon(
                                             Icons.Filled.Check,
