@@ -21,7 +21,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 enum class BuiltInWallpaper(val label: String) {
-    DEFAULT("AZ Music"),
+    DEFAULT("Neon Tech"),
     AURORA("Aurora"),
     NEON("Neon Glow"),
     SUNSET_GLOW("Sunset Glow"),
