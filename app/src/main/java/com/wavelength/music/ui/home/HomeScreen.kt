@@ -962,7 +962,7 @@ private val artistGroups = linkedMapOf(
     "🎵 Tamil" to listOf(
         "Anirudh Ravichander", "A. R. Rahman", "Yuvan Shankar Raja", "Sai Abhyankkar",
         "Hiphop Tamizha", "G. V. Prakash Kumar", "Harris Jayaraj", "Santhosh Narayanan",
-        "Ilaiyaraaja", "Dhanush", "Sid Sriram", "Pradeep Kumar"
+        "Ilaiyaraaja", "Dhanush", "Sid Sriram", "Pradeep Kumar", "Thaman S"
     ),
     "🌎 English" to listOf(
         "The Weeknd", "Taylor Swift", "Bruno Mars", "Ed Sheeran", "Billie Eilish",
