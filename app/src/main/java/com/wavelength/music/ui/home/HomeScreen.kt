@@ -962,7 +962,7 @@ private val artistGroups = linkedMapOf(
     "🎵 Tamil" to listOf(
         "Anirudh Ravichander", "A. R. Rahman", "Yuvan Shankar Raja", "Sai Abhyankkar",
         "Hiphop Tamizha", "G. V. Prakash Kumar", "Harris Jayaraj", "Santhosh Narayanan",
-        "Ilaiyaraaja", "Dhanush", "Sid Sriram", "Pradeep Kumar", "Thaman S"
+        "Ilaiyaraaja", "Dhanush", "Sid Sriram", "Pradeep Kumar", "Thaman S", "Vijay Antony"
     ),
     "🌎 English" to listOf(
         "The Weeknd", "Taylor Swift", "Bruno Mars", "Ed Sheeran", "Billie Eilish",
@@ -1056,6 +1056,8 @@ private val artistPortraits = mapOf(
     "Ilaiyaraaja" to "https://upload.wikimedia.org/wikipedia/commons/2/26/Ilaiyaraaja_at_Merku_Thodarchi_Malai_Press_Meet.jpg",
     "Dhanush" to "https://upload.wikimedia.org/wikipedia/commons/8/86/Dhanush_at_the_%E2%80%98Asuran%E2%80%99_Success_Meet.jpg",
     "Sid Sriram" to "https://upload.wikimedia.org/wikipedia/commons/c/c3/Sid_Sriram.jpg",
+    "Thaman S" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/S._Thaman_at_Damaal_Dumeel_Audio_Launch.jpg",
+    "Vijay Antony" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/Vijay_Antony_and_Arjun_at_the_%E2%80%98Kolaigaran%E2%80%99_Press_Meet_%28cropped%29.jpg",
 
     // English
     "The Weeknd" to "https://commons.wikimedia.org/wiki/Special:Redirect/file/The%20Weeknd%20Jimmy%20Fallon%202025%20(cropped).png",
