@@ -10,8 +10,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -68,7 +66,7 @@ fun AdminActivationScreen(
     val requests by viewModel.requests.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
-    var gmailListExpanded by remember { mutableStateOf(true) }
+    var expandedRequestKey by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -114,68 +112,26 @@ fun AdminActivationScreen(
                 }
                 if (isLoading) item { CircularProgressIndicator() }
 
-                item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Gmail list",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = "${requests.size} activation request${if (requests.size == 1) "" else "s"}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            IconButton(onClick = { gmailListExpanded = !gmailListExpanded }) {
-                                Icon(
-                                    imageVector = if (gmailListExpanded) {
-                                        Icons.Filled.ExpandLess
-                                    } else {
-                                        Icons.Filled.ExpandMore
-                                    },
-                                    contentDescription = if (gmailListExpanded) {
-                                        "Collapse Gmail list"
-                                    } else {
-                                        "Expand Gmail list"
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-
                 if (!isLoading && requests.isEmpty()) {
                     item { Text("No activation requests yet.") }
                 }
 
                 items(requests, key = { it.id ?: it.email }) { record ->
-                    if (gmailListExpanded) {
-                        AdminRequestCard(
-                            record = record,
-                            enabled = !isLoading,
-                            onApprove = { days -> record.id?.let { viewModel.approve(it, days) } },
-                            onReject = { record.id?.let(viewModel::reject) },
-                            onRevoke = { record.id?.let(viewModel::revoke) },
-                            onResetDevice = { record.id?.let(viewModel::resetDevice) },
-                            onDelete = { record.id?.let(viewModel::deleteRevoked) }
-                        )
-                    } else {
-                        Card(modifier = Modifier.fillMaxWidth()) {
-                            Text(
-                                text = record.email,
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
-                            )
-                        }
-                    }
+                    val requestKey = record.id?.toString() ?: record.email
+                    val expanded = expandedRequestKey == requestKey
+                    AdminRequestAccordionCard(
+                        record = record,
+                        expanded = expanded,
+                        enabled = !isLoading,
+                        onToggleExpanded = {
+                            expandedRequestKey = if (expanded) null else requestKey
+                        },
+                        onApprove = { days -> record.id?.let { viewModel.approve(it, days) } },
+                        onReject = { record.id?.let(viewModel::reject) },
+                        onRevoke = { record.id?.let(viewModel::revoke) },
+                        onResetDevice = { record.id?.let(viewModel::resetDevice) },
+                        onDelete = { record.id?.let(viewModel::deleteRevoked) }
+                    )
                 }
             }
         }
@@ -231,9 +187,11 @@ private fun AdminLoginForm(
 }
 
 @Composable
-private fun AdminRequestCard(
+private fun AdminRequestAccordionCard(
     record: ActivationRecord,
+    expanded: Boolean,
     enabled: Boolean,
+    onToggleExpanded: () -> Unit,
     onApprove: (Int?) -> Unit,
     onReject: () -> Unit,
     onRevoke: () -> Unit,
@@ -257,61 +215,68 @@ private fun AdminRequestCard(
             onDismiss = { confirmationAction = null }
         )
     }
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggleExpanded)
+    ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(record.email, style = MaterialTheme.typography.titleMedium)
-            Text("Status: ${record.status.name.replace('_', ' ')}")
-            Text(if (record.deviceBound) "Device: Linked" else "Device: Not linked")
-            record.requestedAt?.let {
-                Text("Requested: ${DateFormat.getDateTimeInstance().format(Date(it))}")
-            }
-            record.expirationDate?.let {
-                Text("Expires: ${DateFormat.getDateTimeInstance().format(Date(it))}")
-            }
 
-            if (record.status == ActivationStatus.PENDING || record.status == ActivationStatus.REJECTED || record.status == ActivationStatus.EXPIRED) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(30, 60, 90).forEach { days ->
-                        OutlinedButton(
-                            onClick = { duration = days },
-                            enabled = enabled
-                        ) {
-                            Text(if (duration == days) "✓ $days days" else "$days days")
+            if (expanded) {
+                Text("Status: ${record.status.name.replace('_', ' ')}")
+                Text(if (record.deviceBound) "Device: Linked" else "Device: Not linked")
+                record.requestedAt?.let {
+                    Text("Requested: ${DateFormat.getDateTimeInstance().format(Date(it))}")
+                }
+                record.expirationDate?.let {
+                    Text("Expires: ${DateFormat.getDateTimeInstance().format(Date(it))}")
+                }
+
+                if (record.status == ActivationStatus.PENDING || record.status == ActivationStatus.REJECTED || record.status == ActivationStatus.EXPIRED) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(30, 60, 90).forEach { days ->
+                            OutlinedButton(
+                                onClick = { duration = days },
+                                enabled = enabled
+                            ) {
+                                Text(if (duration == days) "✓ $days days" else "$days days")
+                            }
                         }
                     }
+                    OutlinedButton(
+                        onClick = { duration = 0 },
+                        enabled = enabled
+                    ) {
+                        Text(if (duration == 0) "✓ Lifetime" else "Lifetime")
+                    }
+                    Button(onClick = { onApprove(duration.takeIf { it != 0 }) }, enabled = enabled) {
+                        Text(if (duration == 0) "Approve Lifetime" else "Approve")
+                    }
+                    OutlinedButton(onClick = onReject, enabled = enabled) {
+                        Text("Reject")
+                    }
                 }
-                OutlinedButton(
-                    onClick = { duration = 0 },
-                    enabled = enabled
-                ) {
-                    Text(if (duration == 0) "✓ Lifetime" else "Lifetime")
-                }
-                Button(onClick = { onApprove(duration.takeIf { it != 0 }) }, enabled = enabled) {
-                    Text(if (duration == 0) "Approve Lifetime" else "Approve")
-                }
-                OutlinedButton(onClick = onReject, enabled = enabled) {
-                    Text("Reject")
-                }
-            }
 
-            if (record.deviceBound) {
-                OutlinedButton(onClick = { confirmationAction = AdminConfirmationAction.RESET_DEVICE }, enabled = enabled) {
-                    Text("Reset Device")
+                if (record.deviceBound) {
+                    OutlinedButton(onClick = { confirmationAction = AdminConfirmationAction.RESET_DEVICE }, enabled = enabled) {
+                        Text("Reset Device")
+                    }
                 }
-            }
 
-            if (record.status == ActivationStatus.ACTIVE) {
-                OutlinedButton(onClick = { confirmationAction = AdminConfirmationAction.DEACTIVATE }, enabled = enabled) {
-                    Text("Deactivate")
+                if (record.status == ActivationStatus.ACTIVE) {
+                    OutlinedButton(onClick = { confirmationAction = AdminConfirmationAction.DEACTIVATE }, enabled = enabled) {
+                        Text("Deactivate")
+                    }
                 }
-            }
 
-            if (record.status == ActivationStatus.REVOKED) {
-                Button(onClick = { confirmationAction = AdminConfirmationAction.DELETE_HISTORY }, enabled = enabled) {
-                    Text("Delete from history")
+                if (record.status == ActivationStatus.REVOKED) {
+                    Button(onClick = { confirmationAction = AdminConfirmationAction.DELETE_HISTORY }, enabled = enabled) {
+                        Text("Delete from history")
+                    }
                 }
             }
         }
