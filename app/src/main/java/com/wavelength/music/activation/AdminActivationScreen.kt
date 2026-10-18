@@ -10,6 +10,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -66,6 +68,7 @@ fun AdminActivationScreen(
     val requests by viewModel.requests.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
+    var gmailListExpanded by remember { mutableStateOf(true) }
 
     Scaffold(
         topBar = {
@@ -110,19 +113,60 @@ fun AdminActivationScreen(
                     }
                 }
                 if (isLoading) item { CircularProgressIndicator() }
-                if (!isLoading && requests.isEmpty()) {
-                    item { Text("No activation requests yet.") }
+
+                item {
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Gmail list",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = "${requests.size} activation request${if (requests.size == 1) "" else "s"}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            IconButton(onClick = { gmailListExpanded = !gmailListExpanded }) {
+                                Icon(
+                                    imageVector = if (gmailListExpanded) {
+                                        Icons.Filled.ExpandLess
+                                    } else {
+                                        Icons.Filled.ExpandMore
+                                    },
+                                    contentDescription = if (gmailListExpanded) {
+                                        "Collapse Gmail list"
+                                    } else {
+                                        "Expand Gmail list"
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
-                items(requests, key = { it.id ?: it.email }) { record ->
-                    AdminRequestCard(
-                        record = record,
-                        enabled = !isLoading,
-                        onApprove = { days -> record.id?.let { viewModel.approve(it, days) } },
-                        onReject = { record.id?.let(viewModel::reject) },
-                        onRevoke = { record.id?.let(viewModel::revoke) },
-                        onResetDevice = { record.id?.let(viewModel::resetDevice) },
-                        onDelete = { record.id?.let(viewModel::deleteRevoked) }
-                    )
+
+                if (gmailListExpanded) {
+                    if (!isLoading && requests.isEmpty()) {
+                        item { Text("No activation requests yet.") }
+                    }
+                    items(requests, key = { it.id ?: it.email }) { record ->
+                        AdminRequestCard(
+                            record = record,
+                            enabled = !isLoading,
+                            onApprove = { days -> record.id?.let { viewModel.approve(it, days) } },
+                            onReject = { record.id?.let(viewModel::reject) },
+                            onRevoke = { record.id?.let(viewModel::revoke) },
+                            onResetDevice = { record.id?.let(viewModel::resetDevice) },
+                            onDelete = { record.id?.let(viewModel::deleteRevoked) }
+                        )
+                    }
                 }
             }
         }
