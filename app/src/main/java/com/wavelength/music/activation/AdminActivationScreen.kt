@@ -152,11 +152,12 @@ fun AdminActivationScreen(
                     }
                 }
 
-                if (gmailListExpanded) {
-                    if (!isLoading && requests.isEmpty()) {
-                        item { Text("No activation requests yet.") }
-                    }
-                    items(requests, key = { it.id ?: it.email }) { record ->
+                if (!isLoading && requests.isEmpty()) {
+                    item { Text("No activation requests yet.") }
+                }
+
+                items(requests, key = { it.id ?: it.email }) { record ->
+                    if (gmailListExpanded) {
                         AdminRequestCard(
                             record = record,
                             enabled = !isLoading,
@@ -166,6 +167,14 @@ fun AdminActivationScreen(
                             onResetDevice = { record.id?.let(viewModel::resetDevice) },
                             onDelete = { record.id?.let(viewModel::deleteRevoked) }
                         )
+                    } else {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = record.email,
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
+                            )
+                        }
                     }
                 }
             }
