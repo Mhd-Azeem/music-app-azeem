@@ -39,7 +39,8 @@ import kotlinx.coroutines.launch
 class DragDropListState internal constructor(
     private val listState: LazyListState,
     private val scope: CoroutineScope,
-    private val onMove: (from: Int, to: Int) -> Unit
+    private val onPreviewMove: (from: Int, to: Int) -> Unit,
+    private val onDrop: (from: Int, to: Int) -> Unit
 ) {
     var draggingItemIndex by mutableStateOf<Int?>(null)
         private set
@@ -98,11 +99,10 @@ class DragDropListState internal constructor(
             }
         }
 
-        // Commit exactly one queue move when the finger is released. Mutating the backing queue
-        // on every crossed row caused recomposition to reshuffle item indices underneath the
-        // pointer, which is what made the first Up Next rows jump and overlap uncontrollably.
+        // The visible list is reordered locally while dragging (YouTube-style), but the real
+        // Media3 queue is committed exactly once on release.
         if (startIndex != null && targetIndex != null && startIndex != targetIndex) {
-            onMove(startIndex, targetIndex)
+            onDrop(startIndex, targetIndex)
         }
 
         stopEdgeAutoScroll()
@@ -125,10 +125,14 @@ class DragDropListState internal constructor(
             middleOffset.toInt() in item.offset..(item.offset + item.size) && draggingItem.index != item.index
         }
 
-        if (targetItem != null) {
-            // Keep the list itself stable during the gesture. Only remember where the user is
-            // aiming; the queue is reordered once on release.
-            dragTargetIndex = targetItem.index
+        if (targetItem != null && targetItem.index != draggingItem.index) {
+            val from = draggingItem.index
+            val to = targetItem.index
+            onPreviewMove(from, to)
+            draggingItemIndex = to
+            dragTargetIndex = to
+            draggingItemInitialOffset = targetItem.offset
+            draggingItemDraggedDelta = startOffset - targetItem.offset
         }
 
         // Edge scrolling must be evaluated on EVERY drag event, even while the dragged row is
@@ -177,15 +181,21 @@ class DragDropListState internal constructor(
 
                 val consumed = listState.scrollBy(currentSpeed)
 
-                // As the list moves underneath a stationary finger, advance the intended drop
-                // destination as well. This makes holding at an edge useful: the queue keeps
-                // travelling and the eventual drop position follows the rows revealed by scrolling.
+                // As the list moves underneath a stationary finger, keep moving the local
+                // placeholder through newly revealed rows. This matches YouTube's queue: the
+                // dragged card stays under the finger while neighbouring rows slide out of the way.
+                val draggingIndex = draggingItemIndex
                 val visible = listState.layoutInfo.visibleItemsInfo
-                if (visible.isNotEmpty()) {
-                    dragTargetIndex = if (currentSpeed > 0f) {
-                        visible.last().index
+                if (draggingIndex != null && visible.isNotEmpty()) {
+                    val nextIndex = if (currentSpeed > 0f) {
+                        visible.last().index.coerceAtMost(listState.layoutInfo.totalItemsCount - 1)
                     } else {
-                        visible.first().index
+                        visible.first().index.coerceAtLeast(0)
+                    }
+                    if (nextIndex != draggingIndex) {
+                        onPreviewMove(draggingIndex, nextIndex)
+                        draggingItemIndex = nextIndex
+                        dragTargetIndex = nextIndex
                     }
                 }
 
@@ -206,17 +216,20 @@ class DragDropListState internal constructor(
 @Composable
 fun rememberDragDropListState(
     listState: LazyListState,
-    onMove: (from: Int, to: Int) -> Unit
+    onPreviewMove: (from: Int, to: Int) -> Unit,
+    onDrop: (from: Int, to: Int) -> Unit
 ): DragDropListState {
     val scope = rememberCoroutineScope()
-    // The caller's index translation can change while this composable stays alive (most notably
-    // when the currently-playing queue index advances). Keeping the first lambda forever makes
-    // drag reorder operate on stale absolute indices and move completely different songs.
-    val latestOnMove = rememberUpdatedState(onMove)
-    val state = remember(listState) {
-        DragDropListState(listState, scope) { from, to -> latestOnMove.value(from, to) }
+    val latestPreviewMove = rememberUpdatedState(onPreviewMove)
+    val latestDrop = rememberUpdatedState(onDrop)
+    return remember(listState) {
+        DragDropListState(
+            listState = listState,
+            scope = scope,
+            onPreviewMove = { from, to -> latestPreviewMove.value(from, to) },
+            onDrop = { from, to -> latestDrop.value(from, to) }
+        )
     }
-    return state
 }
 
 /** Apply to a dedicated drag-handle icon inside each reorderable row, keyed by that row's index in
