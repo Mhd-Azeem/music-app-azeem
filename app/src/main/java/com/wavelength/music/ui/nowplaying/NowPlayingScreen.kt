@@ -1607,14 +1607,27 @@ fun NowPlayingScreen(
                 } else {
                     Modifier.weight(1f)
                 }
-                val dragDropState = rememberDragDropListState(upNextListState) { from, to ->
-                    viewModel.moveQueueItem(state.currentIndex + 1 + from, state.currentIndex + 1 + to)
-                }
+                val upcomingIds = upcoming.map { it.instanceId }
+                var previewUpcoming by remember(upcomingIds) { mutableStateOf(upcoming) }
+                val queueBaseIndex = state.currentIndex + 1
+                val dragDropState = rememberDragDropListState(
+                    listState = upNextListState,
+                    onPreviewMove = { from, to ->
+                        if (from in previewUpcoming.indices && to in previewUpcoming.indices && from != to) {
+                            previewUpcoming = previewUpcoming.toMutableList().apply {
+                                add(to, removeAt(from))
+                            }
+                        }
+                    },
+                    onDrop = { from, to ->
+                        viewModel.moveQueueItem(queueBaseIndex + from, queueBaseIndex + to)
+                    }
+                )
                 LazyColumn(
                     modifier = upNextModifier,
                     state = upNextListState
                 ) {
-                    itemsIndexed(upcoming, key = { _, entry -> entry.instanceId }) { offset, entry ->
+                    itemsIndexed(previewUpcoming, key = { _, entry -> entry.instanceId }) { offset, entry ->
                         val queueIndex = state.currentIndex + 1 + offset
                         val isDragging = dragDropState.draggingItemIndex == offset
                         Row(
