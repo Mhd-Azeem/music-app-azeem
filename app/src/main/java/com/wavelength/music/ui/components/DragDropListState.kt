@@ -128,11 +128,15 @@ class DragDropListState internal constructor(
         if (targetItem != null && targetItem.index != draggingItem.index) {
             val from = draggingItem.index
             val to = targetItem.index
+
+            // Reorder only the local preview. Keep the original drag anchor + accumulated finger
+            // delta unchanged. Because draggingItemOffset is calculated as
+            // (initialOffset + draggedDelta - currentRowOffset), the card remains at the exact same
+            // screen Y while neighbouring rows animate/recompose around it. Resetting the anchor
+            // here was what caused the visible jump shown in the user's recording.
             onPreviewMove(from, to)
             draggingItemIndex = to
             dragTargetIndex = to
-            draggingItemInitialOffset = targetItem.offset
-            draggingItemDraggedDelta = startOffset - targetItem.offset
         }
 
         // Edge scrolling must be evaluated on EVERY drag event, even while the dragged row is
