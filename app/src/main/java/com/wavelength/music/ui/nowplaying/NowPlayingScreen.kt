@@ -501,55 +501,15 @@ fun NowPlayingScreen(
             upNextListState.firstVisibleItemIndex > 0 || upNextListState.firstVisibleItemScrollOffset > 0
         }
     }
-    // Once the queue is short enough to fully fit at its expanded height, growing it snaps the
-    // scroll offset straight back to 0 on its own (LazyColumn's remeasure, not a real scroll) —
-    // which would immediately flip upNextScrolled back to false and shrink it again, causing an
-    // expand/collapse flicker. Latching it keeps the queue expanded once triggered. To still let
-    // the user collapse it by hand, a NestedScrollConnection watches for the list settling at the
-    // top as a result of an *actual* scroll delta passing through it — nested scroll callbacks
-    // never fire for the layout-driven remeasure reset, only for real drag/fling consumption.
-    // But that alone isn't enough: once the queue is pinned at the top with nothing left to
-    // scroll, every further delta shows up here too, including a drag continuing in the same
-    // "reveal more of the queue" direction that caused the expansion in the first place — so the
-    // delta's direction is checked too, and only a delta trying to move back *toward* the top
-    // counts as the user asking to collapse it.
-    //
-    // Collapsing is two-stage rather than firing the instant the list reaches the top: the first
-    // scroll-to-top just lands the list at its top (so you can see the start of the queue) without
-    // shrinking the panel out from under you mid-gesture. Only a *second*, separate pull — one
-    // that starts already pinned at the top — actually collapses it. upNextTopArmed tracks whether
-    // the list was already sitting at the top when the CURRENT scroll/fling gesture began; it's
-    // (re)computed only once a gesture fully settles, so reaching the top partway through one
-    // continuous drag never arms it for that same drag.
+    // Expansion is one-way from the compact queue into an overlay. The old two-pull
+    // nested-scroll collapse behavior has been removed: the compact Up Next stays fixed in place,
+    // and the overlay is dismissed only by its close affordances (backdrop, X, or pull-down handle).
     var upNextExpandedLatch by remember { mutableStateOf(false) }
-    var upNextTopArmed by remember { mutableStateOf(false) }
-    LaunchedEffect(upNextListState.isScrollInProgress) {
-        if (!upNextListState.isScrollInProgress) {
-            upNextTopArmed = upNextListState.firstVisibleItemIndex == 0 &&
-                upNextListState.firstVisibleItemScrollOffset == 0
-        }
-    }
-    val upNextNestedScrollConnection = remember(upNextListState) {
-        object : NestedScrollConnection {
-            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                val towardTop = consumed.y + available.y > 0f
-                if (towardTop &&
-                    upNextTopArmed &&
-                    upNextListState.firstVisibleItemIndex == 0 &&
-                    upNextListState.firstVisibleItemScrollOffset == 0
-                ) {
-                    upNextExpandedLatch = false
-                }
-                return Offset.Zero
-            }
-        }
-    }
     LaunchedEffect(upNextScrolled) {
         if (upNextScrolled) upNextExpandedLatch = true
     }
     LaunchedEffect(track?.id) {
         upNextExpandedLatch = false
-        upNextTopArmed = false
     }
     // Album art hides to free up room for the queue to actually grow into — without this, "half
     // the screen" has nowhere to expand into since art + controls already fill most of the
@@ -641,7 +601,6 @@ fun NowPlayingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .blur(if (isUpNextExpanded) 14.dp else 0.dp)
                 .clip(
                     if (glassmorphismNowPlaying) RoundedCornerShape(34.dp)
                     else RoundedCornerShape(0.dp)
@@ -1604,7 +1563,7 @@ fun NowPlayingScreen(
                     label = "upNextHeight"
                 )
                 val upNextModifier = if (expandUpNextOnScroll) {
-                    Modifier.height(upNextHeight).nestedScroll(upNextNestedScrollConnection)
+                    Modifier.height(upNextHeight)
                 } else {
                     Modifier.weight(1f)
                 }
@@ -1668,6 +1627,9 @@ fun NowPlayingScreen(
             val overlayIds = upcoming.map { it.instanceId }
             var overlayPreview by remember(overlayIds) { mutableStateOf(upcoming) }
             val overlayBaseIndex = state.currentIndex + 1
+            var overlayPullDown by remember { mutableFloatStateOf(0f) }
+            val overlayCloseThresholdPx = with(density) { 72.dp.toPx() }
+
             val overlayDragState = rememberDragDropListState(
                 listState = overlayListState,
                 onPreviewMove = { from, to ->
@@ -1685,6 +1647,7 @@ fun NowPlayingScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .blur(10.dp)
                     .background(Color.Black.copy(alpha = 0.46f))
                     .clickable { upNextExpandedLatch = false }
                     .zIndex(20f)
@@ -1694,6 +1657,7 @@ fun NowPlayingScreen(
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .fillMaxHeight(0.72f)
+                        .graphicsLayer { translationY = overlayPullDown }
                         .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
                         .border(
@@ -1707,10 +1671,32 @@ fun NowPlayingScreen(
                     Box(
                         modifier = Modifier
                             .align(Alignment.CenterHorizontally)
-                            .size(width = 42.dp, height = 4.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.30f))
-                    )
+                            .padding(top = 4.dp, bottom = 6.dp)
+                            .size(width = 72.dp, height = 24.dp)
+                            .pointerInput(Unit) {
+                                detectVerticalDragGestures(
+                                    onVerticalDrag = { change, dragAmount ->
+                                        change.consume()
+                                        overlayPullDown = (overlayPullDown + dragAmount).coerceAtLeast(0f)
+                                    },
+                                    onDragEnd = {
+                                        if (overlayPullDown >= overlayCloseThresholdPx) {
+                                            upNextExpandedLatch = false
+                                        }
+                                        overlayPullDown = 0f
+                                    },
+                                    onDragCancel = { overlayPullDown = 0f }
+                                )
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(width = 42.dp, height = 4.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.30f))
+                        )
+                    }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
