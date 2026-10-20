@@ -601,6 +601,7 @@ fun NowPlayingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .blur(if (isUpNextExpanded) 12.dp else 0.dp)
                 .clip(
                     if (glassmorphismNowPlaying) RoundedCornerShape(34.dp)
                     else RoundedCornerShape(0.dp)
@@ -1647,7 +1648,6 @@ fun NowPlayingScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(10.dp)
                     .background(Color.Black.copy(alpha = 0.46f))
                     .clickable { upNextExpandedLatch = false }
                     .zIndex(20f)
