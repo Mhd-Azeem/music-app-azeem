@@ -555,6 +555,7 @@ fun NowPlayingScreen(
     // the screen" has nowhere to expand into since art + controls already fill most of the
     // screen, so the box would just get clipped off the bottom with no visible size change.
     val isUpNextExpanded = expandUpNextOnScroll && upNextExpandedLatch
+    val upcoming = state.queue.drop(state.currentIndex + 1)
 
     Box(
         modifier = Modifier
@@ -640,6 +641,7 @@ fun NowPlayingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .blur(if (isUpNextExpanded) 14.dp else 0.dp)
                 .clip(
                     if (glassmorphismNowPlaying) RoundedCornerShape(34.dp)
                     else RoundedCornerShape(0.dp)
@@ -1574,7 +1576,6 @@ fun NowPlayingScreen(
                 )
             }
 
-            val upcoming = state.queue.drop(state.currentIndex + 1)
             if (upcoming.isNotEmpty() && !glassmorphismNowPlaying) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = if (compactHeightLayout) 8.dp else 24.dp, bottom = 6.dp),
@@ -1599,7 +1600,7 @@ fun NowPlayingScreen(
                     else -> 220.dp
                 }
                 val upNextHeight by animateDpAsState(
-                    targetValue = if (isUpNextExpanded) screenHeight / 2 else collapsedUpNextHeight,
+                    targetValue = collapsedUpNextHeight,
                     label = "upNextHeight"
                 )
                 val upNextModifier = if (expandUpNextOnScroll) {
@@ -1655,6 +1656,128 @@ fun NowPlayingScreen(
                                     contentDescription = "Hold and drag to reorder",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (isUpNextExpanded && upcoming.isNotEmpty()) {
+            val overlayListState = rememberLazyListState()
+            val overlayIds = upcoming.map { it.instanceId }
+            var overlayPreview by remember(overlayIds) { mutableStateOf(upcoming) }
+            val overlayBaseIndex = state.currentIndex + 1
+            val overlayDragState = rememberDragDropListState(
+                listState = overlayListState,
+                onPreviewMove = { from, to ->
+                    if (from in overlayPreview.indices && to in overlayPreview.indices && from != to) {
+                        overlayPreview = overlayPreview.toMutableList().apply {
+                            add(to, removeAt(from))
+                        }
+                    }
+                },
+                onDrop = { from, to ->
+                    viewModel.moveQueueItem(overlayBaseIndex + from, overlayBaseIndex + to)
+                }
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.46f))
+                    .clickable { upNextExpandedLatch = false }
+                    .zIndex(20f)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.72f)
+                        .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+                            RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                        )
+                        .clickable(enabled = false) {}
+                        .padding(top = 10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .size(width = 42.dp, height = 4.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.30f))
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Up next",
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (overlayPreview.size > 1) {
+                                IconButton(onClick = viewModel::smartShuffle) {
+                                    Icon(
+                                        imageVector = Icons.Filled.AutoAwesome,
+                                        contentDescription = "Smart shuffle",
+                                        tint = accentColor
+                                    )
+                                }
+                            }
+                            IconButton(onClick = { upNextExpandedLatch = false }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = "Close Up Next"
+                                )
+                            }
+                        }
+                    }
+
+                    LazyColumn(
+                        state = overlayListState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 24.dp)
+                    ) {
+                        itemsIndexed(
+                            overlayPreview,
+                            key = { _, entry -> entry.instanceId }
+                        ) { offset, entry ->
+                            val queueIndex = state.currentIndex + 1 + offset
+                            val isDragging = overlayDragState.draggingItemIndex == offset
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .dragDropItemOffset(overlayDragState, offset)
+                                    .zIndex(if (isDragging) 1f else 0f),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TrackRow(
+                                    track = entry.track,
+                                    onClick = { viewModel.playQueueItem(queueIndex) },
+                                    onAddToPlaylistClick = { quickAddQueueIndex = queueIndex },
+                                    onMoreClick = { menuQueueIndex = queueIndex },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .dragHandle(overlayDragState, offset),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.DragHandle,
+                                        contentDescription = "Hold and drag to reorder",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
