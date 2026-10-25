@@ -60,6 +60,21 @@ class MusicRepository @Inject constructor(
     suspend fun getTracksByTag(tag: String, page: Int = 0, limit: Int = 30, forceRefresh: Boolean = false): Result<List<Track>> =
         jioSaavnRepository.searchSongs(tag, page = page, limit = limit, forceRefresh = forceRefresh)
 
+    /** JioSaavn-only search. Use this for generated/recommended queues where local files and
+     * downloaded copies must never be mixed into online recommendations. */
+    suspend fun searchOnlineTracks(
+        query: String,
+        page: Int = 0,
+        limit: Int = 30,
+        forceRefresh: Boolean = false
+    ): Result<List<Track>> =
+        jioSaavnRepository.searchSongs(
+            query = query,
+            page = page,
+            limit = limit,
+            forceRefresh = forceRefresh
+        )
+
     suspend fun searchTracks(
         query: String,
         page: Int = 0,
