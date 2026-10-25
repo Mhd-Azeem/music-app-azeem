@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.wavelength.music.data.model.ArtistStat
 import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
+import com.wavelength.music.data.model.TrackSource
 import com.wavelength.music.data.repository.MusicRepository
 import com.wavelength.music.playback.PlayerController
 import com.wavelength.music.ui.components.ScreenState
@@ -206,7 +207,7 @@ class HomeViewModel @Inject constructor(
         coroutineScope {
             val results = topArtists.map { artist ->
                 async {
-                    artist to repository.searchTracks(
+                    artist to repository.searchOnlineTracks(
                         artist,
                         limit = 18,
                         forceRefresh = forceRefresh
@@ -217,6 +218,7 @@ class HomeViewModel @Inject constructor(
 
             val mixes = results.mapNotNull { (artist, tracks) ->
                 val mixTracks = tracks
+                    .filter { it.source == TrackSource.JIOSAAVN }
                     .distinctBy(::songIdentity)
                     .filterNot { it.id in excludeIds }
                     .filter { candidate ->
@@ -232,6 +234,7 @@ class HomeViewModel @Inject constructor(
 
             val filtered = results
                 .flatMap { it.second }
+                .filter { it.source == TrackSource.JIOSAAVN }
                 .distinctBy(::songIdentity)
                 .filterNot { it.id in excludeIds }
                 .shuffled()
