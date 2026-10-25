@@ -345,16 +345,17 @@ class SearchViewModel @Inject constructor(
         playerController.playQueue(listOf(selected), 0)
         viewModelScope.launch {
             val albumMatches = if (selected.albumName.isNotBlank()) {
-                repository.searchTracks(selected.albumName, limit = 15).getOrDefault(emptyList())
+                repository.searchOnlineTracks(selected.albumName, limit = 15).getOrDefault(emptyList())
             } else emptyList()
             val artistMatches = if (selected.artistName.isNotBlank()) {
-                repository.searchTracks(selected.artistName.substringBefore(',').trim(), limit = 20)
+                repository.searchOnlineTracks(selected.artistName.substringBefore(',').trim(), limit = 20)
                     .getOrDefault(emptyList())
             } else emptyList()
             val seen = linkedSetOf(selected.id)
             (albumMatches + artistMatches)
                 .filter { candidate ->
-                    candidate.id != selected.id && seen.add(candidate.id) &&
+                    candidate.source == com.wavelength.music.data.model.TrackSource.JIOSAAVN &&
+                        candidate.id != selected.id && seen.add(candidate.id) &&
                         (candidate.albumName.equals(selected.albumName, ignoreCase = true) ||
                             candidate.artistName.split(',').any { artist ->
                                 selected.artistName.split(',').any { selectedArtist ->
