@@ -107,8 +107,10 @@ class PlaybackService : MediaSessionService() {
             )
             .build()
 
-        // Feed decoded PCM directly into PcmBeatAnalyzer while passing the audio through unchanged.
-        // This avoids Android Visualizer/vendor compatibility issues entirely for Beat Bounce.
+        // Force the custom audio chain through integer PCM so AzMusic's software volume booster is
+        // always executed consistently across vendor devices. Some float-output paths bypass or
+        // partially bypass custom processors, which made the booster appear to do nothing.
+        // The boosted PCM is then tapped by PcmBeatAnalyzer for Beat Bounce.
         val beatTap = TeeAudioProcessor(pcmBeatAnalyzer)
         val renderersFactory = object : DefaultRenderersFactory(this) {
             override fun buildAudioSink(
@@ -117,7 +119,7 @@ class PlaybackService : MediaSessionService() {
                 enableAudioTrackPlaybackParams: Boolean
             ): AudioSink {
                 return DefaultAudioSink.Builder(context)
-                    .setEnableFloatOutput(enableFloatOutput)
+                    .setEnableFloatOutput(false)
                     .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
                     .setAudioProcessors(arrayOf<AudioProcessor>(volumeBoostAudioProcessor, beatTap))
                     .build()
