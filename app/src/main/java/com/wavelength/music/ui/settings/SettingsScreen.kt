@@ -1509,11 +1509,11 @@ fun SettingsScreen(
                             Slider(
                                 value = volumeBoostPercent.toFloat(),
                                 onValueChange = { equalizerViewModel.setVolumeBoostPercent(it.roundToInt()) },
-                                valueRange = 100f..400f,
+                                valueRange = 100f..200f,
                                 enabled = volumeBoostEnabled
                             )
                             Text(
-                                text = "Boosting past 100% can distort audio, especially at higher device volume.",
+                                text = "Software gain up to 200% with soft limiting to reduce clipping. Very loud tracks may still compress at high boost.",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(top = 4.dp)
