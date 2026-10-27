@@ -8,10 +8,8 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.abs
-import kotlin.math.exp
 import kotlin.math.roundToInt
-import kotlin.math.sign
+import kotlin.math.tanh
 
 /**
  * VLC-style software gain stage for AzMusic.
@@ -70,21 +68,21 @@ class VolumeBoostAudioProcessor @Inject constructor() : BaseAudioProcessor() {
     }
 
     /**
-     * Transparent below 92% full scale, then smoothly compresses peaks toward 1.0.
-     * This preserves normal dynamics while preventing boosted samples from hard clipping.
+     * Perceptual loudness curve similar to a media-player "volume over 100%" control.
+     *
+     * A plain multiply followed by a peak limiter barely changes already-mastered tracks because
+     * their peaks are already close to full scale. This normalized tanh transfer raises quieter
+     * samples strongly while smoothly compressing peaks, so RMS/perceived loudness actually rises
+     * without the hard-clipping screech from the old LoudnessEnhancer path.
      */
     private fun processSample(value: Float): Float {
-        val magnitude = abs(value)
-        if (magnitude <= SOFT_LIMIT_START) return value
+        val currentGain = gain
+        if (currentGain <= 1.0001f) return value.coerceIn(-1f, 1f)
 
-        val excess = magnitude - SOFT_LIMIT_START
-        val compressed = SOFT_LIMIT_START +
-            (1f - SOFT_LIMIT_START) *
-            (1f - exp((-excess / (1f - SOFT_LIMIT_START)).toDouble()).toFloat())
-        return sign(value) * compressed.coerceAtMost(0.999f)
-    }
-
-    private companion object {
-        const val SOFT_LIMIT_START = 0.92f
+        // queueInput already multiplies by gain. Undo that here so the drive is applied once.
+        val original = (value / currentGain).coerceIn(-1f, 1f)
+        val drive = currentGain.toDouble()
+        val normalized = tanh(original * drive) / tanh(drive)
+        return normalized.toFloat().coerceIn(-0.999f, 0.999f)
     }
 }
