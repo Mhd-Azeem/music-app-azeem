@@ -43,6 +43,9 @@ class PlaybackService : MediaSessionService() {
     @Inject
     lateinit var pcmBeatAnalyzer: PcmBeatAnalyzer
 
+    @Inject
+    lateinit var volumeBoostAudioProcessor: VolumeBoostAudioProcessor
+
     private var mediaSession: MediaSession? = null
     private var streamCache: SimpleCache? = null
 
@@ -116,7 +119,7 @@ class PlaybackService : MediaSessionService() {
                 return DefaultAudioSink.Builder(context)
                     .setEnableFloatOutput(enableFloatOutput)
                     .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
-                    .setAudioProcessors(arrayOf<AudioProcessor>(beatTap))
+                    .setAudioProcessors(arrayOf<AudioProcessor>(volumeBoostAudioProcessor, beatTap))
                     .build()
             }
         }
