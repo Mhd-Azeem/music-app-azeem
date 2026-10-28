@@ -57,6 +57,7 @@ import com.wavelength.music.ui.navigation.WavelengthNavHost
 import com.wavelength.music.ui.settings.AppSettingsViewModel
 import com.wavelength.music.ui.splash.AzMusicSplashScreen
 import com.wavelength.music.ui.theme.WavelengthTheme
+import com.wavelength.music.ui.theme.AzMusicBlue
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -145,7 +146,9 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            val targetAccent = albumAdaptiveAccent ?: Color(settings.customAccentArgb)
+            // Keep AzMusic's brand accent constant across every theme. Album-adaptive colors may
+            // still influence ambient backgrounds, but controls/selection/playback identity stay blue.
+            val targetAccent = AzMusicBlue
             val animatedAccent by animateColorAsState(
                 targetValue = targetAccent,
                 animationSpec = tween(if (settings.animateThemeTransitions) 500 else 0),
