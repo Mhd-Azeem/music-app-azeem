@@ -558,60 +558,28 @@ fun SettingsScreen(
             }
 
             item {
-                SettingsSection(title = "Theme Accent Color") {
+                SettingsSection(title = "AzMusic Brand Color") {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
+                        Box(
                             modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable { showThemeColorPicker = !showThemeColorPicker }
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(34.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(settings.customAccentArgb))
-                                    .border(2.dp, Color.White.copy(alpha = 0.65f), CircleShape)
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF19B5FE))
+                                .border(2.dp, Color(0xFF53E8FF).copy(alpha = 0.70f), CircleShape)
+                        )
+                        Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
+                            Text("Electric Blue • #19B5FE")
+                            Text(
+                                "Permanent AzMusic accent for playing, selected and actionable controls.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Column(modifier = Modifier.padding(start = 12.dp)) {
-                                Text(text = "#%08X".format(settings.customAccentArgb))
-                                Text(
-                                    text = if (showThemeColorPicker) {
-                                        "Tap to collapse color picker"
-                                    } else {
-                                        "Tap to customize all theme colors"
-                                    },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
                         }
-                        IconButton(onClick = { showThemeColorPicker = !showThemeColorPicker }) {
-                            Icon(Icons.Filled.ExpandMore, contentDescription = "Expand theme color picker")
-                        }
-                        TextButton(onClick = { viewModel.setCustomAccentArgb(0xFF22D3EE.toInt()) }) {
-                            Text("Reset")
-                        }
-                    }
-                    if (showThemeColorPicker) {
-                        Text(
-                            text = "Tap or drag anywhere in the color box. This accent applies to both solid and Liquid themes.",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                        )
-                        LiquidColorPicker(
-                            selectedArgb = settings.customAccentArgb,
-                            onColorSelected = viewModel::setCustomAccentArgb,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
                     }
                 }
             }
