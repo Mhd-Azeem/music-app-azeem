@@ -2,11 +2,23 @@ package com.wavelength.music.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val WavelengthGreen = Color(0xFF1DB954)
-val WavelengthGreenLight = Color(0xFF4CD97B)
-val WavelengthBackground = Color(0xFF121212)
-val WavelengthSurface = Color(0xFF1E1E1E)
-val WavelengthSurfaceVariant = Color(0xFF2A2A2A)
-val WavelengthOnBackground = Color(0xFFF5F5F5)
-val WavelengthOnSurfaceMuted = Color(0xFFA0A0A0)
+// AzMusic permanent brand palette.
+// Electric Blue is the equivalent of Spotify Green: active, selected, playing and actionable.
+val AzMusicBlue = Color(0xFF19B5FE)
+val AzMusicBlueHighlight = Color(0xFF53E8FF)
+val AzMusicBlueDeep = Color(0xFF0A4D8C)
+val AzMusicBackground = Color(0xFF07111F)
+val AzMusicSurface = Color(0xFF0D1B2A)
+val AzMusicSurfaceVariant = Color(0xFF12263A)
+val AzMusicOnBackground = Color(0xFFF5F9FF)
+val AzMusicOnSurfaceMuted = Color(0xFF93A4B8)
+
+// Compatibility aliases for existing UI code. They now resolve to the AzMusic brand system.
+val WavelengthGreen = AzMusicBlue
+val WavelengthGreenLight = AzMusicBlueHighlight
+val WavelengthBackground = AzMusicBackground
+val WavelengthSurface = AzMusicSurface
+val WavelengthSurfaceVariant = AzMusicSurfaceVariant
+val WavelengthOnBackground = AzMusicOnBackground
+val WavelengthOnSurfaceMuted = AzMusicOnSurfaceMuted
 val WavelengthError = Color(0xFFCF6679)
