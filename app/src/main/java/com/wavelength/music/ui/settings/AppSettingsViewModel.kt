@@ -19,6 +19,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import com.wavelength.music.data.repository.forExperience
+import com.wavelength.music.data.repository.AppExperienceMode
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
@@ -39,7 +42,10 @@ class AppSettingsViewModel @Inject constructor(
     private val backupRepository: BackupRepository
 ) : ViewModel() {
 
-    val state: StateFlow<AppSettingsState> = settingsRepository.state
+    val state: StateFlow<AppSettingsState> = settingsRepository.state.map { it.forExperience() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, settingsRepository.state.value.forExperience())
+
+    fun setExperienceMode(mode: AppExperienceMode) = settingsRepository.setExperienceMode(mode)
     val customBackgroundFile: File get() = settingsRepository.customBackgroundFile
     val favoriteWallpapers: StateFlow<List<File>> = settingsRepository.favoriteWallpapers
 

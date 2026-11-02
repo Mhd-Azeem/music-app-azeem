@@ -377,6 +377,67 @@ fun SettingsScreen(
         }
     ) { padding ->
         LazyColumn(modifier = Modifier.fillMaxWidth().padding(padding)) {
+            item { SystemModeSection(settings.experienceMode, viewModel::setExperienceMode) }
+            if (settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.MINIMAL) item {
+                SettingsSection(title = "Player behavior") {
+                    Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Expand Up Next when scrolled", Modifier.weight(1f))
+                        Switch(checked = settings.expandUpNextOnScroll, onCheckedChange = viewModel::setExpandUpNextOnScroll)
+                    }
+                    Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Sync volume slider with system volume", Modifier.weight(1f))
+                        Switch(checked = settings.syncVolumeWithSystem, onCheckedChange = viewModel::setSyncVolumeWithSystem)
+                    }
+                }
+            }
+            item {
+                SettingsSection(title = "Floating Island") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("AzMusic Floating Island")
+                            Text(
+                                "Show a draggable mini Now Playing island above other apps. Tap it to expand playback controls.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = settings.floatingIslandEnabled,
+                            onCheckedChange = { enabled ->
+                                if (!enabled) {
+                                    viewModel.setFloatingIslandEnabled(false)
+                                    context.stopService(Intent(context, FloatingIslandService::class.java))
+                                } else if (Settings.canDrawOverlays(context)) {
+                                    viewModel.setFloatingIslandEnabled(true)
+                                    context.startService(Intent(context, FloatingIslandService::class.java))
+                                } else {
+                                    floatingIslandPermissionLauncher.launch(
+                                        Intent(
+                                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                            Uri.parse("package:${context.packageName}")
+                                        )
+                                    )
+                                }
+                            }
+                        )
+                    }
+                    Text(
+                        "Android will ask for Display over other apps permission the first time. This is AzMusic's own overlay and does not replace your phone's native Live Island.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+
+
+            if (settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.NORMAL) {
             item {
                 SettingsCategoryHeader(
                     title = "Appearance & Interface",
@@ -583,53 +644,6 @@ fun SettingsScreen(
                     }
                 }
             }
-
-            item {
-                SettingsSection(title = "Floating Island") {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("AzMusic Floating Island")
-                            Text(
-                                "Show a draggable mini Now Playing island above other apps. Tap it to expand playback controls.",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = settings.floatingIslandEnabled,
-                            onCheckedChange = { enabled ->
-                                if (!enabled) {
-                                    viewModel.setFloatingIslandEnabled(false)
-                                    context.stopService(Intent(context, FloatingIslandService::class.java))
-                                } else if (Settings.canDrawOverlays(context)) {
-                                    viewModel.setFloatingIslandEnabled(true)
-                                    context.startService(Intent(context, FloatingIslandService::class.java))
-                                } else {
-                                    floatingIslandPermissionLauncher.launch(
-                                        Intent(
-                                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                            Uri.parse("package:${context.packageName}")
-                                        )
-                                    )
-                                }
-                            }
-                        )
-                    }
-                    Text(
-                        "Android will ask for Display over other apps permission the first time. This is AzMusic's own overlay and does not replace your phone's native Live Island.",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                    )
-                }
-            }
-
-
 
             item {
                 SettingsSection(title = "Favorite Wallpapers") {
@@ -1062,6 +1076,7 @@ fun SettingsScreen(
 
             }
 
+            }
             item {
                 SettingsCategoryHeader(
                     title = "Playback",
@@ -1158,7 +1173,7 @@ fun SettingsScreen(
                 }
             }
 
-            item {
+            if (settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.NORMAL) item {
                 SettingsSection(title = "Audio Visualizer") {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),

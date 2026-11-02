@@ -152,6 +152,7 @@ fun WavelengthNavHost() {
             if (showChrome) {
                 Column {
                         MiniPlayerBar(
+                            minimal = settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.MINIMAL,
                             state = playbackState,
                             onClick = { navController.navigate(Screen.NowPlaying.route) },
                             onPlayPause = playerViewModel::playPause,
@@ -492,7 +493,7 @@ fun WavelengthNavHost() {
             contentModifier = contentModifier.haze(state = hazeState)
         }
         Box(modifier = contentModifier) {
-            AppBackground(
+            if (settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.NORMAL) AppBackground(
                 hasCustomBackground = settings.hasCustomBackground,
                 customBackgroundFile = settingsViewModel.customBackgroundFile,
                 opacity = settings.backgroundOpacity,
@@ -589,16 +590,16 @@ fun WavelengthNavHost() {
 composable(
                     route = Screen.NowPlaying.route,
                     enterTransition = {
-                        slideInVertically(initialOffsetY = { it }, animationSpec = tween(320))
+                        slideInVertically(initialOffsetY = { it }, animationSpec = tween(if (settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.MINIMAL) 0 else 320))
                     },
                     exitTransition = {
-                        slideOutVertically(targetOffsetY = { it }, animationSpec = tween(280))
+                        slideOutVertically(targetOffsetY = { it }, animationSpec = tween(if (settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.MINIMAL) 0 else 280))
                     },
                     popEnterTransition = {
-                        slideInVertically(initialOffsetY = { it }, animationSpec = tween(320))
+                        slideInVertically(initialOffsetY = { it }, animationSpec = tween(if (settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.MINIMAL) 0 else 320))
                     },
                     popExitTransition = {
-                        slideOutVertically(targetOffsetY = { it }, animationSpec = tween(280))
+                        slideOutVertically(targetOffsetY = { it }, animationSpec = tween(if (settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.MINIMAL) 0 else 280))
                     }
                 ) {
                     NowPlayingScreen(
@@ -614,6 +615,7 @@ composable(
                         glassStyle = glassStyle,
                         expandUpNextOnScroll = settings.expandUpNextOnScroll,
                         dynamicThemeFromAlbumArt = settings.dynamicThemeFromAlbumArt,
+                        minimal = settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.MINIMAL,
                         albumArtStyle = settings.albumArtStyle,
                         audioVisualizerEnabled = settings.audioVisualizerEnabled,
                         trackTransitionEnabled = settings.trackTransitionEnabled,

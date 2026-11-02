@@ -59,7 +59,7 @@ jobs:
             echo "AZMUSIC_KEY_PASSWORD=$AZMUSIC_KEY_PASSWORD" >> "$GITHUB_ENV"
           fi
       - name: Build AzMusic release
-        run: ./gradlew :app:assembleRelease --build-cache --parallel --stacktrace
+        run: ./gradlew :app:testDebugUnitTest :app:assembleRelease --build-cache --parallel --stacktrace
       - name: Prepare APK
         run: |
           mkdir -p release-apks

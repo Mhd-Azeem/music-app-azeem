@@ -129,9 +129,27 @@ fun WavelengthTheme(
     neomorphismEnabled: Boolean = false,
     amoledEnabled: Boolean = false,
     visualThemeMode: VisualThemeMode = VisualThemeMode.SOLID,
+    minimal: Boolean = false,
     animateTransitions: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    if (minimal) {
+        MaterialTheme(colorScheme = darkColorScheme(
+            primary = Color(0xFFE53935), onPrimary = Color.White,
+            secondary = Color(0xFFFF5252), onSecondary = Color.White,
+            tertiary = Color(0xFFFF5252), onTertiary = Color.White,
+            background = Color.Transparent, surface = Color(0xFF140909),
+            surfaceVariant = Color(0xFF350B10), onSurface = Color.White,
+            onBackground = Color.White, onSurfaceVariant = Color(0xFFA8A0A0),
+            outline = Color(0xFF302020), outlineVariant = Color(0xFF302020),
+            primaryContainer = Color(0xFF350B10), onPrimaryContainer = Color.White,
+            secondaryContainer = Color(0xFF350B10), onSecondaryContainer = Color.White,
+            surfaceContainerLowest = Color(0xFF080808), surfaceContainerLow = Color(0xFF140909),
+            surfaceContainer = Color(0xFF140909), surfaceContainerHigh = Color(0xFF140909),
+            surfaceContainerHighest = Color(0xFF350B10), surfaceTint = Color.Transparent
+        ), typography = WavelengthTypography, content = content)
+        return
+    }
     val baseScheme = schemeFor(theme, customLiquidAccent)
     val appScheme = if (glassmorphismEnabled) {
         baseScheme.copy(
