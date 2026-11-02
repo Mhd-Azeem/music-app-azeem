@@ -60,6 +60,8 @@ import com.wavelength.music.ui.theme.WavelengthTheme
 import com.wavelength.music.ui.theme.AzMusicBlue
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -113,22 +115,28 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel: AppSettingsViewModel = hiltViewModel()
             val settings by settingsViewModel.state.collectAsStateWithLifecycle()
             val playerViewModel: PlayerViewModel = hiltViewModel()
-            val playbackState by playerViewModel.state.collectAsStateWithLifecycle()
+            // The app background needs artwork changes, never playback-position ticks.
+            val artworkFlow = remember(playerViewModel) {
+                playerViewModel.state.map { it.currentTrack?.albumArtUrl }.distinctUntilChanged()
+            }
+            val artworkUrl by artworkFlow.collectAsStateWithLifecycle(
+                initialValue = playerViewModel.state.value.currentTrack?.albumArtUrl
+            )
             var albumAdaptiveAccent by remember { mutableStateOf<Color?>(null) }
 
             LaunchedEffect(
-                playbackState.currentTrack?.albumArtUrl,
+                artworkUrl,
                 settings.visualThemeMode
             ) {
                 albumAdaptiveAccent = if (settings.visualThemeMode == VisualThemeMode.ALBUM_ADAPTIVE) {
-                    loadAppAlbumAccent(this@MainActivity, playbackState.currentTrack?.albumArtUrl)
+                    loadAppAlbumAccent(this@MainActivity, artworkUrl)
                 } else {
                     null
                 }
             }
             var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
             var updateDismissed by remember { mutableStateOf(false) }
-            var showSplash by remember { mutableStateOf(savedInstanceState == null) }
+            var showSplash by remember { mutableStateOf(savedInstanceState == null && settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.NORMAL) }
 
             LaunchedEffect(Unit) {
                 updateInfo = checkForUpdate()
@@ -162,11 +170,13 @@ class MainActivity : ComponentActivity() {
                 neomorphismEnabled = settings.visualThemeMode == VisualThemeMode.NEOMORPHISM,
                 amoledEnabled = settings.visualThemeMode == VisualThemeMode.AMOLED,
                 visualThemeMode = settings.visualThemeMode,
+                minimal = settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.MINIMAL,
                 animateTransitions = settings.animateThemeTransitions
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     OfflineBanner()
+                    val auroraColors = if (settings.visualThemeMode == VisualThemeMode.AURORA) {
                     val aurora = rememberInfiniteTransition(label = "auroraTheme")
                     val auroraA by aurora.animateColor(
                         initialValue = Color(0xFF0A2342),
@@ -187,6 +197,10 @@ class MainActivity : ComponentActivity() {
                         label = "auroraB"
                     )
 
+                    auroraA to auroraB
+                    } else Color.Black to Color.Black
+                    val auroraA = auroraColors.first
+                    val auroraB = auroraColors.second
                     val bgTopTarget = when (settings.visualThemeMode) {
                         VisualThemeMode.GLASSMORPHISM -> animatedAccent.copy(alpha = 0.32f)
                         VisualThemeMode.NEOMORPHISM -> Color(0xFF303846)
@@ -208,7 +222,7 @@ class MainActivity : ComponentActivity() {
                     val transitionMs = if (settings.animateThemeTransitions) 520 else 0
                     val bgTop by animateColorAsState(bgTopTarget, tween(transitionMs), label = "themeBgTop")
                     val bgBottom by animateColorAsState(bgBottomTarget, tween(transitionMs), label = "themeBgBottom")
-                    val appSurface = Modifier.background(
+                    val appSurface = if (settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.MINIMAL) Modifier.background(MinimalBackgroundBrush) else Modifier.background(
                         Brush.verticalGradient(listOf(bgTop, bgBottom))
                     )
                     Box(modifier = Modifier.fillMaxWidth().weight(1f).then(appSurface)) {
@@ -545,3 +559,5 @@ class MainActivity : ComponentActivity() {
         const val KEY_PENDING_BUILD_NUMBER = "pending_update_build_number"
     }
 }
+
+private val MinimalBackgroundBrush = Brush.linearGradient(listOf(Color(0xFF080808), Color(0xFF140909), Color(0xFF350B10)))

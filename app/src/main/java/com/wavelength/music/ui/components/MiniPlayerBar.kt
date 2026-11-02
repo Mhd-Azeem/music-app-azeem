@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -57,6 +58,7 @@ fun MiniPlayerBar(
     glassStyle: HazeStyle = HazeStyle.Unspecified,
     trackTransitionEnabled: Boolean = true,
     trackTransitionDurationMs: Int = 300,
+    minimal: Boolean = false,
     visualThemeMode: VisualThemeMode = VisualThemeMode.SOLID
 ) {
     val track = state.currentTrack ?: return
@@ -123,7 +125,7 @@ fun MiniPlayerBar(
             visualThemeMode == VisualThemeMode.AURORA -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.88f)
             else -> MaterialTheme.colorScheme.surfaceVariant
         },
-        tonalElevation = when (visualThemeMode) {
+        tonalElevation = if (minimal) 0.dp else when (visualThemeMode) {
             VisualThemeMode.NEOMORPHISM -> 12.dp
             VisualThemeMode.AURORA -> 8.dp
             VisualThemeMode.AMOLED -> 0.dp
@@ -131,6 +133,12 @@ fun MiniPlayerBar(
         },
         shape = shape
     ) {
+        Column {
+        if (minimal) LinearProgressIndicator(
+            progress = { if (state.durationMs > 0) (state.positionMs.toFloat() / state.durationMs).coerceIn(0f, 1f) else 0f },
+            modifier = Modifier.fillMaxWidth().height(2.dp),
+            color = MaterialTheme.colorScheme.primary
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -183,6 +191,7 @@ fun MiniPlayerBar(
             IconButton(onClick = onSkipNext) {
                 Icon(imageVector = Icons.Filled.SkipNext, contentDescription = null)
             }
+        }
         }
     }
 }

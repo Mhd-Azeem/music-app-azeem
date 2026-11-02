@@ -50,7 +50,10 @@ enum class AlbumArtStyle(val label: String, val description: String) {
     SPATIAL_FLOAT("Spatial Float", "Strong gyro depth with inertial movement")
 }
 
+enum class AppExperienceMode { NORMAL, MINIMAL }
+
 data class AppSettingsState(
+    val experienceMode: AppExperienceMode = AppExperienceMode.NORMAL,
     val iconPreset: IconPreset = IconPreset.CLASSIC,
     val theme: AppTheme = AppTheme.CLASSIC,
     val visualThemeMode: VisualThemeMode = VisualThemeMode.SOLID,
@@ -126,6 +129,7 @@ class SettingsRepository @Inject constructor(
             ?: emptyList()
 
     private fun loadState(): AppSettingsState = AppSettingsState(
+        experienceMode = runCatching { AppExperienceMode.valueOf(prefs.getString("experience_mode", "NORMAL")!!) }.getOrDefault(AppExperienceMode.NORMAL),
         iconPreset = runCatching {
             IconPreset.valueOf(prefs.getString(KEY_ICON, null) ?: IconPreset.CLASSIC.name)
         }.getOrDefault(IconPreset.CLASSIC),
@@ -186,6 +190,11 @@ class SettingsRepository @Inject constructor(
             prefs.getBoolean(KEY_VINYL_STYLE, false) -> AlbumArtStyle.VINYL
             else -> AlbumArtStyle.OFF
         }
+    }
+
+    fun setExperienceMode(mode: AppExperienceMode) {
+        prefs.edit { putString("experience_mode", mode.name) }
+        _state.update { it.copy(experienceMode = mode) }
     }
 
     fun setIconPreset(preset: IconPreset) {
@@ -507,3 +516,14 @@ class SettingsRepository @Inject constructor(
         const val KEY_LIQUID_ALBUM_ART_BACKGROUND = "liquid_album_art_background"
     }
 }
+
+/** Presentation-only projection. Never writes over the user's Normal preferences. */
+fun AppSettingsState.forExperience(): AppSettingsState =
+    if (experienceMode == AppExperienceMode.NORMAL) this else copy(
+        theme = AppTheme.CLASSIC, visualThemeMode = VisualThemeMode.SOLID,
+        animateThemeTransitions = false, hasCustomBackground = false,
+        backgroundOpacity = 0f, dynamicThemeFromAlbumArt = false,
+        albumArtStyle = AlbumArtStyle.OFF, audioVisualizerEnabled = false,
+        trackTransitionEnabled = false, neomorphismEnabled = false,
+        glassmorphismNowPlaying = false, liquidAlbumArtBackground = false
+    )

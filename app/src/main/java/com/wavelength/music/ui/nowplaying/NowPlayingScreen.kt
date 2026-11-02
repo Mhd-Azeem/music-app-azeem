@@ -162,6 +162,7 @@ fun NowPlayingScreen(
     glassStyle: HazeStyle = HazeStyle.Unspecified,
     expandUpNextOnScroll: Boolean = false,
     dynamicThemeFromAlbumArt: Boolean = false,
+    minimal: Boolean = false,
     albumArtStyle: AlbumArtStyle = AlbumArtStyle.OFF,
     audioVisualizerEnabled: Boolean = false,
     trackTransitionEnabled: Boolean = true,
@@ -601,7 +602,7 @@ fun NowPlayingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .blur(if (isUpNextExpanded) 12.dp else 0.dp)
+                .blur(if (isUpNextExpanded && !minimal) 12.dp else 0.dp)
                 .clip(
                     if (glassmorphismNowPlaying) RoundedCornerShape(34.dp)
                     else RoundedCornerShape(0.dp)
