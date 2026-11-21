@@ -353,6 +353,7 @@ fun HomeScreen(
                     playlists = playlists.filter { !it.isFolder && !it.name.startsWith("★ Favorite Album · ") },
                     favoriteAlbums = playlists.filter { !it.isFolder && it.name.startsWith("★ Favorite Album · ") },
                     searchHistory = searchHistory,
+                    showArtistDiscovery = settings.experienceMode != com.wavelength.music.data.repository.AppExperienceMode.MINIMAL,
                     onTrackClick = { index, queue ->
                         viewModel.playTrack(queue, index)
                         onTrackClick()
@@ -389,6 +390,7 @@ private fun HomeContent(
     playlists: List<PlaylistSummary>,
     favoriteAlbums: List<PlaylistSummary>,
     searchHistory: List<String>,
+    showArtistDiscovery: Boolean,
     onTrackClick: (Int, List<Track>) -> Unit,
     onAddMixToQueue: (List<Track>) -> Unit,
     onGenreClick: (String, String) -> Unit,
@@ -532,7 +534,7 @@ private fun HomeContent(
             }
         }
 
-        artistGroups.forEach { (language, artists) ->
+        if (showArtistDiscovery) artistGroups.forEach { (language, artists) ->
             item { SectionHeader("$language artists") }
             item {
                 LazyRow(
