@@ -41,5 +41,7 @@ class StatisticsViewModel @Inject constructor(
     val topTracks: StateFlow<List<Track>> = repository.observeTopTracks(10)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun playTrack(queue: List<Track>, index: Int) = playerController.playQueue(queue, index)
+    fun playTrack(queue: List<Track>, index: Int) {
+        playerController.playQueue(queue, index)
+    }
 }

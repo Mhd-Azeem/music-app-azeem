@@ -242,7 +242,7 @@ fun SearchScreen(
                             layoutInfo.totalItemsCount > 0 && lastVisible >= layoutInfo.totalItemsCount - 3
                         }
                     }
-                    LaunchedEffect(shouldLoadMore) {
+                    LaunchedEffect(shouldLoadMore, tracks.size) {
                         if (shouldLoadMore) viewModel.loadMore()
                     }
 

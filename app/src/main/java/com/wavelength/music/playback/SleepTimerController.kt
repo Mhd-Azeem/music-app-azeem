@@ -48,10 +48,13 @@ class SleepTimerController @Inject constructor(
     fun startEndOfTrack() {
         cancel()
         _isEndOfTrack.value = true
-        val startIndex = playerController.state.value.currentIndex
+        val startEntry = playerController.state.value.currentEntryId ?: run {
+            cancel()
+            return
+        }
         job = scope.launch {
             playerController.state.collect { state ->
-                if (state.currentIndex != startIndex) {
+                if (state.currentEntryId != startEntry) {
                     playerController.pause()
                     cancel()
                 }

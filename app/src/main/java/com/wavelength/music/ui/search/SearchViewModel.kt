@@ -8,6 +8,10 @@ import com.wavelength.music.playback.PlayerController
 import com.wavelength.music.ui.components.ScreenState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -40,6 +44,7 @@ class SearchViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var searchJob: Job? = null
+    private var pageJob: Job? = null
 
     // Paging state for the currently-displayed query only — reset on every new search, not tied
     // to _query directly since onQueryChange fires on every keystroke but a page only ever
@@ -61,7 +66,7 @@ class SearchViewModel @Inject constructor(
 
     fun onQueryChange(newQuery: String) {
         _query.value = newQuery
-        searchJob?.cancel()
+        cancelRequests()
         if (newQuery.isBlank()) {
             _results.value = ScreenState.Empty
             return
@@ -73,13 +78,22 @@ class SearchViewModel @Inject constructor(
         }
     }
 
+    private fun cancelRequests() {
+        searchJob?.cancel()
+        pageJob?.cancel()
+        _isLoadingMore.value = false
+        pagedQuery = ""
+    }
+
     private suspend fun runSearch(q: String) {
         val selected = _selectedLanguage.value
         val effectiveQuery = if (selected == "All") q else "$q $selected"
         pagedQuery = effectiveQuery
         currentPage = 0
         canLoadMore = true
-        repository.searchTracks(effectiveQuery, page = 0, limit = SEARCH_PAGE_SIZE).fold(
+        val result = repository.searchTracks(effectiveQuery, page = 0, limit = SEARCH_PAGE_SIZE)
+        coroutineContext.ensureActive()
+        result.fold(
             onSuccess = { tracks ->
                 // Modifier-heavy queries such as "song name slowed reverb" often make JioSaavn
                 // over-weight the generic modifier words. Fetch the base title too, merge both
@@ -92,7 +106,9 @@ class SearchViewModel @Inject constructor(
                 } else {
                     emptyList()
                 }
-                val ranked = rankTracks(dedupeTracks(tracks + baseTracks), q)
+                val ranked = withContext(Dispatchers.Default) {
+                    rankTracks(dedupeTracks(tracks + baseTracks), q)
+                }
                 canLoadMore = tracks.isNotEmpty()
                 _results.value = if (ranked.isEmpty()) ScreenState.Empty else ScreenState.Success(ranked)
 
@@ -102,6 +118,7 @@ class SearchViewModel @Inject constructor(
                 if (shouldTryLyricsSearch(q)) {
                     val language = selected.takeUnless { it == "All" }
                     val lyricMatches = repository.searchTracksByLyrics(q, language = language)
+                    coroutineContext.ensureActive()
                     if (pagedQuery == effectiveQuery && lyricMatches.isNotEmpty()) {
                         val latest = (_results.value as? ScreenState.Success)?.data.orEmpty()
                         val merged = dedupeTracks(lyricMatches + latest)
@@ -113,6 +130,7 @@ class SearchViewModel @Inject constructor(
                 if (shouldTryLyricsSearch(q)) {
                     val language = selected.takeUnless { it == "All" }
                     val lyricMatches = repository.searchTracksByLyrics(q, language = language)
+                    coroutineContext.ensureActive()
                     if (lyricMatches.isNotEmpty()) {
                         _results.value = ScreenState.Success(dedupeTracks(lyricMatches))
                     } else {
@@ -129,16 +147,17 @@ class SearchViewModel @Inject constructor(
      * can return short or overlapping pages, so page size is not a reliable end-of-results signal. */
     fun loadMore() {
         val first = _results.value
-        if (first !is ScreenState.Success || _isLoadingMore.value || !canLoadMore) return
+        if (first !is ScreenState.Success || _isLoadingMore.value || !canLoadMore || pagedQuery.isBlank()) return
         val q = pagedQuery
         val rankingQuery = _query.value.trim()
-        viewModelScope.launch {
+        pageJob = viewModelScope.launch {
             _isLoadingMore.value = true
             try {
                 var attempts = 0
                 while (attempts < 3 && canLoadMore && pagedQuery == q) {
                     val nextPage = currentPage + 1
                     val result = repository.searchTracks(q, page = nextPage, limit = SEARCH_PAGE_SIZE)
+                    coroutineContext.ensureActive()
                     val newTracks = result.getOrElse {
                         // Keep current results and allow the next scroll to retry.
                         return@launch
@@ -154,7 +173,11 @@ class SearchViewModel @Inject constructor(
 
                     canLoadMore = true
                     val latest = (_results.value as? ScreenState.Success)?.data ?: first.data
-                    val merged = rankTracks(dedupeTracks(latest + newTracks), rankingQuery)
+                    val ranked = withContext(Dispatchers.Default) {
+                        rankTracks(dedupeTracks(latest + newTracks), rankingQuery)
+                    }
+                    val now = (_results.value as? ScreenState.Success)?.data.orEmpty()
+                    val merged = if (now === latest) ranked else dedupeTracks(now + ranked)
                     if (merged.size > latest.size) {
                         _results.value = ScreenState.Success(merged)
                         break
@@ -165,7 +188,9 @@ class SearchViewModel @Inject constructor(
                     attempts++
                 }
             } finally {
-                _isLoadingMore.value = false
+                if (pagedQuery == q && coroutineContext[kotlinx.coroutines.Job]?.isActive == true) {
+                    _isLoadingMore.value = false
+                }
             }
         }
     }
@@ -176,7 +201,7 @@ class SearchViewModel @Inject constructor(
         val baseQuery = _query.value.trim()
         if (baseQuery.isBlank()) return
 
-        searchJob?.cancel()
+        cancelRequests()
         searchJob = viewModelScope.launch {
             _results.value = ScreenState.Loading
             runSearch(baseQuery)
@@ -194,7 +219,8 @@ class SearchViewModel @Inject constructor(
     fun filteredTracks(tracks: List<Track>): List<Track> = tracks
 
     private fun dedupeTracks(tracks: List<Track>): List<Track> {
-        val seen = linkedSetOf<String>()
+        val seen = hashSetOf<String>()
+        val ids = hashSetOf<String>()
         return tracks.filter { track ->
             val canonicalTitle = canonicalSongTitle(track.name)
             val canonicalLanguage = track.language.lowercase().trim()
@@ -202,8 +228,8 @@ class SearchViewModel @Inject constructor(
 
             // Keep true duplicates collapsed, but preserve meaningful versions such as
             // slowed/reverb, lofi, sped-up, remix and instrumental as separate results.
-            val key = "$canonicalLanguage|$canonicalTitle|$variant"
-            key.isNotBlank() && seen.add(key)
+            val key = "$canonicalLanguage|$canonicalTitle|${normalizeForMatch(track.artistName)}|$variant"
+            track.id !in ids && seen.add(key) && ids.add(track.id)
         }
     }
 
@@ -260,9 +286,9 @@ class SearchViewModel @Inject constructor(
             return score
         }
 
-        return tracks.withIndex()
-            .sortedWith(compareByDescending<IndexedValue<Track>> { score(it.value) }.thenBy { it.index })
-            .map { it.value }
+        return tracks.map { it to score(it) }
+            .sortedByDescending { it.second }
+            .map { it.first }
     }
 
     private fun requestedVariantTokens(value: String): Set<String> {
@@ -331,7 +357,8 @@ class SearchViewModel @Inject constructor(
     fun retry() {
         val q = _query.value
         if (q.isNotBlank()) {
-            viewModelScope.launch {
+            cancelRequests()
+            searchJob = viewModelScope.launch {
                 _results.value = ScreenState.Loading
                 runSearch(q)
             }
@@ -342,7 +369,7 @@ class SearchViewModel @Inject constructor(
         val selected = queue.getOrNull(index) ?: return
         // Search is discovery, not a queue definition. Start the selected song immediately and
         // build Up Next from its album/artist instead of dumping every search result into it.
-        playerController.playQueue(listOf(selected), 0)
+        val generation = playerController.playQueue(listOf(selected), 0) ?: return
         viewModelScope.launch {
             val albumMatches = if (selected.albumName.isNotBlank()) {
                 repository.searchOnlineTracks(selected.albumName, limit = 15).getOrDefault(emptyList())
@@ -352,7 +379,7 @@ class SearchViewModel @Inject constructor(
                     .getOrDefault(emptyList())
             } else emptyList()
             val seen = linkedSetOf(selected.id)
-            (albumMatches + artistMatches)
+            val recommendations = (albumMatches + artistMatches)
                 .filter { candidate ->
                     candidate.source == com.wavelength.music.data.model.TrackSource.JIOSAAVN &&
                         candidate.id != selected.id && seen.add(candidate.id) &&
@@ -364,7 +391,8 @@ class SearchViewModel @Inject constructor(
                             })
                 }
                 .take(15)
-                .forEach(playerController::addToQueue)
+            coroutineContext.ensureActive()
+            playerController.appendRecommendations(generation, recommendations)
         }
     }
 

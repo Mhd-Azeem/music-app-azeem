@@ -1,9 +1,14 @@
 package com.wavelength.music.data.model
 
+import com.squareup.moshi.JsonClass
+
+// Moshi reads these enum fields by name when restoring a saved playback queue.
+@JsonClass(generateAdapter = false)
 enum class TrackSource {
     JIOSAAVN, LOCAL, DOWNLOADED
 }
 
+@JsonClass(generateAdapter = true)
 data class Track(
     val id: String,
     val name: String,

@@ -191,6 +191,7 @@ class FloatingBubbleService : Service() {
         }
     }
 
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     private fun connect() {
         val token = SessionToken(this, ComponentName(this, PlaybackService::class.java))
         future = MediaController.Builder(this, token).buildAsync().also { f ->

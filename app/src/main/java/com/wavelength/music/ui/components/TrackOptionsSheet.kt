@@ -144,7 +144,7 @@ fun TrackOptionsSheet(
                 icon = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                 label = if (isFavorite) "Remove from favorites" else "Add to favorites"
             ) {
-                viewModel.toggleFavorite(track, isFavorite)
+                viewModel.toggleFavorite(track)
                 onDismiss()
             }
             TrackOptionRow(Icons.Filled.PlaylistAdd, "Add to playlist") {

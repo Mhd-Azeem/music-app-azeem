@@ -2,6 +2,7 @@ package com.wavelength.music.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -15,6 +16,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.Button
@@ -32,10 +34,12 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.wavelength.music.R
 import com.wavelength.music.data.model.Track
@@ -61,10 +65,28 @@ fun TrackListScreen(
     headerExtra: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
-    var menuTrackIndex by remember { mutableStateOf<Int?>(null) }
     var quickAddTrack by remember { mutableStateOf<Track?>(null) }
     val successData = (state as? ScreenState.Success)?.data
+    var menuTrackIndex by remember(successData) { mutableStateOf<Int?>(null) }
     val listState = rememberLazyListState()
+    val reorderable = onReorder != null && successData != null
+    val playlistRows = remember(successData, reorderable) {
+        if (reorderable) successData.orEmpty().withIndex().toList() else emptyList()
+    }
+    var previewRows by remember(playlistRows) { mutableStateOf(playlistRows) }
+    val playlistKeys = remember(playlistRows) { playlistRows.map { "${it.index}:${it.value.id}" } }
+    val dragState = if (reorderable) {
+        rememberDragDropListState(
+            listState = listState,
+            itemKeys = playlistKeys,
+            firstReorderableIndex = 1,
+            onPreviewMove = { from, to ->
+                previewRows = previewRows.toMutableList().apply { add(to, removeAt(from)) }
+            },
+            onDrop = { from, to -> onReorder?.invoke(from, to) },
+            onCancel = { previewRows = playlistRows }
+        )
+    } else null
     val shouldLoadMore by remember(successData, onLoadMore) {
         derivedStateOf {
             val total = listState.layoutInfo.totalItemsCount
@@ -174,13 +196,44 @@ fun TrackListScreen(
                         }
                     }
                 }
-                itemsIndexed(state.data) { index, track ->
-                    TrackRow(
-                        track = track,
-                        onClick = { onTrackClick(index) },
-                        onAddToPlaylistClick = { quickAddTrack = track },
-                        onMoreClick = { menuTrackIndex = index }
-                    )
+                if (dragState == null) {
+                    itemsIndexed(state.data) { index, track ->
+                        TrackRow(
+                            track = track,
+                            onClick = { onTrackClick(index) },
+                            onAddToPlaylistClick = { quickAddTrack = track },
+                            onMoreClick = { menuTrackIndex = index }
+                        )
+                    }
+                } else {
+                    itemsIndexed(previewRows, key = { _, row -> playlistKeys[row.index] }) { index, row ->
+                        val lazyIndex = index + 1
+                        val isDragging = dragState.draggingItemIndex == lazyIndex
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .dragDropItemOffset(dragState, playlistKeys[row.index])
+                                .zIndex(if (isDragging) 1f else 0f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TrackRow(
+                                track = row.value,
+                                onClick = { if (dragState.draggingItemIndex == null) onTrackClick(row.index) },
+                                onAddToPlaylistClick = { if (dragState.draggingItemIndex == null) quickAddTrack = row.value },
+                                onMoreClick = { if (dragState.draggingItemIndex == null) menuTrackIndex = row.index },
+                                modifier = Modifier.weight(1f)
+                            )
+                            Box(
+                                modifier = Modifier.size(44.dp).dragHandle(dragState, lazyIndex),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Filled.DragHandle,
+                                    contentDescription = "Hold and drag to reorder",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
                 }
                 if (isLoadingMore) {
                     item {

@@ -39,6 +39,7 @@ enum class EqualizerPreset(val label: String, val curve: List<Float>) {
  * the ExoPlayer instance in [PlaybackService] is currently using. Devices vary wildly in how many
  * bands they support (or whether these effects exist at all), so every call is defensive — a
  * device that doesn't support one of these just reports it as unsupported instead of crashing. */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Singleton
 class EqualizerController @Inject constructor(
     @ApplicationContext context: Context,

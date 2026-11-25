@@ -3,6 +3,7 @@ package com.wavelength.music.playback
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Process
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.Player
@@ -22,6 +23,7 @@ import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.audio.TeeAudioProcessor
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.ShuffleOrder
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.wavelength.music.MainActivity
@@ -138,7 +140,11 @@ class PlaybackService : MediaSessionService() {
             )
             .setHandleAudioBecomingNoisy(true)
             .build()
-            .also { it.addListener(audioSessionListener) }
+            .also {
+                // Up Next owns playback order, including when shuffle is enabled.
+                it.setShuffleOrder(ShuffleOrder.UnshuffledShuffleOrder(0))
+                it.addListener(audioSessionListener)
+            }
 
         val sessionActivityIntent = PendingIntent.getActivity(
             this,
@@ -148,6 +154,24 @@ class PlaybackService : MediaSessionService() {
         )
 
         mediaSession = MediaSession.Builder(this, player)
+            .setCallback(object : MediaSession.Callback {
+                override fun onConnect(
+                    session: MediaSession,
+                    controller: MediaSession.ControllerInfo
+                ): MediaSession.ConnectionResult {
+                    if (controller.uid == Process.myUid()) return super.onConnect(session, controller)
+                    if (!controller.isTrusted && !session.isMediaNotificationController(controller)) {
+                        return MediaSession.ConnectionResult.reject()
+                    }
+                    val commands = MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
+                        .remove(Player.COMMAND_SET_MEDIA_ITEM)
+                        .remove(Player.COMMAND_CHANGE_MEDIA_ITEMS)
+                        .build()
+                    return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                        .setAvailablePlayerCommands(commands)
+                        .build()
+                }
+            })
             .setSessionActivity(sessionActivityIntent)
             .build()
 

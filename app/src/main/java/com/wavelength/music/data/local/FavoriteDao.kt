@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -24,4 +25,12 @@ interface FavoriteDao {
 
     @Query("DELETE FROM favorite_tracks WHERE id = :trackId")
     suspend fun deleteById(trackId: String)
+
+    @Query("DELETE FROM favorite_tracks WHERE id = :trackId")
+    suspend fun deleteIfPresent(trackId: String): Int
+
+    @Transaction
+    suspend fun toggle(favorite: FavoriteTrackEntity) {
+        if (deleteIfPresent(favorite.id) == 0) insert(favorite)
+    }
 }

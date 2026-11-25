@@ -8,6 +8,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.SystemClock
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -53,6 +54,7 @@ import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Favorite
@@ -197,9 +199,9 @@ fun NowPlayingScreen(
     var showSleepTimerDialog by remember { mutableStateOf(false) }
     var showSpeedMenu by remember { mutableStateOf(false) }
     var showLyrics by remember { mutableStateOf(false) }
-    var menuQueueIndex by remember { mutableStateOf<Int?>(null) }
+    var menuQueueId by remember { mutableStateOf<Long?>(null) }
     var showCurrentTrackMenu by remember { mutableStateOf(false) }
-    var quickAddQueueIndex by remember { mutableStateOf<Int?>(null) }
+    var quickAddQueueId by remember { mutableStateOf<Long?>(null) }
 
     val context = LocalContext.current
     var dynamicAccent by remember { mutableStateOf<Color?>(null) }
@@ -458,26 +460,31 @@ fun NowPlayingScreen(
         )
     }
 
-    val menuTrack = menuQueueIndex?.let { state.queue.getOrNull(it)?.track }
+    val queueMenuIndex = remember(state.queue, menuQueueId) {
+        if (menuQueueId == null) -1 else state.queue.indexOfFirst { it.instanceId == menuQueueId }
+    }
+    val menuTrack = state.queue.getOrNull(queueMenuIndex)?.track
+        ?.takeIf { queueMenuIndex > state.currentIndex }
     if (menuTrack != null) {
-        val queueIndex = menuQueueIndex!!
+        val queueIndex = queueMenuIndex
+        val entryId = state.queue[queueIndex].instanceId
         TrackOptionsSheet(
             track = menuTrack,
-            onDismiss = { menuQueueIndex = null },
+            onDismiss = { menuQueueId = null },
             onBrowseAlbum = { onBrowseAlbum(menuTrack.albumName) },
-            onRemoveFromQueue = { viewModel.removeQueueItem(queueIndex) },
+            onRemoveFromQueue = { viewModel.removeQueueItem(entryId) },
             onMoveUp = if (queueIndex > state.currentIndex + 1) {
-                { viewModel.moveQueueItem(queueIndex, queueIndex - 1) }
+                { viewModel.moveQueueItem(entryId, state.queue[queueIndex - 1].instanceId) }
             } else null,
             onMoveDown = if (queueIndex < state.queue.lastIndex) {
-                { viewModel.moveQueueItem(queueIndex, queueIndex + 1) }
+                { viewModel.moveQueueItem(entryId, state.queue[queueIndex + 1].instanceId) }
             } else null
         )
     }
 
-    val quickAddTrack = quickAddQueueIndex?.let { state.queue.getOrNull(it)?.track }
+    val quickAddTrack = quickAddQueueId?.let { state.queue.firstOrNull { entry -> entry.instanceId == it }?.track }
     if (quickAddTrack != null) {
-        QuickAddToPlaylistDialog(track = quickAddTrack, onDismiss = { quickAddQueueIndex = null })
+        QuickAddToPlaylistDialog(track = quickAddTrack, onDismiss = { quickAddQueueId = null })
     }
 
     val density = LocalDensity.current
@@ -516,7 +523,11 @@ fun NowPlayingScreen(
     // the screen" has nowhere to expand into since art + controls already fill most of the
     // screen, so the box would just get clipped off the bottom with no visible size change.
     val isUpNextExpanded = expandUpNextOnScroll && upNextExpandedLatch
-    val upcoming = state.queue.drop(state.currentIndex + 1)
+    val upcoming = remember(state.queue, state.currentIndex) { state.queue.drop(state.currentIndex + 1) }
+    val upcomingIds = remember(upcoming) { upcoming.map { it.instanceId } }
+    BackHandler(enabled = isUpNextExpanded && upcoming.isNotEmpty()) {
+        upNextExpandedLatch = false
+    }
 
     Box(
         modifier = Modifier
@@ -916,7 +927,7 @@ fun NowPlayingScreen(
             }
 
             if (glassmorphismNowPlaying) {
-                val glassUpcoming = state.queue.drop(state.currentIndex + 1)
+                val glassUpcoming = upcoming
                 val fanState = rememberLazyListState()
 
                 // Up Next: real queue cards arranged as a horizontally scrollable circular fan.
@@ -924,6 +935,11 @@ fun NowPlayingScreen(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     contentAlignment = Alignment.BottomCenter
                 ) {
+                    if (glassUpcoming.isNotEmpty()) {
+                        Box(Modifier.align(Alignment.TopStart)) {
+                            ClearUpNextButton(viewModel::clearUpcoming)
+                        }
+                    }
                     if (glassUpcoming.size > 1) {
                         Row(
                             modifier = Modifier
@@ -1000,8 +1016,8 @@ fun NowPlayingScreen(
                                         .clip(RoundedCornerShape(UiDesignConfig.GLASS_QUEUE_CARD_RADIUS_DP.dp))
                                         .background(Color(0xFFD7ECFF).copy(alpha = 0.52f))
                                         .combinedClickable(
-                                            onClick = { viewModel.playQueueItem(state.currentIndex + 1 + index) },
-                                            onLongClick = { menuQueueIndex = state.currentIndex + 1 + index }
+                                            onClick = { viewModel.playQueueItem(glassUpcoming[index].instanceId) },
+                                            onLongClick = { menuQueueId = glassUpcoming[index].instanceId }
                                         )
                                         .padding(5.dp),
                                     contentAlignment = Alignment.TopCenter
@@ -1386,7 +1402,7 @@ fun NowPlayingScreen(
                                             .size(UiDesignConfig.GLASS_PLAY_INNER_SIZE_DP.dp)
                                             .clip(CircleShape)
                                             .background(Color.White.copy(alpha = 0.96f))
-                                            .clickable(enabled = !state.isBuffering, onClick = viewModel::playPause),
+                                            .clickable(onClick = viewModel::playPause),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         if (state.isBuffering) {
@@ -1544,17 +1560,19 @@ fun NowPlayingScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(text = "Up next", style = MaterialTheme.typography.titleSmall)
-                    if (upcoming.size > 1) {
-                        IconButton(onClick = { viewModel.smartShuffle() }, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                imageVector = Icons.Filled.AutoAwesome,
-                                contentDescription = "Smart shuffle (favors your most-played tracks)",
-                                tint = accentColor
-                            )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        ClearUpNextButton(viewModel::clearUpcoming)
+                        if (upcoming.size > 1) {
+                            IconButton(onClick = viewModel::smartShuffle, modifier = Modifier.size(32.dp)) {
+                                Icon(
+                                    imageVector = Icons.Filled.AutoAwesome,
+                                    contentDescription = "Smart shuffle (favors your most-played tracks)",
+                                    tint = accentColor
+                                )
+                            }
                         }
                     }
                 }
-                val screenHeight = screenHeightDp.dp
                 val collapsedUpNextHeight = when {
                     veryCompactHeightLayout -> 112.dp
                     compactHeightLayout -> 150.dp
@@ -1569,11 +1587,10 @@ fun NowPlayingScreen(
                 } else {
                     Modifier.weight(1f)
                 }
-                val upcomingIds = upcoming.map { it.instanceId }
                 var previewUpcoming by remember(upcomingIds) { mutableStateOf(upcoming) }
-                val queueBaseIndex = state.currentIndex + 1
                 val dragDropState = rememberDragDropListState(
                     listState = upNextListState,
+                    itemKeys = upcomingIds,
                     onPreviewMove = { from, to ->
                         if (from in previewUpcoming.indices && to in previewUpcoming.indices && from != to) {
                             previewUpcoming = previewUpcoming.toMutableList().apply {
@@ -1582,28 +1599,28 @@ fun NowPlayingScreen(
                         }
                     },
                     onDrop = { from, to ->
-                        viewModel.moveQueueItem(queueBaseIndex + from, queueBaseIndex + to)
-                    }
+                        viewModel.moveQueueItem(upcoming[from].instanceId, upcoming[to].instanceId)
+                    },
+                    onCancel = { previewUpcoming = upcoming }
                 )
                 LazyColumn(
                     modifier = upNextModifier,
                     state = upNextListState
                 ) {
                     itemsIndexed(previewUpcoming, key = { _, entry -> entry.instanceId }) { offset, entry ->
-                        val queueIndex = state.currentIndex + 1 + offset
                         val isDragging = dragDropState.draggingItemIndex == offset
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .dragDropItemOffset(dragDropState, offset)
+                                .dragDropItemOffset(dragDropState, entry.instanceId)
                                 .zIndex(if (isDragging) 1f else 0f),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             TrackRow(
                                 track = entry.track,
-                                onClick = { viewModel.playQueueItem(queueIndex) },
-                                onAddToPlaylistClick = { quickAddQueueIndex = queueIndex },
-                                onMoreClick = { menuQueueIndex = queueIndex },
+                                onClick = { if (dragDropState.draggingItemIndex == null) viewModel.playQueueItem(entry.instanceId) },
+                                onAddToPlaylistClick = { if (dragDropState.draggingItemIndex == null) quickAddQueueId = entry.instanceId },
+                                onMoreClick = { if (dragDropState.draggingItemIndex == null) menuQueueId = entry.instanceId },
                                 modifier = Modifier.weight(1f)
                             )
                             Box(
@@ -1626,14 +1643,13 @@ fun NowPlayingScreen(
 
         if (isUpNextExpanded && upcoming.isNotEmpty()) {
             val overlayListState = rememberLazyListState()
-            val overlayIds = upcoming.map { it.instanceId }
-            var overlayPreview by remember(overlayIds) { mutableStateOf(upcoming) }
-            val overlayBaseIndex = state.currentIndex + 1
+            var overlayPreview by remember(upcomingIds) { mutableStateOf(upcoming) }
             var overlayPullDown by remember { mutableFloatStateOf(0f) }
             val overlayCloseThresholdPx = with(density) { 72.dp.toPx() }
 
             val overlayDragState = rememberDragDropListState(
                 listState = overlayListState,
+                itemKeys = upcomingIds,
                 onPreviewMove = { from, to ->
                     if (from in overlayPreview.indices && to in overlayPreview.indices && from != to) {
                         overlayPreview = overlayPreview.toMutableList().apply {
@@ -1642,8 +1658,9 @@ fun NowPlayingScreen(
                     }
                 },
                 onDrop = { from, to ->
-                    viewModel.moveQueueItem(overlayBaseIndex + from, overlayBaseIndex + to)
-                }
+                    viewModel.moveQueueItem(upcoming[from].instanceId, upcoming[to].instanceId)
+                },
+                onCancel = { overlayPreview = upcoming }
             )
 
             Box(
@@ -1710,6 +1727,7 @@ fun NowPlayingScreen(
                             style = MaterialTheme.typography.titleLarge
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            ClearUpNextButton(viewModel::clearUpcoming)
                             if (overlayPreview.size > 1) {
                                 IconButton(onClick = viewModel::smartShuffle) {
                                     Icon(
@@ -1737,20 +1755,19 @@ fun NowPlayingScreen(
                             overlayPreview,
                             key = { _, entry -> entry.instanceId }
                         ) { offset, entry ->
-                            val queueIndex = state.currentIndex + 1 + offset
                             val isDragging = overlayDragState.draggingItemIndex == offset
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .dragDropItemOffset(overlayDragState, offset)
+                                    .dragDropItemOffset(overlayDragState, entry.instanceId)
                                     .zIndex(if (isDragging) 1f else 0f),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 TrackRow(
                                     track = entry.track,
-                                    onClick = { viewModel.playQueueItem(queueIndex) },
-                                    onAddToPlaylistClick = { quickAddQueueIndex = queueIndex },
-                                    onMoreClick = { menuQueueIndex = queueIndex },
+                                    onClick = { if (overlayDragState.draggingItemIndex == null) viewModel.playQueueItem(entry.instanceId) },
+                                    onAddToPlaylistClick = { if (overlayDragState.draggingItemIndex == null) quickAddQueueId = entry.instanceId },
+                                    onMoreClick = { if (overlayDragState.draggingItemIndex == null) menuQueueId = entry.instanceId },
                                     modifier = Modifier.weight(1f)
                                 )
                                 Box(
@@ -1915,4 +1932,11 @@ private fun formatMillis(millis: Long): String {
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
     return String.format("%d:%02d", minutes, seconds)
+}
+
+@Composable
+private fun ClearUpNextButton(onClear: () -> Unit) {
+    IconButton(onClick = onClear, modifier = Modifier.size(40.dp)) {
+        Icon(Icons.Filled.ClearAll, contentDescription = "Clear Up Next")
+    }
 }

@@ -454,6 +454,7 @@ class SettingsRepository @Inject constructor(
         _state.update { it.copy(floatingIslandEnabled = enabled) }
     }
 
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     fun setStreamCacheLimitMb(limitMb: Int) {
         val clamped = limitMb.coerceIn(0, DEFAULT_STREAM_CACHE_LIMIT_MB)
         prefs.edit { putInt(KEY_STREAM_CACHE_LIMIT_MB, clamped) }
@@ -464,6 +465,7 @@ class SettingsRepository @Inject constructor(
         )
     }
 
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     fun clearStreamCache() {
         StreamCacheControl.clear(context)
     }

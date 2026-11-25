@@ -35,8 +35,8 @@ class TrackActionsViewModel @Inject constructor(
 
     fun isDownloaded(trackId: String): Flow<Boolean> = repository.isDownloaded(trackId)
 
-    fun toggleFavorite(track: Track, isCurrentlyFavorite: Boolean) {
-        viewModelScope.launch { repository.toggleFavorite(track, isCurrentlyFavorite) }
+    fun toggleFavorite(track: Track) {
+        viewModelScope.launch { repository.toggleFavoriteAuto(track) }
     }
 
     fun addToPlaylist(playlistId: Long, track: Track) {

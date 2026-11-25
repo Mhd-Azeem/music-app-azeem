@@ -19,6 +19,8 @@ import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.model.TrackSource
 import android.net.Uri
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.wavelength.music.data.model.DownloadsSummary
 import java.io.File
 import java.util.Calendar
@@ -85,14 +87,17 @@ class MusicRepository @Inject constructor(
         val offlineMatches = if (page == 0 && normalized.isNotBlank()) {
             val local = runCatching { observeLocalSongs().first() }.getOrDefault(emptyList())
             val downloads = runCatching { observeDownloadedTracks().first() }.getOrDefault(emptyList())
-            (downloads + local)
-                .filter { track ->
-                    track.name.lowercase().contains(normalized) ||
-                        track.artistName.lowercase().contains(normalized) ||
-                        track.albumName.lowercase().contains(normalized)
-                }
-                .distinctBy { it.id }
-                .take(limit)
+            withContext(Dispatchers.Default) {
+                (downloads.asSequence() + local.asSequence())
+                    .filter { track ->
+                        track.name.contains(normalized, ignoreCase = true) ||
+                            track.artistName.contains(normalized, ignoreCase = true) ||
+                            track.albumName.contains(normalized, ignoreCase = true)
+                    }
+                    .distinctBy { it.id }
+                    .take(limit)
+                    .toList()
+            }
         } else {
             emptyList()
         }
@@ -167,23 +172,19 @@ class MusicRepository @Inject constructor(
     /** Unconditionally marks [track] as a favorite (insert-or-replace), unlike [toggleFavorite]
      * which flips the current state — used by backup restore, where "add if missing" is what's
      * wanted regardless of whatever's already favorited. */
-    suspend fun addFavorite(track: Track) {
-        favoriteDao.insert(
-            FavoriteTrackEntity(
-                id = track.id,
-                name = track.name,
-                artist = track.artistName,
-                albumArtUrl = track.albumArtUrl,
-                audioUrl = track.audioUrl,
-                source = track.source.name
-            )
-        )
-    }
+    suspend fun addFavorite(track: Track) = favoriteDao.insert(track.toFavoriteEntity())
 
-    /** For quick actions (like swipe-to-favorite) that don't already know the current state. */
-    suspend fun toggleFavoriteAuto(track: Track) {
-        toggleFavorite(track, isCurrentlyFavorite = favoriteDao.isFavorite(track.id).first())
-    }
+    /** For quick actions and the player, toggle against the database's current value. */
+    suspend fun toggleFavoriteAuto(track: Track) = favoriteDao.toggle(track.toFavoriteEntity())
+
+    private fun Track.toFavoriteEntity() = FavoriteTrackEntity(
+        id = id,
+        name = name,
+        artist = artistName,
+        albumArtUrl = albumArtUrl,
+        audioUrl = audioUrl,
+        source = source.name
+    )
 
     fun observeRecentlyPlayed(limit: Int = 50): Flow<List<Track>> =
         recentlyPlayedDao.observeRecent(limit).map { list ->
@@ -235,7 +236,8 @@ class MusicRepository @Inject constructor(
 
     /** Used by smart shuffle to weight a queue reorder by actual listening history. */
     suspend fun getPlayCounts(trackIds: List<String>): Map<String, Int> =
-        playEventDao.getPlayCounts(trackIds).associate { it.trackId to it.playCount }
+        trackIds.distinct().chunked(900).flatMap { playEventDao.getPlayCounts(it) }
+            .associate { it.trackId to it.playCount }
 
     // --- User-created playlists -----------------------------------------------------------------
 
@@ -267,8 +269,7 @@ class MusicRepository @Inject constructor(
         playlistDao.observePlaylistTracks(playlistId).map { list -> list.map { it.toTrack() } }
 
     suspend fun addTrackToPlaylist(playlistId: Long, track: Track) {
-        val nextPosition = playlistDao.maxPosition(playlistId) + 1
-        playlistDao.addTrack(
+        playlistDao.appendTrack(
             PlaylistTrackEntity(
                 playlistId = playlistId,
                 trackId = track.id,
@@ -276,8 +277,7 @@ class MusicRepository @Inject constructor(
                 artist = track.artistName,
                 albumArtUrl = track.albumArtUrl,
                 audioUrl = track.audioUrl,
-                source = track.source.name,
-                position = nextPosition
+                source = track.source.name
             )
         )
     }
@@ -285,12 +285,8 @@ class MusicRepository @Inject constructor(
     suspend fun removeTrackFromPlaylist(playlistId: Long, trackId: String) =
         playlistDao.removeTrack(playlistId, trackId)
 
-    /** Persists a new track order after a drag/move-up/move-down reorder in the UI. */
-    suspend fun reorderPlaylistTracks(playlistId: Long, orderedTrackIds: List<String>) {
-        orderedTrackIds.forEachIndexed { index, trackId ->
-            playlistDao.updatePosition(playlistId, trackId, index)
-        }
-    }
+    suspend fun movePlaylistTrack(playlistId: Long, expectedTrackIds: List<String>, from: Int, to: Int): Boolean =
+        playlistDao.moveTrack(playlistId, expectedTrackIds, from, to)
 
     // --- Offline downloads -----------------------------------------------------------------------
 

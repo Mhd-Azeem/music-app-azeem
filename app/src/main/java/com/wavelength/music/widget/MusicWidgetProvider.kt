@@ -32,25 +32,26 @@ class MusicWidgetProvider : AppWidgetProvider() {
     private fun handleTransportAction(context: Context, action: String) {
         withMediaController(context) { controller ->
             when (action) {
-                ACTION_PLAY_PAUSE -> if (controller.isPlaying) controller.pause() else controller.play()
+                ACTION_PLAY_PAUSE -> if (controller.playWhenReady) controller.pause() else controller.play()
                 ACTION_NEXT -> controller.seekToNext()
                 ACTION_PREVIOUS -> controller.seekToPrevious()
             }
         }
     }
 
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     private fun withMediaController(context: Context, action: (MediaController) -> Unit) {
         val pendingResult = goAsync()
         val sessionToken = SessionToken(context, ComponentName(context, PlaybackService::class.java))
         val controllerFuture = MediaController.Builder(context, sessionToken).buildAsync()
         controllerFuture.addListener(
             {
-                runCatching {
-                    val controller = controllerFuture.get()
-                    action(controller)
-                    controller.release()
+                try {
+                    runCatching { action(controllerFuture.get()) }
+                } finally {
+                    MediaController.releaseFuture(controllerFuture)
+                    pendingResult.finish()
                 }
-                pendingResult.finish()
             },
             ContextCompat.getMainExecutor(context)
         )

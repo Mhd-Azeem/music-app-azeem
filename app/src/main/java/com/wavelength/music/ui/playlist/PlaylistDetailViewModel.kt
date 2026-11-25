@@ -45,21 +45,21 @@ class PlaylistDetailViewModel @Inject constructor(
     fun playAll() {
         val current = tracks.value
         if (current is ScreenState.Success) {
-            playerController.playQueue(current.data, 0)
+            playerController.playQueue(current.data, 0, playlistId)
         }
     }
 
     fun shuffleAll() {
         val current = tracks.value
         if (current is ScreenState.Success && current.data.isNotEmpty()) {
-            playerController.playQueue(current.data.shuffled(), 0)
+            playerController.playQueue(current.data.shuffled(), 0, playlistId)
         }
     }
 
     fun playTrack(index: Int) {
         val current = tracks.value
         if (current is ScreenState.Success) {
-            playerController.playQueue(current.data, index)
+            playerController.playQueue(current.data, index, playlistId)
         }
     }
 
@@ -73,7 +73,11 @@ class PlaylistDetailViewModel @Inject constructor(
         val list = current.data
         if (from !in list.indices || to !in list.indices || from == to) return
         val reordered = list.toMutableList().apply { add(to, removeAt(from)) }
-        viewModelScope.launch { repository.reorderPlaylistTracks(playlistId, reordered.map { it.id }) }
+        viewModelScope.launch {
+            if (repository.movePlaylistTrack(playlistId, list.map { it.id }, from, to)) {
+                playerController.syncPlaylistOrder(playlistId, reordered.map { it.id })
+            }
+        }
     }
 
     suspend fun generateQrCode(): Result<Bitmap> =

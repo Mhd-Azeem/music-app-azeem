@@ -106,6 +106,12 @@ android {
 }
 
 dependencies {
+    constraints {
+        implementation("com.google.guava:guava:33.7.2-android") {
+            because("Media3's transitive Guava version is affected by GHSA-xxph-c9ww-hj94")
+        }
+    }
+
     testImplementation("junit:junit:4.13.2")
     implementation(libs.androidx.core.ktx)
     implementation("androidx.core:core-splashscreen:1.0.1")

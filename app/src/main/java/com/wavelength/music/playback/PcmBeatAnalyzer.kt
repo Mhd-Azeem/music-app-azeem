@@ -22,6 +22,7 @@ import kotlin.math.sqrt
  * This deliberately does not use Android's Visualizer API, RECORD_AUDIO or the microphone.
  * If ExoPlayer is producing audible PCM, this class sees the same samples before AudioTrack.
  */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Singleton
 class PcmBeatAnalyzer @Inject constructor() : TeeAudioProcessor.AudioBufferSink {
 

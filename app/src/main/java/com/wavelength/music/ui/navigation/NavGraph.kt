@@ -95,7 +95,6 @@ import dev.chrisbanes.haze.hazeChild
 fun WavelengthNavHost() {
     val navController = rememberNavController()
     val playerViewModel: PlayerViewModel = hiltViewModel()
-    val playbackState by playerViewModel.state.collectAsStateWithLifecycle()
     val settingsViewModel: AppSettingsViewModel = hiltViewModel()
     val settings by settingsViewModel.state.collectAsStateWithLifecycle()
     val activationViewModel: ActivationViewModel = hiltViewModel()
@@ -151,19 +150,20 @@ fun WavelengthNavHost() {
         bottomBar = {
             if (showChrome) {
                 Column {
-                        MiniPlayerBar(
-                            minimal = settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.MINIMAL,
-                            state = playbackState,
-                            onClick = { navController.navigate(Screen.NowPlaying.route) },
-                            onPlayPause = playerViewModel::playPause,
-                            onSkipNext = playerViewModel::skipNext,
-                            onSkipPrevious = playerViewModel::skipPrevious,
-                            hazeState = if (isLiquid) hazeState else null,
-                            glassStyle = glassStyle,
-                            trackTransitionEnabled = settings.trackTransitionEnabled,
-                            trackTransitionDurationMs = settings.trackTransitionDurationMs,
-                            visualThemeMode = settings.visualThemeMode
-                        )
+                    val playbackState by playerViewModel.state.collectAsStateWithLifecycle()
+                    MiniPlayerBar(
+                        minimal = settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.MINIMAL,
+                        state = playbackState,
+                        onClick = { navController.navigate(Screen.NowPlaying.route) },
+                        onPlayPause = playerViewModel::playPause,
+                        onSkipNext = playerViewModel::skipNext,
+                        onSkipPrevious = playerViewModel::skipPrevious,
+                        hazeState = if (isLiquid) hazeState else null,
+                        glassStyle = glassStyle,
+                        trackTransitionEnabled = settings.trackTransitionEnabled,
+                        trackTransitionDurationMs = settings.trackTransitionDurationMs,
+                        visualThemeMode = settings.visualThemeMode
+                    )
                     BoxWithConstraints(
                         modifier = Modifier
                             .fillMaxWidth()

@@ -15,33 +15,33 @@ export default {
       if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
 
       if (request.method === 'POST' && url.pathname === '/activation/request') {
-        return requestActivation(request, env);
+        return await requestActivation(request, env);
       }
       if (request.method === 'GET' && url.pathname === '/activation/status') {
-        return activationStatus(url, env);
+        return await activationStatus(url, env);
       }
       if (request.method === 'POST' && url.pathname === '/admin/login') {
-        return adminLogin(request, env);
+        return await adminLogin(request, env);
       }
       if (request.method === 'POST' && url.pathname === '/usage/report') {
-        return reportUsage(request, env);
+        return await reportUsage(request, env);
       }
 
       const adminMatch = url.pathname.match(/^\/admin\/requests\/(\d+)\/(approve|reject|revoke|reset-device)$/);
       if (request.method === 'GET' && url.pathname === '/admin/requests') {
         const auth = await requireAdmin(request, env);
         if (!auth.ok) return auth.response;
-        return listRequests(env);
+        return await listRequests(env);
       }
       if (request.method === 'GET' && url.pathname === '/admin/user-stats') {
         const auth = await requireAdmin(request, env);
         if (!auth.ok) return auth.response;
-        return listUserStats(env);
+        return await listUserStats(env);
       }
       if (request.method === 'POST' && adminMatch) {
         const auth = await requireAdmin(request, env);
         if (!auth.ok) return auth.response;
-        return decideRequest(request, env, Number(adminMatch[1]), adminMatch[2]);
+        return await decideRequest(request, env, Number(adminMatch[1]), adminMatch[2]);
       }
 
       return json({ error: 'Not found' }, 404);
@@ -296,7 +296,10 @@ async function ensureDeviceBindingSchema(env) {
     deviceSchemaReadyPromise = env.DB.prepare('ALTER TABLE activations ADD COLUMN device_id TEXT').run()
       .catch(error => {
         const message = String(error?.message || error || '');
-        if (!message.toLowerCase().includes('duplicate column')) throw error;
+        if (!message.toLowerCase().includes('duplicate column')) {
+          deviceSchemaReadyPromise = undefined;
+          throw error;
+        }
       });
   }
   return deviceSchemaReadyPromise;
@@ -311,7 +314,10 @@ async function ensureUsageStatsSchema(env) {
         total_listened_ms INTEGER NOT NULL DEFAULT 0,
         updated_at INTEGER NOT NULL
       )
-    `).run();
+    `).run().catch(error => {
+      usageSchemaReadyPromise = undefined;
+      throw error;
+    });
   }
   return usageSchemaReadyPromise;
 }

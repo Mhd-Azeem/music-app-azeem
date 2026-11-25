@@ -14,6 +14,9 @@ import com.wavelength.music.playback.SystemVolumeController
 import com.wavelength.music.playback.VisualizerController
 import com.wavelength.music.ui.components.ScreenState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -48,6 +51,7 @@ class PlayerViewModel @Inject constructor(
     val pcmBassLevel: StateFlow<Float> = pcmBeatAnalyzer.bassLevel
     val systemVolume: StateFlow<Float> = systemVolumeController.volume
 
+    private var lyricsJob: Job? = null
     private val _lyrics = MutableStateFlow<ScreenState<List<LyricLine>>>(ScreenState.Empty)
     val lyrics: StateFlow<ScreenState<List<LyricLine>>> = _lyrics.asStateFlow()
 
@@ -74,9 +78,10 @@ class PlayerViewModel @Inject constructor(
     fun smartShuffle() = playerController.smartShuffleQueue()
     fun ensureSmartQueue() = playerController.ensureSmartQueue()
     fun cycleRepeatMode() = playerController.cycleRepeatMode()
-    fun playQueueItem(index: Int) = playerController.playQueueItem(index)
-    fun moveQueueItem(from: Int, to: Int) = playerController.moveQueueItem(from, to)
-    fun removeQueueItem(index: Int) = playerController.removeQueueItem(index)
+    fun playQueueItem(entryId: Long) = playerController.playQueueItem(entryId)
+    fun moveQueueItem(from: Long, to: Long) = playerController.moveQueueItem(from, to)
+    fun removeQueueItem(entryId: Long) = playerController.removeQueueItem(entryId)
+    fun clearUpcoming() = playerController.clearUpcoming()
     fun setVolume(volume: Float) = playerController.setVolume(volume)
     fun setSystemVolume(volume: Float) = systemVolumeController.setVolume(volume)
     fun setPlaybackSpeed(speed: Float) = playerController.setPlaybackSpeed(speed)
@@ -84,14 +89,18 @@ class PlayerViewModel @Inject constructor(
 
     fun loadLyrics() {
         val track = state.value.currentTrack ?: return
-        viewModelScope.launch {
+        lyricsJob?.cancel()
+        lyricsJob = viewModelScope.launch {
             _lyrics.value = ScreenState.Loading
-            lyricsRepository.getLyrics(
+            val result = lyricsRepository.getLyrics(
                 trackName = track.name,
                 artistName = track.artistName,
                 albumName = track.albumName,
                 durationSeconds = track.durationSeconds
-            ).fold(
+            )
+            coroutineContext.ensureActive()
+            if (state.value.currentTrack?.id != track.id) return@launch
+            result.fold(
                 onSuccess = { lines ->
                     _lyrics.value = if (lines.isEmpty()) ScreenState.Empty else ScreenState.Success(lines)
                 },
@@ -108,7 +117,7 @@ class PlayerViewModel @Inject constructor(
 
     fun toggleFavorite() {
         val track = state.value.currentTrack ?: return
-        viewModelScope.launch { repository.toggleFavorite(track, isCurrentFavorite.value) }
+        viewModelScope.launch { repository.toggleFavoriteAuto(track) }
     }
 
     fun addCurrentTrackToPlaylist(playlistId: Long) {

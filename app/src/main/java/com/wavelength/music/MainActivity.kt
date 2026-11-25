@@ -78,6 +78,7 @@ class MainActivity : ComponentActivity() {
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
+    private var updateDownloadReceiver: BroadcastReceiver? = null
     private val updaterClient by lazy { OkHttpClient() }
     private val updaterPrefs by lazy {
         getSharedPreferences("azmusic_updater", Context.MODE_PRIVATE)
@@ -119,9 +120,7 @@ class MainActivity : ComponentActivity() {
             val artworkFlow = remember(playerViewModel) {
                 playerViewModel.state.map { it.currentTrack?.albumArtUrl }.distinctUntilChanged()
             }
-            val artworkUrl by artworkFlow.collectAsStateWithLifecycle(
-                initialValue = playerViewModel.state.value.currentTrack?.albumArtUrl
-            )
+            val artworkUrl by artworkFlow.collectAsStateWithLifecycle(initialValue = null)
             var albumAdaptiveAccent by remember { mutableStateOf<Color?>(null) }
 
             LaunchedEffect(
@@ -461,26 +460,32 @@ class MainActivity : ComponentActivity() {
         // activity immediately. While AzMusic is visible, poll this exact download and open the
         // installer the moment it becomes successful. The broadcast receiver and onResume()
         // logic below remain as fallbacks.
-        watchDownloadAndLaunchInstaller(downloadId)
-
+        unregisterUpdateDownloadReceiver()
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 if (intent?.action != DownloadManager.ACTION_DOWNLOAD_COMPLETE) return
                 if (intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) != downloadId) return
-
-                runCatching { unregisterReceiver(this) }
-
                 tryLaunchDownloadedUpdate(downloadId)
             }
         }
+        ContextCompat.registerReceiver(
+            this,
+            receiver,
+            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+            ContextCompat.RECEIVER_EXPORTED
+        )
+        updateDownloadReceiver = receiver
+        watchDownloadAndLaunchInstaller(downloadId)
+    }
 
-        val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(receiver, filter, RECEIVER_NOT_EXPORTED)
-        } else {
-            @Suppress("DEPRECATION")
-            registerReceiver(receiver, filter)
-        }
+    override fun onDestroy() {
+        unregisterUpdateDownloadReceiver()
+        super.onDestroy()
+    }
+
+    private fun unregisterUpdateDownloadReceiver() {
+        updateDownloadReceiver?.let { unregisterReceiver(it) }
+        updateDownloadReceiver = null
     }
 
     private fun watchDownloadAndLaunchInstaller(downloadId: Long) {
@@ -494,6 +499,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun tryLaunchDownloadedUpdate(downloadId: Long): Boolean {
+        if (updaterPrefs.getLong(KEY_PENDING_DOWNLOAD_ID, -1L) != downloadId) return false
         val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val cursor = downloadManager.query(DownloadManager.Query().setFilterById(downloadId))
             ?: return false
@@ -507,11 +513,13 @@ class MainActivity : ComponentActivity() {
                 DownloadManager.STATUS_SUCCESSFUL -> {
                     val uri = downloadManager.getUriForDownloadedFile(downloadId) ?: return false
                     updaterPrefs.edit().remove(KEY_PENDING_DOWNLOAD_ID).apply()
+                    unregisterUpdateDownloadReceiver()
                     launchPackageInstaller(uri)
                     return true
                 }
                 DownloadManager.STATUS_FAILED -> {
                     updaterPrefs.edit().remove(KEY_PENDING_DOWNLOAD_ID).apply()
+                    unregisterUpdateDownloadReceiver()
                     Toast.makeText(
                         this,
                         "Update download failed. Please try again.",

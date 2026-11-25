@@ -10,6 +10,7 @@ import com.wavelength.music.data.local.PlayEventDao
 import com.wavelength.music.data.local.PlaylistDao
 import com.wavelength.music.data.local.RecentlyPlayedDao
 import com.wavelength.music.data.local.SearchHistoryDao
+import com.wavelength.music.data.local.libraryMigrations
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,7 +26,7 @@ object DatabaseModule {
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "wavelength.db")
-            .fallbackToDestructiveMigration()
+            .addMigrations(*libraryMigrations)
             .build()
 
     @Provides
