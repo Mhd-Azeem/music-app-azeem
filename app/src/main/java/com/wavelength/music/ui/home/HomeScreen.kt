@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wavelength.music.R
+import com.wavelength.music.ui.radio.ExperienceSwitcher
 import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.repository.VisualThemeMode
@@ -84,6 +85,7 @@ import com.wavelength.music.ui.settings.AppSettingsViewModel
 @Composable
 fun HomeScreen(
     onTrackClick: () -> Unit,
+    onOpenRadio: () -> Unit,
     onGenreClick: (tag: String, label: String) -> Unit,
     onArtistClick: (String) -> Unit,
     onSettingsClick: () -> Unit,
@@ -99,7 +101,7 @@ fun HomeScreen(
     val settingsViewModel: AppSettingsViewModel = hiltViewModel()
     val settings by settingsViewModel.state.collectAsStateWithLifecycle()
     if (settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.MINIMAL) {
-        InstantHome(viewModel, onTrackClick, onSettingsClick, onStatisticsClick, onPlaylistClick, onSearchClick, onSwipeToSearch)
+        InstantHome(viewModel, onTrackClick, onSettingsClick, onStatisticsClick, onPlaylistClick, onSearchClick, onSwipeToSearch, onOpenRadio)
         return
     }
     val featured by viewModel.featured.collectAsStateWithLifecycle()
@@ -228,11 +230,7 @@ fun HomeScreen(
                             }
                         )
                 ) {
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleLarge
-                    )
+                    ExperienceSwitcher(onSwitch = onOpenRadio, tint = Color.White)
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -387,7 +385,8 @@ private fun InstantHome(
     onStats: () -> Unit,
     onPlaylist: (Long) -> Unit,
     onSearch: () -> Unit,
-    onSwipeToSearch: () -> Unit
+    onSwipeToSearch: () -> Unit,
+    onOpenRadio: () -> Unit
 ) {
     val current by viewModel.currentTrack.collectAsStateWithLifecycle(null)
     val recent by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
@@ -400,7 +399,7 @@ private fun InstantHome(
     val threshold = with(LocalDensity.current) { 96.dp.toPx() }
     Scaffold(topBar = {
         TopAppBar(
-            title = { Text(stringResource(R.string.app_name)) },
+            title = { ExperienceSwitcher(onSwitch = onOpenRadio) },
             actions = {
                 TextButton(onClick = onStats) { Text("Stats") }
                 IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, contentDescription = "Settings") }

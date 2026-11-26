@@ -75,6 +75,7 @@ import com.wavelength.music.ui.components.AppBackground
 import com.wavelength.music.ui.components.MiniPlayerBar
 import com.wavelength.music.ui.home.GenreScreen
 import com.wavelength.music.ui.home.HomeScreen
+import com.wavelength.music.ui.radio.RadioScreen
 import com.wavelength.music.ui.library.LibraryScreen
 import com.wavelength.music.ui.nowplaying.NowPlayingScreen
 import com.wavelength.music.ui.nowplaying.PlayerViewModel
@@ -109,7 +110,8 @@ fun WavelengthNavHost() {
     val showChrome = currentRoute != Screen.NowPlaying.route &&
         currentRoute != Screen.Settings.route &&
         currentRoute != Screen.Activation.route &&
-        currentRoute != Screen.AdminActivation.route
+        currentRoute != Screen.AdminActivation.route &&
+        currentRoute != Screen.Radio.route
     val activationRequiredSequence by playerViewModel.activationRequiredSequence.collectAsStateWithLifecycle()
     var showActivationPrompt by remember { mutableStateOf(false) }
     var searchFocusRequestSequence by remember { mutableIntStateOf(0) }
@@ -120,7 +122,7 @@ fun WavelengthNavHost() {
         }
     }
 
-    if (showActivationPrompt) {
+    if (showActivationPrompt && currentRoute != Screen.Radio.route) {
         AlertDialog(
             onDismissRequest = { showActivationPrompt = false },
             title = { Text("Email activation required") },
@@ -532,8 +534,14 @@ fun WavelengthNavHost() {
                 startDestination = Screen.Home.route,
                 modifier = Modifier.padding(padding)
             ) {
+                composable(Screen.Radio.route) {
+                    RadioScreen(onOpenMusic = { navController.popBackStack() })
+                }
                 composable(Screen.Home.route) {
                     HomeScreen(
+                        onOpenRadio = {
+                            navController.navigate(Screen.Radio.route) { launchSingleTop = true }
+                        },
                         onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
                         onGenreClick = { tag, label ->
                             navController.navigate(Screen.Genre.createRoute(tag, label))
