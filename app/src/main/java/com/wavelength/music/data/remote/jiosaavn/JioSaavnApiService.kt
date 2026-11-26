@@ -18,6 +18,9 @@ interface JioSaavnApiService {
         @Query("limit") limit: Int = 20
     ): JioSaavnSearchResponse
 
+    @GET("search/albums")
+    suspend fun searchAlbums(@Query("query") query: String, @Query("limit") limit: Int = 8): JioSaavnAlbumSearchResponse
+
     @GET("songs/{id}")
     suspend fun getSong(@Path("id") id: String): JioSaavnSongResponse
 

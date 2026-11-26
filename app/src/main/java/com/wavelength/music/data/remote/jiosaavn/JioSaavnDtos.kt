@@ -92,3 +92,12 @@ data class JioSaavnUsageDataDto(
     @Json(name = "limit") val limit: Int? = null,
     @Json(name = "date") val date: String? = null
 )
+
+@JsonClass(generateAdapter = true)
+data class JioSaavnAlbumSearchResponse(val data: JioSaavnAlbumSearchData? = null)
+
+@JsonClass(generateAdapter = true)
+data class JioSaavnAlbumSearchData(val results: List<JioSaavnAlbumSearchResult> = emptyList())
+
+@JsonClass(generateAdapter = true)
+data class JioSaavnAlbumSearchResult(val name: String? = null, val url: String? = null)

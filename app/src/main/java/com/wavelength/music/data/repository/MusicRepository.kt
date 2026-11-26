@@ -145,6 +145,9 @@ class MusicRepository @Inject constructor(
         return results.distinctBy { it.id }.take(limit)
     }
 
+    suspend fun searchSoundtrackTracks(query: String): List<Track> =
+        jioSaavnRepository.searchAlbumTracks(query)
+
     suspend fun getApiUsage() = jioSaavnRepository.getUsage()
 
     // --- Local device songs --------------------------------------------------------------------

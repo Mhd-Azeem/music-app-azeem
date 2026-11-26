@@ -98,6 +98,15 @@ class SearchViewModel @Inject constructor(
         canLoadMore = true
         val result = repository.searchTracks(effectiveQuery, page = 0, limit = SEARCH_PAGE_SIZE)
         coroutineContext.ensureActive()
+        val title = normalizeForMatch(q)
+        val movie = title == "om" || title == "o m" || title == "om movie" ||
+            title == "o m movie" || "operation mole" in title
+        val song = when (title) {
+            "fa fa", "fa fa fa" -> "fa fa fa"
+            "veezha", "veezha veera" -> "veezha veera"
+            else -> null
+        }
+        val soundtrackQuery = if (movie || song != null) "Operation Mole" else q
         result.fold(
             onSuccess = { tracks ->
                 // Modifier-heavy queries such as "song name slowed reverb" often make JioSaavn
@@ -120,6 +129,22 @@ class SearchViewModel @Inject constructor(
                 // Phrase-like searches are also checked against lyrics. These matches are merged
                 // in after the normal list so title/artist search stays fast while lyric discovery
                 // can enrich it a moment later.
+                if (movie || song != null || ranked.isEmpty() || "soundtrack" in title) {
+                    val album = repository.searchSoundtrackTracks(soundtrackQuery)
+                    val exact = if (song != null) {
+                        repository.searchOnlineTracks("$song Operation Mole", limit = SEARCH_PAGE_SIZE)
+                            .getOrDefault(emptyList())
+                    } else emptyList()
+                    coroutineContext.ensureActive()
+                    val matching = (album + exact).filter { track ->
+                        (selected == "All" || track.language.equals(selected, ignoreCase = true)) &&
+                            (song == null || canonicalSongTitle(track.name) == song)
+                    }
+                    if (matching.isNotEmpty()) {
+                        val latest = (_results.value as? ScreenState.Success)?.data.orEmpty()
+                        _results.value = ScreenState.Success(dedupeTracks(matching + latest))
+                    }
+                }
                 if (shouldTryLyricsSearch(q)) {
                     val language = selected.takeUnless { it == "All" }
                     val lyricMatches = repository.searchTracksByLyrics(q, language = language)

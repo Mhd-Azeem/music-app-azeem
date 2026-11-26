@@ -2,6 +2,7 @@ package com.wavelength.music.data.repository
 
 import com.wavelength.music.data.cache.TtlCache
 import com.wavelength.music.data.model.Track
+import com.wavelength.music.data.model.normalizeForMatch
 import com.wavelength.music.data.model.toTrack
 import com.wavelength.music.data.remote.jiosaavn.JioSaavnApiService
 import com.wavelength.music.data.remote.jiosaavn.JioSaavnUsageDataDto
@@ -42,6 +43,26 @@ class JioSaavnRepository @Inject constructor(
                 .take(limit)
                 .map { it.toDomain().toTrack() }
         }
+    }
+
+    suspend fun searchAlbumTracks(query: String): List<Track> {
+        val normalized = normalizeForMatch(query)
+        if (normalized.isBlank()) return emptyList()
+        return runCatching {
+            detailCache.getOrPut("album-search:$normalized", SEARCH_FRESH_MS, SEARCH_STALE_MS) {
+                val matches = api.searchAlbums(query).data?.results.orEmpty().mapNotNull { result ->
+                    val title = normalizeForMatch(result.name.orEmpty())
+                    val url = result.url?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                    if (title == normalized || title.startsWith("$normalized ") ||
+                        (" " + title + " ").contains(" $normalized ")) title to url else null
+                }.distinctBy { it.second }
+                    .sortedByDescending { (title, _) -> "soundtrack" in title || "motion picture" in title }
+                    .take(3)
+                matches.flatMap { (_, url) -> getAlbumTracks(url).getOrDefault(emptyList()) }
+                    .filter { it.audioUrl.isNotBlank() }
+                    .distinctBy { it.id }
+            }
+        }.getOrDefault(emptyList())
     }
 
     suspend fun getSong(id: String): Result<Track?> = runCatching {
