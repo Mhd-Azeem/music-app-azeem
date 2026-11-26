@@ -34,8 +34,11 @@ android {
         applicationId = "com.wavelength.music"
         minSdk = 24
         targetSdk = 34
-        versionCode = maxOf(691, System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 691)
-        versionName = "1.1.0"
+        val buildNumber = maxOf(691, System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 691)
+        // Build 690 shipped as 1.0. Advance one tenth per build with a rollover after .9.
+        val versionStep = buildNumber - 690
+        versionCode = buildNumber
+        versionName = "${1 + versionStep / 10}.${versionStep % 10}"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
