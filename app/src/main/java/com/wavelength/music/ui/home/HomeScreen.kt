@@ -57,6 +57,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wavelength.music.R
 import com.wavelength.music.ui.radio.ExperienceSwitcher
+import com.wavelength.music.ui.radio.StyledExperienceSwitcher
+import com.wavelength.music.ui.radio.experienceHeaderStyle
 import com.wavelength.music.data.model.PlaylistSummary
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.repository.VisualThemeMode
@@ -126,73 +128,11 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                val headerBrush = when (settings.visualThemeMode) {
-                    VisualThemeMode.SOLID -> Brush.linearGradient(
-                        listOf(Color(0xFF181818), Color(0xFF101010))
-                    )
-                    VisualThemeMode.LIQUID -> Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.58f),
-                            Color(0xCC29436B),
-                            Color(0xAA142033)
-                        )
-                    )
-                    VisualThemeMode.GLASSMORPHISM -> Brush.linearGradient(
-                        listOf(
-                            Color.White.copy(alpha = 0.20f),
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.26f),
-                            Color(0x66152D48)
-                        )
-                    )
-                    VisualThemeMode.NEOMORPHISM -> Brush.linearGradient(
-                        listOf(Color(0xFF38414F), Color(0xFF272E39), Color(0xFF1A1F27))
-                    )
-                    VisualThemeMode.AMOLED -> Brush.linearGradient(
-                        listOf(Color.Black, Color(0xFF050505))
-                    )
-                    VisualThemeMode.ALBUM_ADAPTIVE -> Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.82f),
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.34f),
-                            Color(0xCC090C12)
-                        )
-                    )
-                    VisualThemeMode.AURORA -> Brush.linearGradient(
-                        listOf(
-                            Color(0xDD4338CA),
-                            Color(0xDD7E22CE),
-                            Color(0xBB0891B2)
-                        )
-                    )
-                }
-
-                val headerRadius = when (settings.visualThemeMode) {
-                    VisualThemeMode.SOLID -> 10.dp
-                    VisualThemeMode.LIQUID -> 28.dp
-                    VisualThemeMode.GLASSMORPHISM -> 32.dp
-                    VisualThemeMode.NEOMORPHISM -> 20.dp
-                    VisualThemeMode.AMOLED -> 3.dp
-                    VisualThemeMode.ALBUM_ADAPTIVE -> 22.dp
-                    VisualThemeMode.AURORA -> 34.dp
-                }
-                val headerShape = RoundedCornerShape(headerRadius)
-                val headerBorder = when (settings.visualThemeMode) {
-                    VisualThemeMode.SOLID -> MaterialTheme.colorScheme.primary.copy(alpha = 0.48f)
-                    VisualThemeMode.LIQUID -> Color.White.copy(alpha = 0.34f)
-                    VisualThemeMode.GLASSMORPHISM -> Color.White.copy(alpha = 0.60f)
-                    VisualThemeMode.NEOMORPHISM -> Color.White.copy(alpha = 0.10f)
-                    VisualThemeMode.AMOLED -> Color.White.copy(alpha = 0.22f)
-                    VisualThemeMode.ALBUM_ADAPTIVE -> MaterialTheme.colorScheme.primary.copy(alpha = 0.96f)
-                    VisualThemeMode.AURORA -> Color.White.copy(alpha = 0.72f)
-                }
-                val headerElevation = when (settings.visualThemeMode) {
-                    VisualThemeMode.AMOLED -> 0.dp
-                    VisualThemeMode.SOLID -> 4.dp
-                    VisualThemeMode.NEOMORPHISM -> 18.dp
-                    VisualThemeMode.AURORA -> 20.dp
-                    VisualThemeMode.ALBUM_ADAPTIVE -> 14.dp
-                    else -> 12.dp
-                }
+                val header = experienceHeaderStyle(settings.visualThemeMode)
+                val headerBrush = header.brush
+                val headerShape = header.shape
+                val headerBorder = header.border
+                val headerElevation = header.elevation
                 val settingsShape = when (settings.visualThemeMode) {
                     VisualThemeMode.SOLID -> RoundedCornerShape(10.dp)
                     VisualThemeMode.LIQUID -> RoundedCornerShape(26.dp)
@@ -203,35 +143,7 @@ fun HomeScreen(
                     VisualThemeMode.AURORA -> CircleShape
                 }
 
-                Box(
-                    modifier = Modifier
-                        .shadow(
-                            headerElevation,
-                            headerShape,
-                            ambientColor = if (settings.visualThemeMode == VisualThemeMode.AURORA) Color(0xFF7C3AED) else Color.Black,
-                            spotColor = if (settings.visualThemeMode == VisualThemeMode.ALBUM_ADAPTIVE) MaterialTheme.colorScheme.primary else Color.Black
-                        )
-                        .clip(headerShape)
-                        .background(headerBrush)
-                        .border(
-                            if (settings.visualThemeMode == VisualThemeMode.AMOLED) 1.dp else 1.3.dp,
-                            headerBorder,
-                            headerShape
-                        )
-                        .padding(
-                            horizontal = when (settings.visualThemeMode) {
-                                VisualThemeMode.AMOLED, VisualThemeMode.SOLID -> 14.dp
-                                VisualThemeMode.AURORA -> 20.dp
-                                else -> 18.dp
-                            },
-                            vertical = when (settings.visualThemeMode) {
-                                VisualThemeMode.AMOLED -> 9.dp
-                                else -> 11.dp
-                            }
-                        )
-                ) {
-                    ExperienceSwitcher(onSwitch = onOpenRadio, tint = Color.White)
-                }
+                StyledExperienceSwitcher(settings.visualThemeMode, onSwitch = onOpenRadio, style = header)
 
                 Spacer(modifier = Modifier.weight(1f))
 

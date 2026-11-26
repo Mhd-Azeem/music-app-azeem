@@ -535,7 +535,12 @@ fun WavelengthNavHost() {
                 modifier = Modifier.padding(padding)
             ) {
                 composable(Screen.Radio.route) {
-                    RadioScreen(onOpenMusic = { navController.popBackStack() }, onStartRadio = playerViewModel::pause)
+                    RadioScreen(
+                        onOpenMusic = { navController.popBackStack() },
+                        onStartRadio = playerViewModel::pause,
+                        visualThemeMode = settings.visualThemeMode,
+                        minimal = minimal
+                    )
                 }
                 composable(Screen.Home.route) {
                     HomeScreen(
