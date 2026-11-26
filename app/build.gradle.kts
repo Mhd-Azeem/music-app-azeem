@@ -35,10 +35,10 @@ android {
         minSdk = 24
         targetSdk = 34
         val buildNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()?.takeIf { it > 0 } ?: 1
-        // Start at 1.0 for build 1, then advance one tenth per build.
+        // Start at 1.0.0 for build 1 and roll patch and minor over after 9.
         val versionStep = buildNumber - 1
         versionCode = buildNumber
-        versionName = "${1 + versionStep / 10}.${versionStep % 10}"
+        versionName = "${1 + versionStep / 100}.${versionStep / 10 % 10}.${versionStep % 10}"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
