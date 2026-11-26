@@ -99,6 +99,7 @@ fun WavelengthNavHost() {
     val settings by settingsViewModel.state.collectAsStateWithLifecycle()
     val activationViewModel: ActivationViewModel = hiltViewModel()
     val activation by activationViewModel.activation.collectAsStateWithLifecycle()
+    val minimal = settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.MINIMAL
     val isLiquid = settings.theme.isGlass
     val glassStyle = glassStyleFor(settings.theme)
     val hazeState = remember { HazeState() }
@@ -164,7 +165,34 @@ fun WavelengthNavHost() {
                         trackTransitionDurationMs = settings.trackTransitionDurationMs,
                         visualThemeMode = settings.visualThemeMode
                     )
-                    BoxWithConstraints(
+                    if (minimal) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            bottomNavScreens.forEach { screen ->
+                                val selected = currentRoute == screen.route
+                                val tint = if (selected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant
+                                TextButton(
+                                    onClick = {
+                                        if (selected && screen == Screen.Search) {
+                                            searchFocusRequestSequence++
+                                        } else {
+                                            navController.navigate(screen.route) {
+                                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(navLabelFor(screen), color = tint, maxLines = 1)
+                                }
+                            }
+                        }
+                    } else BoxWithConstraints(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 22.dp, vertical = 10.dp)
@@ -545,6 +573,7 @@ fun WavelengthNavHost() {
                 }
                 composable(Screen.Search.route) {
                     SearchScreen(
+                        minimal = minimal,
                         onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
                         focusRequestSequence = searchFocusRequestSequence,
                         onBrowseArtist = { artist -> navController.navigate(Screen.Artist.createRoute(artist)) },
@@ -569,6 +598,7 @@ fun WavelengthNavHost() {
                 }
                 composable(Screen.Library.route) {
                     LibraryScreen(
+                        minimal = minimal,
                         onTrackClick = { navController.navigate(Screen.NowPlaying.route) },
                         onPlaylistClick = { id ->
                             navController.navigate(Screen.PlaylistDetail.createRoute(id))
@@ -645,6 +675,7 @@ composable(
                 }
                 composable(Screen.Statistics.route) {
                     StatisticsScreen(
+                        minimal = minimal,
                         onBack = { navController.popBackStack() },
                         onOpenAdmin = { navController.navigate(Screen.AdminActivation.route) }
                     )

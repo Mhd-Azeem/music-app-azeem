@@ -3,6 +3,7 @@ package com.wavelength.music.playback
 import android.content.Context
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
+import com.wavelength.music.data.model.Track
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +22,8 @@ internal data class QueueSnapshot(
     val shuffled: Boolean,
     val repeatMode: Int,
     val playlistId: Long? = null,
-    val autoQueueSuppressed: Boolean = false
+    val autoQueueSuppressed: Boolean = false,
+    val radioSeed: Track? = null
 )
 
 @Singleton
@@ -38,16 +40,18 @@ class QueueSnapshotStore @Inject constructor(
     init {
         CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
             var lastEntries: List<QueueEntry>? = null
+            var lastRadioSeed: Track? = null
             var timelineVersion = ""
             for (snapshot in pending) {
                 runCatching {
-                    if (lastEntries !== snapshot.entries) {
+                    if (lastEntries !== snapshot.entries || lastRadioSeed != snapshot.radioSeed) {
                         timelineVersion = UUID.randomUUID().toString()
                         timeline.edit()
                             .putString("version", timelineVersion)
                             .putString("queue", adapter.toJson(snapshot))
                             .apply()
                         lastEntries = snapshot.entries
+                        lastRadioSeed = snapshot.radioSeed
                     }
                     // Position checkpoints write only this small file. A version mismatch
                     // after process death falls back to the cursor embedded in the timeline.

@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import com.wavelength.music.ui.components.rememberOnlineTrackAccess
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -91,6 +94,7 @@ fun LibraryScreen(
     onBrowseArtist: (String) -> Unit,
     onBrowseAlbum: (String) -> Unit,
     onSwipeToSearch: () -> Unit = {},
+    minimal: Boolean = false,
     viewModel: LibraryViewModel = hiltViewModel()
 ) {
     val favorites by viewModel.favorites.collectAsStateWithLifecycle()
@@ -152,7 +156,10 @@ fun LibraryScreen(
         4 -> downloadedTracks
         else -> emptyList()
     }
-    val selectedTracks = currentTracks.filter { it.id in selectedIds }
+    val selectedTracks = remember(currentTracks, selectedIds) {
+        if (selectedIds.isEmpty()) emptyList() else currentTracks.filter { it.id in selectedIds }
+    }
+    val tabState = rememberSaveableStateHolder()
 
     fun exitSelection() {
         selectionMode = false
@@ -342,59 +349,30 @@ fun LibraryScreen(
                 selectedIds = setOf(track.id)
             }
 
-            when (selectedTab) {
-                0 -> TrackList(
-                    tracks = favorites,
-                    isFavoriteTab = true,
-                    onTrackClick = { index ->
-                        viewModel.playFrom(favorites, index)
-                        onTrackClick()
-                    },
-                    onFavoriteClick = viewModel::removeFavorite,
-                    onAddToPlaylistClick = { trackForQuickAdd = it },
-                    onMoreClick = { trackForMenu = it },
-                    selectionMode = selectionMode,
-                    selectedIds = selectedIds,
-                    onToggleSelect = ::onToggleSelect,
-                    onEnterSelection = ::onEnterSelection
-                )
-                1 -> TrackList(
-                    tracks = recentlyPlayed,
-                    isFavoriteTab = false,
-                    onTrackClick = { index ->
-                        viewModel.playFrom(recentlyPlayed, index)
-                        onTrackClick()
-                    },
-                    onFavoriteClick = null,
-                    onAddToPlaylistClick = { trackForQuickAdd = it },
-                    onMoreClick = { trackForMenu = it },
-                    selectionMode = selectionMode,
-                    selectedIds = selectedIds,
-                    onToggleSelect = ::onToggleSelect,
-                    onEnterSelection = ::onEnterSelection
-                )
-                2 -> PlaylistList(
-                    playlists = visiblePlaylists,
-                    currentFolderId = currentFolderId,
-                    onPlaylistClick = onPlaylistClick,
-                    onFolderClick = { folderId -> currentFolderId = folderId },
-                    onBackFromFolder = { currentFolderId = null },
-                    onDelete = viewModel::deletePlaylist
-                )
-                3 -> when {
-                    !hasPermission -> PermissionPrompt { permissionLauncher.launch(audioPermission) }
-                    isScanning -> Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                    else -> TrackList(
-                        tracks = deviceSongs,
+            tabState.SaveableStateProvider(selectedTab) {
+                when (selectedTab) {
+                    0 -> TrackList(
+                        tracks = favorites,
+                        minimal = minimal,
+                        isFavoriteTab = true,
+                        onTrackClick = { index ->
+                            viewModel.playFrom(favorites, index)
+                            onTrackClick()
+                        },
+                        onFavoriteClick = viewModel::removeFavorite,
+                        onAddToPlaylistClick = { trackForQuickAdd = it },
+                        onMoreClick = { trackForMenu = it },
+                        selectionMode = selectionMode,
+                        selectedIds = selectedIds,
+                        onToggleSelect = ::onToggleSelect,
+                        onEnterSelection = ::onEnterSelection
+                    )
+                    1 -> TrackList(
+                        tracks = recentlyPlayed,
+                        minimal = minimal,
                         isFavoriteTab = false,
                         onTrackClick = { index ->
-                            viewModel.playFrom(deviceSongs, index)
+                            viewModel.playFrom(recentlyPlayed, index)
                             onTrackClick()
                         },
                         onFavoriteClick = null,
@@ -405,23 +383,58 @@ fun LibraryScreen(
                         onToggleSelect = ::onToggleSelect,
                         onEnterSelection = ::onEnterSelection
                     )
+                    2 -> PlaylistList(
+                        playlists = visiblePlaylists,
+                        currentFolderId = currentFolderId,
+                        onPlaylistClick = onPlaylistClick,
+                        onFolderClick = { folderId -> currentFolderId = folderId },
+                        onBackFromFolder = { currentFolderId = null },
+                        onDelete = viewModel::deletePlaylist
+                    )
+                    3 -> when {
+                        !hasPermission -> PermissionPrompt { permissionLauncher.launch(audioPermission) }
+                        isScanning -> Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                        else -> TrackList(
+                            tracks = deviceSongs,
+                            minimal = minimal,
+                            isFavoriteTab = false,
+                            onTrackClick = { index ->
+                                viewModel.playFrom(deviceSongs, index)
+                                onTrackClick()
+                            },
+                            onFavoriteClick = null,
+                            onAddToPlaylistClick = { trackForQuickAdd = it },
+                            onMoreClick = { trackForMenu = it },
+                            selectionMode = selectionMode,
+                            selectedIds = selectedIds,
+                            onToggleSelect = ::onToggleSelect,
+                            onEnterSelection = ::onEnterSelection
+                        )
+                    }
+                    else -> TrackList(
+                        tracks = downloadedTracks,
+                        minimal = minimal,
+                        isFavoriteTab = false,
+                        onTrackClick = { index ->
+                            viewModel.playFrom(downloadedTracks, index)
+                            onTrackClick()
+                        },
+                        onFavoriteClick = null,
+                        onAddToPlaylistClick = { trackForQuickAdd = it },
+                        onMoreClick = { trackForMenu = it },
+                        emptyMessage = "No downloads yet — use a track's three-dot menu to download it",
+                        selectionMode = selectionMode,
+                        selectedIds = selectedIds,
+                        onToggleSelect = ::onToggleSelect,
+                        onEnterSelection = ::onEnterSelection
+                    )
                 }
-                else -> TrackList(
-                    tracks = downloadedTracks,
-                    isFavoriteTab = false,
-                    onTrackClick = { index ->
-                        viewModel.playFrom(downloadedTracks, index)
-                        onTrackClick()
-                    },
-                    onFavoriteClick = null,
-                    onAddToPlaylistClick = { trackForQuickAdd = it },
-                    onMoreClick = { trackForMenu = it },
-                    emptyMessage = "No downloads yet — use a track's three-dot menu to download it",
-                    selectionMode = selectionMode,
-                    selectedIds = selectedIds,
-                    onToggleSelect = ::onToggleSelect,
-                    onEnterSelection = ::onEnterSelection
-                )
             }
         }
     }
@@ -518,6 +531,7 @@ private fun DeviceLibraryControls(
 @Composable
 private fun TrackList(
     tracks: List<Track>,
+    minimal: Boolean,
     isFavoriteTab: Boolean,
     onTrackClick: (Int) -> Unit,
     onFavoriteClick: ((Track) -> Unit)?,
@@ -529,6 +543,7 @@ private fun TrackList(
     onEnterSelection: (Track) -> Unit,
     emptyMessage: String? = null
 ) {
+    val listState = rememberLazyListState()
     if (tracks.isEmpty()) {
         if (emptyMessage != null) {
             EmptyView(modifier = Modifier.fillMaxSize(), message = emptyMessage)
@@ -536,8 +551,9 @@ private fun TrackList(
             EmptyView(modifier = Modifier.fillMaxSize())
         }
     } else {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            itemsIndexed(tracks, key = { _, track -> track.id }) { index, track ->
+        val onlineAccess = rememberOnlineTrackAccess()
+        LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
+            itemsIndexed(tracks, key = { _, track -> track.id }, contentType = { _, _ -> "track" }) { index, track ->
                 TrackRow(
                     track = track,
                     onClick = { if (selectionMode) onToggleSelect(track) else onTrackClick(index) },
@@ -547,7 +563,9 @@ private fun TrackList(
                     onAddToPlaylistClick = if (selectionMode) null else { { onAddToPlaylistClick(track) } },
                     onMoreClick = if (selectionMode) null else { { onMoreClick(track) } },
                     isSelected = track.id in selectedIds,
-                    showSelectionCheckbox = selectionMode
+                    showSelectionCheckbox = selectionMode,
+                    lightweight = minimal,
+                    onlineAccess = onlineAccess
                 )
             }
         }

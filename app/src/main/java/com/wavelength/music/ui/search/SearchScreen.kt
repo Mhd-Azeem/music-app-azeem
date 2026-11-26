@@ -81,6 +81,7 @@ fun SearchScreen(
     onBrowseAlbum: (String) -> Unit = {},
     onSwipeToHome: () -> Unit = {},
     onSwipeToLibrary: () -> Unit = {},
+    minimal: Boolean = false,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     val query by viewModel.query.collectAsStateWithLifecycle()
@@ -234,6 +235,12 @@ fun SearchScreen(
                 )
                 is ScreenState.Success -> {
                     val tracks = viewModel.filteredTracks(state.data)
+                    val groups = remember(tracks, minimal) {
+                        if (minimal) tracks.map { listOf(it) } else groupSongVersions(tracks)
+                    }
+                    var expanded by remember(query, selectedLanguage) { mutableStateOf(emptySet<String>()) }
+                    val positions = remember(tracks) { tracks.withIndex().associate { it.value.id to it.index } }
+                    val access = com.wavelength.music.ui.components.rememberOnlineTrackAccess()
                     val listState = rememberLazyListState()
                     val shouldLoadMore by remember {
                         derivedStateOf {
@@ -250,17 +257,33 @@ fun SearchScreen(
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         state = listState
                     ) {
-                        itemsIndexed(tracks, key = { _, track -> track.id }) { index, track ->
-                            TrackRow(
-                                track = track,
-                                onClick = {
-                                    viewModel.playTrack(tracks, index)
-                                    onTrackClick()
-                                },
-                                onAddToPlaylistClick = { trackForQuickAdd = track },
-                                onMoreClick = { trackForMenu = track },
-                                showLanguage = true
-                            )
+                        for (group in groups) {
+                            val id = group.first().id
+                            val open = id in expanded
+                            items(if (open) group else group.take(1), key = { it.id }, contentType = { "track" }) { track ->
+                                TrackRow(
+                                    track = track,
+                                    onClick = {
+                                        viewModel.playTrack(tracks, positions.getValue(track.id))
+                                        onTrackClick()
+                                    },
+                                    onAddToPlaylistClick = { trackForQuickAdd = track },
+                                    onMoreClick = { trackForMenu = track },
+                                    showLanguage = true,
+                                    lightweight = minimal,
+                                    onlineAccess = access
+                                )
+                            }
+                            if (group.size > 1) {
+                                item(key = "versions:$id", contentType = "versions") {
+                                    TextButton(
+                                        onClick = { expanded = if (open) expanded - id else expanded + id },
+                                        modifier = Modifier.padding(start = 64.dp)
+                                    ) {
+                                        Text(if (open) "Hide other versions" else "Show other versions (${group.size - 1})")
+                                    }
+                                }
+                            }
                         }
                         if (isLoadingMore) {
                             item {

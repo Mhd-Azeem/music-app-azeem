@@ -7,7 +7,7 @@ enum class RepeatMode { OFF, ONE, ALL }
 
 /** Stable identity for one playback occurrence, independent of the track's catalog ID. */
 @JsonClass(generateAdapter = true)
-data class QueueEntry(val instanceId: Long, val track: Track)
+data class QueueEntry(val instanceId: Long, val track: Track, val recommended: Boolean = false)
 
 data class PlaybackUiState(
     val currentTrack: Track? = null,

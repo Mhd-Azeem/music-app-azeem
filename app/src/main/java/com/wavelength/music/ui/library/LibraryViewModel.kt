@@ -11,6 +11,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -66,12 +68,13 @@ class LibraryViewModel @Inject constructor(
         }
 
         val comparator = when (sort) {
-            DeviceSongSort.NAME -> compareBy<Track> { it.name.lowercase() }
+            DeviceSongSort.NAME -> compareBy<Track, String>(String.CASE_INSENSITIVE_ORDER) { it.name }
             DeviceSongSort.SIZE -> compareBy { it.fileSizeBytes }
             DeviceSongSort.MODIFIED_DATE -> compareBy { it.modifiedAtSeconds }
         }
         if (ascending) filtered.sortedWith(comparator) else filtered.sortedWith(comparator.reversed())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val playlists: StateFlow<List<PlaylistSummary>> = repository.observePlaylists()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

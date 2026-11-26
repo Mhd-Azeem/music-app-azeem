@@ -14,6 +14,7 @@ import com.wavelength.music.activation.ActivationRepository
 import com.wavelength.music.data.model.Track
 import com.wavelength.music.data.model.TrackSource
 import com.wavelength.music.data.repository.MusicRepository
+import com.wavelength.music.data.repository.AppExperienceMode
 import com.wavelength.music.data.repository.ListeningTimeRepository
 import com.wavelength.music.data.repository.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -49,6 +50,9 @@ class PlayerController @Inject constructor(
     private var queueGeneration = 0L
     private var recordedEntry = false
     private var autoQueueSuppressed = false
+    private var radioSeed: Track? = null
+    private var radioPage = 0
+    private var radioExhausted = false
     private var aiDjExtendJob: Job? = null
     private var resumeAfterGap: Job? = null
     private var lastCheckpointMs = 0L
@@ -118,7 +122,8 @@ class PlayerController @Inject constructor(
                 c.shuffleModeEnabled,
                 c.repeatMode,
                 activePlaylistId,
-                autoQueueSuppressed
+                autoQueueSuppressed,
+                radioSeed
             )
         )
     }
@@ -135,6 +140,7 @@ class PlayerController @Inject constructor(
                 return
             }
             if (isPlaying && track != null) recordPlaybackStart(track)
+            if (isPlaying && radioSeed != null) ensureSmartQueue()
             _state.update { it.copy(isPlaying = isPlaying) }
             updateTicker(isPlaying)
             if (!isPlaying) checkpoint(c)
@@ -166,9 +172,7 @@ class PlayerController @Inject constructor(
 
             if (track != null) {
                 if (c.isPlaying) recordPlaybackStart(track)
-                if (settingsRepository.state.value.aiDjEnabled && index >= currentQueue.size - 2) {
-                    extendQueueWithAiDj(track)
-                }
+                ensureSmartQueue()
             }
             fadeOutTriggeredForIndex = -1
             val crossfadeMs = settingsRepository.state.value.crossfadeDurationMs
@@ -287,6 +291,11 @@ class PlayerController @Inject constructor(
         if (c.mediaItemCount > 0 && currentQueue.isNotEmpty()) return
         val entries = saved?.entries.orEmpty()
         nextInstanceId = maxOf(nextInstanceId, (entries.maxOfOrNull { it.instanceId } ?: -1L) + 1L)
+        activePlaylistId = saved?.playlistId
+        autoQueueSuppressed = saved?.autoQueueSuppressed ?: false
+        radioSeed = saved?.radioSeed
+        radioPage = 0
+        radioExhausted = false
         if (c.mediaItemCount > 0) {
             val byId = entries.associateBy { it.instanceId.toString() }
             currentQueue = (0 until c.mediaItemCount).mapNotNull { byId[c.getMediaItemAt(it).mediaId] }
@@ -294,8 +303,6 @@ class PlayerController @Inject constructor(
         }
         if (saved == null || entries.isEmpty()) return
         currentQueue = entries
-        activePlaylistId = saved.playlistId
-        autoQueueSuppressed = saved.autoQueueSuppressed
         val index = entries.indexOfFirst { it.instanceId == saved.currentEntryId }
         c.setMediaItems(entries.map { it.mediaItem() }, index.coerceAtLeast(0), saved.positionMs)
         c.shuffleModeEnabled = saved.shuffled
@@ -424,6 +431,9 @@ class PlayerController @Inject constructor(
         resumeAfterGap?.cancel()
         queueGeneration++
         autoQueueSuppressed = false
+        radioSeed = null
+        radioPage = 0
+        radioExhausted = false
         activePlaylistId = playlistId
         val entries = tracks.distinctQueueEntries(safeStartIndex)
         val selected = entries.first
@@ -457,6 +467,14 @@ class PlayerController @Inject constructor(
         if (c.playWhenReady && c.playbackState != Player.STATE_ENDED) c.pause() else {
             if (c.playbackState == Player.STATE_ENDED) c.seekToDefaultPosition()
             c.play()
+        }
+    }
+
+    fun resumePlayback() {
+        val c = controller ?: return
+        if (resumeAfterGap?.isActive == true) return
+        if (!c.playWhenReady || c.playbackState == Player.STATE_IDLE || c.playbackState == Player.STATE_ENDED) {
+            playPause()
         }
     }
 
@@ -530,18 +548,41 @@ class PlayerController @Inject constructor(
 
     fun appendRecommendations(generation: Long, tracks: List<Track>) {
         val c = controller ?: return
-        if (generation == queueGeneration) addUpcoming(c, tracks, currentQueue.size)
+        if (generation == queueGeneration) addUpcoming(c, tracks, currentQueue.size, recommended = true)
     }
 
     fun addToQueue(track: Track) {
         val c = controller ?: return
-        addUpcoming(c, listOf(track), currentQueue.size)
+        val start = upcomingStart(c)
+        val tail = currentQueue.drop(start)
+        val firstRecommended = tail.indexOfFirst { it.recommended }
+        val target = if (firstRecommended < 0 || settingsRepository.state.value.experienceMode == AppExperienceMode.MINIMAL) {
+            currentQueue.size
+        } else start + firstRecommended
+        val existing = tail.indexOfFirst { it.track.id == track.id }
+        if (existing >= 0 && tail[existing].recommended) {
+            val position = start + existing
+            val entry = promoteToManual(position)
+            val destination = if (position < target) target - 1 else target
+            if (position == destination) publishQueue(c)
+            else moveQueueItem(entry.instanceId, currentQueue[destination].instanceId)
+        } else {
+            addUpcoming(c, listOf(track), target)
+        }
     }
 
-    private fun addUpcoming(c: MediaController, tracks: List<Track>, index: Int) {
+    private fun promoteToManual(index: Int): QueueEntry {
+        val entry = currentQueue[index]
+        if (!entry.recommended) return entry
+        return entry.copy(recommended = false).also { manual ->
+            currentQueue = currentQueue.toMutableList().apply { set(index, manual) }
+        }
+    }
+
+    private fun addUpcoming(c: MediaController, tracks: List<Track>, index: Int, recommended: Boolean = false) {
         val existing = currentQueue.asSequence().drop(c.currentMediaItemIndex.coerceAtLeast(0))
             .map { it.track.id }.toSet()
-        val added = newUpcomingTracks(tracks, existing).map { QueueEntry(nextInstanceId++, it) }
+        val added = newUpcomingTracks(tracks, existing).map { QueueEntry(nextInstanceId++, it, recommended) }
         if (added.isEmpty()) return
         currentQueue = currentQueue.toMutableList().apply { addAll(index, added) }
         c.addMediaItems(index, added.map { it.mediaItem() })
@@ -550,9 +591,63 @@ class PlayerController @Inject constructor(
 
     fun ensureSmartQueue() {
         val c = controller ?: return
-        if (!settingsRepository.state.value.aiDjEnabled) return
+        if (autoQueueSuppressed || currentQueue.size - upcomingStart(c) > 2) return
         val track = entryAt(c, c.currentMediaItemIndex)?.track ?: return
-        if (currentQueue.size - upcomingStart(c) <= 2) extendQueueWithAiDj(track)
+        val settings = settingsRepository.state.value
+        val seed = radioSeed
+        if (seed != null) {
+            if (settings.experienceMode == AppExperienceMode.NORMAL) refillRadio(seed)
+        } else if (settings.aiDjEnabled) {
+            extendQueueWithAiDj(track)
+        }
+    }
+
+    fun startSongRadio(track: Track) {
+        if (settingsRepository.state.value.experienceMode != AppExperienceMode.NORMAL) return
+        if (!activationRepository.isAccessActive()) {
+            notifyActivationRequired()
+            return
+        }
+        playQueue(listOf(track)) ?: return
+        aiDjExtendJob?.cancel()
+        aiDjExtendJob = null
+        radioSeed = track
+        controller?.let(::checkpoint)
+        ensureSmartQueue()
+    }
+
+    private fun refillRadio(seed: Track) {
+        if (radioExhausted || aiDjExtendJob?.isActive == true || !activationRepository.isAccessActive()) return
+        val artist = seed.artistName.substringBefore(',').trim()
+        val album = seed.albumName.trim()
+        val generation = queueGeneration
+        aiDjExtendJob = controllerScope.launch {
+            repeat(4) {
+                val page = radioPage
+                val query = if (page == 0 && album.isNotBlank()) album else artist.ifBlank { album }
+                if (query.isBlank()) return@launch
+                val catalogPage = if (artist.isNotBlank() && album.isNotBlank() && page > 0) page - 1 else page
+                val results = repository.searchOnlineTracks(query, page = catalogPage, limit = 20)
+                    .getOrElse { return@launch }
+                if (generation != queueGeneration ||
+                    settingsRepository.state.value.experienceMode != AppExperienceMode.NORMAL) return@launch
+                radioPage++
+                val ids = currentQueue.mapTo(hashSetOf()) { it.track.id }
+                val related = results.filter { candidate ->
+                    candidate.audioUrl.isNotBlank() && ids.add(candidate.id) &&
+                        ((album.isNotBlank() && candidate.albumName.equals(album, ignoreCase = true)) ||
+                            (artist.isNotBlank() && candidate.artistName.split(',').any { it.trim().equals(artist, ignoreCase = true) }))
+                }
+                if (related.isNotEmpty()) {
+                    appendRecommendations(generation, related)
+                    return@launch
+                }
+                if (results.isEmpty() && page > 0) {
+                    radioExhausted = true
+                    return@launch
+                }
+            }
+        }
     }
 
     private fun extendQueueWithAiDj(justPlayed: Track) {
@@ -564,7 +659,7 @@ class PlayerController @Inject constructor(
             if (generation != queueGeneration || !settingsRepository.state.value.aiDjEnabled) return@launch
             val existingIds = currentQueue.map { it.track.id }.toHashSet()
             val tracks = results.filter { existingIds.add(it.id) }.take(5)
-            addUpcoming(c, tracks, currentQueue.size)
+            addUpcoming(c, tracks, currentQueue.size, recommended = true)
         }
     }
 
@@ -660,9 +755,11 @@ class PlayerController @Inject constructor(
         val start = upcomingStart(c)
         val offset = currentQueue.asSequence().drop(start).indexOfFirst { it.track.id == track.id }
         val index = if (offset < 0) -1 else start + offset
-        if (index > start) {
-            moveQueueItem(currentQueue[index].instanceId, currentQueue[start].instanceId)
-        } else if (index < start && entryAt(c, c.currentMediaItemIndex)?.track?.id != track.id) {
+        if (index >= start) {
+            val entry = promoteToManual(index)
+            if (index > start) moveQueueItem(entry.instanceId, currentQueue[start].instanceId)
+            else publishQueue(c)
+        } else if (entryAt(c, c.currentMediaItemIndex)?.track?.id != track.id) {
             addUpcoming(c, listOf(track), start)
         }
     }

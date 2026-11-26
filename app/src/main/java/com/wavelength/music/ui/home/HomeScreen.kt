@@ -96,6 +96,12 @@ fun HomeScreen(
     onSwipeToSearch: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
+    val settingsViewModel: AppSettingsViewModel = hiltViewModel()
+    val settings by settingsViewModel.state.collectAsStateWithLifecycle()
+    if (settings.experienceMode == com.wavelength.music.data.repository.AppExperienceMode.MINIMAL) {
+        InstantHome(viewModel, onTrackClick, onSettingsClick, onStatisticsClick, onPlaylistClick, onSearchClick, onSwipeToSearch)
+        return
+    }
     val featured by viewModel.featured.collectAsStateWithLifecycle()
     val suggested by viewModel.suggested.collectAsStateWithLifecycle()
     val recentListeningMixes by viewModel.recentListeningMixes.collectAsStateWithLifecycle()
@@ -108,8 +114,6 @@ fun HomeScreen(
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     val searchHistory by viewModel.searchHistory.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
-    val settingsViewModel: AppSettingsViewModel = hiltViewModel()
-    val settings by settingsViewModel.state.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -370,6 +374,65 @@ fun HomeScreen(
                     },
                     onStartListeningViewAll = onStartListeningViewAll
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InstantHome(
+    viewModel: HomeViewModel,
+    onTrack: () -> Unit,
+    onSettings: () -> Unit,
+    onStats: () -> Unit,
+    onPlaylist: (Long) -> Unit,
+    onSearch: () -> Unit,
+    onSwipeToSearch: () -> Unit
+) {
+    val current by viewModel.currentTrack.collectAsStateWithLifecycle(null)
+    val recent by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
+    val favorites by viewModel.recentlyAdded.collectAsStateWithLifecycle()
+    val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+    val shortcuts = remember(playlists) {
+        playlists.filterNot { it.isFolder || it.name.startsWith("★ Favorite Album · ") }.take(5)
+    }
+    val onlineAccess = com.wavelength.music.ui.components.rememberOnlineTrackAccess()
+    val threshold = with(LocalDensity.current) { 96.dp.toPx() }
+    Scaffold(topBar = {
+        TopAppBar(
+            title = { Text(stringResource(R.string.app_name)) },
+            actions = {
+                TextButton(onClick = onStats) { Text("Stats") }
+                IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, contentDescription = "Settings") }
+            }
+        )
+    }) { padding ->
+        LazyColumn(
+            Modifier.fillMaxSize().padding(padding)
+                .swipeHorizontal(thresholdPx = threshold, onSwipeLeft = onSwipeToSearch)
+        ) {
+            item { TextButton(onClick = onSearch) { Text("Search songs") } }
+            current?.let { track ->
+                item { SectionHeader("Continue listening") }
+                item(key = "resume", contentType = "track") {
+                    TrackRow(track, onClick = { viewModel.resumePlayback(); onTrack() },
+                        lightweight = true, onlineAccess = onlineAccess)
+                }
+            }
+            for ((heading, tracks) in listOf("Recently played" to recent, "Favorites" to favorites)) {
+                if (tracks.isEmpty()) continue
+                item(key = heading) { SectionHeader(heading) }
+                itemsIndexed(tracks, key = { _, track -> "$heading:${track.id}" }, contentType = { _, _ -> "track" }) { index, track ->
+                    TrackRow(track, onClick = { viewModel.playTrack(tracks, index); onTrack() },
+                        lightweight = true, onlineAccess = onlineAccess)
+                }
+            }
+            if (shortcuts.isNotEmpty()) item { SectionHeader("Playlists") }
+            items(shortcuts, key = { "playlist:${it.id}" }) { playlist ->
+                TextButton(onClick = { onPlaylist(playlist.id) }) { Text(playlist.name) }
+            }
+            if (current == null && recent.isEmpty() && favorites.isEmpty() && shortcuts.isEmpty()) {
+                item { Text("Recently played songs, favorites and playlists appear here.", Modifier.padding(16.dp)) }
             }
         }
     }

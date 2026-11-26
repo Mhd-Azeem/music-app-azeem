@@ -19,6 +19,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import com.wavelength.music.data.repository.SettingsRepository
+import com.wavelength.music.data.repository.AppExperienceMode
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -49,7 +52,8 @@ data class RecentListeningMix(
 class HomeViewModel @Inject constructor(
     private val repository: MusicRepository,
     private val playerController: PlayerController,
-    private val pendingSearchQuery: PendingSearchQuery
+    private val pendingSearchQuery: PendingSearchQuery,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _featured = MutableStateFlow<ScreenState<List<Track>>>(ScreenState.Loading)
@@ -97,26 +101,37 @@ class HomeViewModel @Inject constructor(
     private var latestRecentTracks: List<Track> = emptyList()
     private var latestTopArtists: List<ArtistStat> = emptyList()
 
+    val currentTrack = playerController.state.map { it.currentTrack }.distinctUntilChanged()
+
+    fun resumePlayback() = playerController.resumePlayback()
+
     init {
-        loadFeatured()
-        loadTopCharts()
         viewModelScope.launch {
-            repository.observeRecentlyPlayed(30).collectLatest { tracks ->
-                latestRecentTracks = tracks
-                loadSuggested(tracks)
-            }
-        }
-        viewModelScope.launch {
-            repository.observeTopArtists(2).collectLatest { artists ->
-                latestTopArtists = artists
-                loadDailyMix(artists)
-                loadTopArtistTracks(artists.firstOrNull())
+            settingsRepository.state.map { it.experienceMode }.distinctUntilChanged().collectLatest { mode ->
+                if (mode == AppExperienceMode.MINIMAL) return@collectLatest
+                coroutineScope {
+                    launch { fetchFeatured() }
+                    launch { loadTopCharts() }
+                    launch {
+                        repository.observeRecentlyPlayed(30).collectLatest { tracks ->
+                            latestRecentTracks = tracks
+                            loadSuggested(tracks)
+                        }
+                    }
+                    launch {
+                        repository.observeTopArtists(2).collectLatest { artists ->
+                            latestTopArtists = artists
+                            loadDailyMix(artists)
+                            loadTopArtistTracks(artists.firstOrNull())
+                        }
+                    }
+                }
             }
         }
     }
 
-    fun loadTopCharts() {
-        viewModelScope.launch {
+    private suspend fun loadTopCharts() {
+        coroutineScope {
             val chartQueries = linkedMapOf(
                 "Global Top 10" to "global top songs",
                 "India Top 10" to "india top songs",

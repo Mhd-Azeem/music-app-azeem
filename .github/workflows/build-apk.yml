@@ -51,19 +51,45 @@ jobs:
           AZMUSIC_KEY_ALIAS: ${{ secrets.AZMUSIC_KEY_ALIAS }}
           AZMUSIC_KEY_PASSWORD: ${{ secrets.AZMUSIC_KEY_PASSWORD }}
         run: |
-          if [ -n "$AZMUSIC_KEYSTORE_BASE64" ]; then
-            echo "$AZMUSIC_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/azmusic-release.jks"
-            echo "AZMUSIC_KEYSTORE_PATH=$RUNNER_TEMP/azmusic-release.jks" >> "$GITHUB_ENV"
-            echo "AZMUSIC_KEYSTORE_PASSWORD=$AZMUSIC_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
-            echo "AZMUSIC_KEY_ALIAS=$AZMUSIC_KEY_ALIAS" >> "$GITHUB_ENV"
-            echo "AZMUSIC_KEY_PASSWORD=$AZMUSIC_KEY_PASSWORD" >> "$GITHUB_ENV"
+          if [ -z "$AZMUSIC_KEYSTORE_BASE64" ] || [ -z "$AZMUSIC_KEYSTORE_PASSWORD" ] || [ -z "$AZMUSIC_KEY_ALIAS" ] || [ -z "$AZMUSIC_KEY_PASSWORD" ]; then
+            echo "::error::Production signing is required to publish an in-app update."
+            exit 1
           fi
+          echo "$AZMUSIC_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/azmusic-release.jks"
+          echo "AZMUSIC_KEYSTORE_PATH=$RUNNER_TEMP/azmusic-release.jks" >> "$GITHUB_ENV"
       - name: Build AzMusic release
-        run: ./gradlew :app:testDebugUnitTest :app:assembleRelease --build-cache --parallel --stacktrace
+        env:
+          AZMUSIC_KEYSTORE_PASSWORD: ${{ secrets.AZMUSIC_KEYSTORE_PASSWORD }}
+          AZMUSIC_KEY_ALIAS: ${{ secrets.AZMUSIC_KEY_ALIAS }}
+          AZMUSIC_KEY_PASSWORD: ${{ secrets.AZMUSIC_KEY_PASSWORD }}
+        run: ./gradlew :app:testDebugUnitTest :app:lint :app:assembleRelease --build-cache --parallel --stacktrace
       - name: Prepare APK
         run: |
           mkdir -p release-apks
           cp app/build/outputs/apk/release/app-release.apk release-apks/AzMusic.apk
+      - name: Verify this APK upgrades the published app
+        id: apk
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release download latest --pattern AzMusic.apk --dir "$RUNNER_TEMP"
+          tools="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f -printf '%h\n' | sort -V | tail -1)"
+          certificate() {
+            "$tools/apksigner" verify --print-certs "$1" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p'
+          }
+          version_code() {
+            "$tools/aapt" dump badging "$1" | sed -n "s/^package:.*versionCode='\([0-9]*\)'.*/\1/p"
+          }
+          previous="$RUNNER_TEMP/AzMusic.apk"
+          candidate="release-apks/AzMusic.apk"
+          previous_cert="$(certificate "$previous")"
+          candidate_cert="$(certificate "$candidate")"
+          previous_code="$(version_code "$previous")"
+          candidate_code="$(version_code "$candidate")"
+          test -n "$previous_cert" && test "$previous_cert" = "$candidate_cert"
+          test -n "$previous_code" && test -n "$candidate_code" && test "$candidate_code" -gt "$previous_code"
+          echo "version_code=$candidate_code" >> "$GITHUB_OUTPUT"
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
@@ -71,18 +97,13 @@ jobs:
           path: release-apks/AzMusic.apk
           retention-days: 30
           compression-level: 0
-      - name: Remove stale release assets
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release view latest --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' 2>/dev/null | while read -r asset; do gh release delete-asset latest "$asset" --repo "$GITHUB_REPOSITORY" -y; done || true
       - name: Publish AzMusic APK to Releases
         uses: softprops/action-gh-release@v3
         with:
           tag_name: latest
           name: AzMusic Latest
           body: |
-            Build number: ${{ github.run_number }}
+            Build number: ${{ steps.apk.outputs.version_code }}
             Automatically rebuilt from commit ${{ github.sha }}.
 
             `AzMusic.apk` is the production Android app.

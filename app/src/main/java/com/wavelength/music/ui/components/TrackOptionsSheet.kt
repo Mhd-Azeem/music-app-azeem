@@ -21,6 +21,10 @@ import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material.icons.filled.Radio
+import androidx.compose.material.icons.automirrored.filled.Subject
+import com.wavelength.music.ui.settings.AppSettingsViewModel
+import com.wavelength.music.data.repository.AppExperienceMode
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -58,8 +62,12 @@ fun TrackOptionsSheet(
     onMoveDown: (() -> Unit)? = null,
     onBrowseArtist: (() -> Unit)? = null,
     onBrowseAlbum: (() -> Unit)? = null,
+    onShowLyrics: (() -> Unit)? = null,
     viewModel: TrackActionsViewModel = hiltViewModel()
 ) {
+    val settings: AppSettingsViewModel = hiltViewModel()
+    val preferences by settings.state.collectAsStateWithLifecycle()
+    val normal = preferences.experienceMode == AppExperienceMode.NORMAL
     val isFavorite by remember(track.id) { viewModel.isFavorite(track.id) }
         .collectAsStateWithLifecycle(false)
     val isDownloaded by remember(track.id) { viewModel.isDownloaded(track.id) }
@@ -150,7 +158,19 @@ fun TrackOptionsSheet(
             TrackOptionRow(Icons.Filled.PlaylistAdd, "Add to playlist") {
                 showAddToPlaylist = true
             }
-            if (onBrowseArtist != null && track.artistName.isNotBlank()) {
+            if (normal && (track.artistName.isNotBlank() || track.albumName.isNotBlank())) {
+                TrackOptionRow(Icons.Filled.Radio, "Start song radio") {
+                    viewModel.startSongRadio(track)
+                    onDismiss()
+                }
+            }
+            if (onShowLyrics != null) {
+                TrackOptionRow(Icons.AutoMirrored.Filled.Subject, "Lyrics") {
+                    onDismiss()
+                    onShowLyrics()
+                }
+            }
+            if (normal && onBrowseArtist != null && track.artistName.isNotBlank()) {
                 TrackOptionRow(Icons.Filled.Person, "More from this artist") {
                     onBrowseArtist()
                     onDismiss()

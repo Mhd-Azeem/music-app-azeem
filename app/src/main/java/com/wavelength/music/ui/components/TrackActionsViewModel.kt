@@ -52,6 +52,8 @@ class TrackActionsViewModel @Inject constructor(
 
     fun playNext(track: Track) = playerController.playNext(track)
 
+    fun startSongRadio(track: Track) = playerController.startSongRadio(track)
+
     fun addToQueue(track: Track) = playerController.addToQueue(track)
 
     fun download(track: Track) {

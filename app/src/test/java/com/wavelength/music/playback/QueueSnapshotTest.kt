@@ -12,15 +12,25 @@ class QueueSnapshotTest {
         val local = Track("local", "Song", "", "", "", "", "", "content://media/21", 41, TrackSource.LOCAL)
         val remote = local.copy(id = "online", audioUrl = "https://example.test/audio", source = TrackSource.JIOSAAVN)
         val original = QueueSnapshot(
-            entries = listOf(QueueEntry(14, local), QueueEntry(3, remote)),
+            entries = listOf(QueueEntry(14, local), QueueEntry(3, remote, recommended = true)),
             currentEntryId = 14,
             positionMs = 23_900L,
             shuffled = true,
             repeatMode = 2,
             playlistId = 51,
-            autoQueueSuppressed = true
+            autoQueueSuppressed = true,
+            radioSeed = remote
         )
         val adapter = Moshi.Builder().build().adapter(QueueSnapshot::class.java)
         assertEquals(original, adapter.fromJson(adapter.toJson(original)))
+    }
+
+    @Test
+    fun olderSnapshotKeepsItsQueue() {
+        val track = Track("local", "Song", "", "", "", "", "", "content://media/21", 41, TrackSource.LOCAL)
+        val snapshot = QueueSnapshot(listOf(QueueEntry(14, track)), 14, 300L, false, 0)
+        val adapter = Moshi.Builder().build().adapter(QueueSnapshot::class.java)
+        val olderJson = adapter.toJson(snapshot).replace(",\"recommended\":false", "")
+        assertEquals(snapshot, adapter.fromJson(olderJson))
     }
 }

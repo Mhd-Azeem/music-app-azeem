@@ -5,6 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.filled.MusicNote
+import com.wavelength.music.activation.ActivationStatus
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -49,11 +52,12 @@ fun TrackRow(
     onLongClick: (() -> Unit)? = null,
     isSelected: Boolean = false,
     showSelectionCheckbox: Boolean = false,
-    showLanguage: Boolean = false
+    showLanguage: Boolean = false,
+    lightweight: Boolean = false,
+    onlineAccess: Boolean? = null
 ) {
-    val activationViewModel: ActivationViewModel = hiltViewModel()
-    val activation by activationViewModel.activation.collectAsStateWithLifecycle()
-    val isLocked = track.source == TrackSource.JIOSAAVN && !activationViewModel.isAccessActive()
+    val isLocked = track.source == TrackSource.JIOSAAVN &&
+        !(onlineAccess ?: rememberOnlineTrackAccess())
 
     val selectionBackground = if (isSelected) {
         Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
@@ -76,14 +80,16 @@ fun TrackRow(
                 tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        AsyncImage(
-            model = track.albumArtUrl,
-            contentDescription = track.name,
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        )
+        val artwork = Modifier.size(if (lightweight) 40.dp else 48.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+        if (lightweight) {
+            Box(artwork, contentAlignment = Alignment.Center) {
+                Icon(Icons.Filled.MusicNote, contentDescription = null)
+            }
+        } else {
+            AsyncImage(model = track.albumArtUrl, contentDescription = null, modifier = artwork)
+        }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = track.name,
@@ -145,4 +151,11 @@ fun TrackRow(
             }
         }
     }
+}
+
+@Composable
+internal fun rememberOnlineTrackAccess(): Boolean {
+    val viewModel: ActivationViewModel = hiltViewModel()
+    val activation by viewModel.activation.collectAsStateWithLifecycle()
+    return activation.status == ActivationStatus.ACTIVE && viewModel.isAccessActive()
 }

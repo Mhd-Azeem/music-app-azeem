@@ -34,8 +34,8 @@ android {
         applicationId = "com.wavelength.music"
         minSdk = 24
         targetSdk = 34
-        versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
-        versionName = "1.0"
+        versionCode = maxOf(691, System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 691)
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

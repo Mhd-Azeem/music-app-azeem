@@ -83,6 +83,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -456,7 +457,8 @@ fun NowPlayingScreen(
             track = track,
             onDismiss = { showCurrentTrackMenu = false },
             onBrowseArtist = { onBrowseArtist(track.artistName) },
-            onBrowseAlbum = { onBrowseAlbum(track.albumName) }
+            onBrowseAlbum = { onBrowseAlbum(track.albumName) },
+            onShowLyrics = if (glassmorphismNowPlaying) ({ showLyrics = true }) else null
         )
     }
 
@@ -514,7 +516,7 @@ fun NowPlayingScreen(
     // and the overlay is dismissed only by its close affordances (backdrop, X, or pull-down handle).
     var upNextExpandedLatch by remember { mutableStateOf(false) }
     LaunchedEffect(upNextScrolled) {
-        if (upNextScrolled) upNextExpandedLatch = true
+        if (expandUpNextOnScroll && upNextScrolled) upNextExpandedLatch = true
     }
     LaunchedEffect(track?.id) {
         upNextExpandedLatch = false
@@ -522,7 +524,7 @@ fun NowPlayingScreen(
     // Album art hides to free up room for the queue to actually grow into — without this, "half
     // the screen" has nowhere to expand into since art + controls already fill most of the
     // screen, so the box would just get clipped off the bottom with no visible size change.
-    val isUpNextExpanded = expandUpNextOnScroll && upNextExpandedLatch
+    val isUpNextExpanded = upNextExpandedLatch
     val upcoming = remember(state.queue, state.currentIndex) { state.queue.drop(state.currentIndex + 1) }
     val upcomingIds = remember(upcoming) { upcoming.map { it.instanceId } }
     BackHandler(enabled = isUpNextExpanded && upcoming.isNotEmpty()) {
@@ -936,6 +938,7 @@ fun NowPlayingScreen(
                     contentAlignment = Alignment.BottomCenter
                 ) {
                     if (glassUpcoming.isNotEmpty()) {
+                        TextButton(onClick = { upNextExpandedLatch = true }, modifier = Modifier.align(Alignment.TopCenter)) { Text("Up next") }
                         Box(Modifier.align(Alignment.TopStart)) {
                             ClearUpNextButton(viewModel::clearUpcoming)
                         }
@@ -1559,7 +1562,8 @@ fun NowPlayingScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "Up next", style = MaterialTheme.typography.titleSmall)
+                    if (minimal) Text("Up next", style = MaterialTheme.typography.titleSmall)
+                    else TextButton(onClick = { upNextExpandedLatch = true }) { Text("Up next") }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         ClearUpNextButton(viewModel::clearUpcoming)
                         if (upcoming.size > 1) {
@@ -1587,7 +1591,7 @@ fun NowPlayingScreen(
                 } else {
                     Modifier.weight(1f)
                 }
-                var previewUpcoming by remember(upcomingIds) { mutableStateOf(upcoming) }
+                var previewUpcoming by remember(upcoming) { mutableStateOf(upcoming) }
                 val dragDropState = rememberDragDropListState(
                     listState = upNextListState,
                     itemKeys = upcomingIds,
@@ -1609,31 +1613,39 @@ fun NowPlayingScreen(
                 ) {
                     itemsIndexed(previewUpcoming, key = { _, entry -> entry.instanceId }) { offset, entry ->
                         val isDragging = dragDropState.draggingItemIndex == offset
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .dragDropItemOffset(dragDropState, entry.instanceId)
-                                .zIndex(if (isDragging) 1f else 0f),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            TrackRow(
-                                track = entry.track,
-                                onClick = { if (dragDropState.draggingItemIndex == null) viewModel.playQueueItem(entry.instanceId) },
-                                onAddToPlaylistClick = { if (dragDropState.draggingItemIndex == null) quickAddQueueId = entry.instanceId },
-                                onMoreClick = { if (dragDropState.draggingItemIndex == null) menuQueueId = entry.instanceId },
-                                modifier = Modifier.weight(1f)
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .dragHandle(dragDropState, offset),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.DragHandle,
-                                    contentDescription = "Hold and drag to reorder",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        Column(modifier = Modifier.fillMaxWidth()
+                            .dragDropItemOffset(dragDropState, entry.instanceId)
+                            .zIndex(if (isDragging) 1f else 0f)) {
+                            if (!minimal && previewUpcoming.getOrNull(offset - 1)?.recommended != entry.recommended) {
+                                Text(
+                                    if (entry.recommended) "Recommended" else "Manual queue",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    modifier = Modifier.padding(start = 16.dp, top = 8.dp)
                                 )
+                            }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TrackRow(
+                                    track = entry.track,
+                                    lightweight = minimal,
+                                    onClick = { if (dragDropState.draggingItemIndex == null) viewModel.playQueueItem(entry.instanceId) },
+                                    onAddToPlaylistClick = { if (dragDropState.draggingItemIndex == null) quickAddQueueId = entry.instanceId },
+                                    onMoreClick = { if (dragDropState.draggingItemIndex == null) menuQueueId = entry.instanceId },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .dragHandle(dragDropState, offset),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.DragHandle,
+                                        contentDescription = "Hold and drag to reorder",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
@@ -1643,7 +1655,7 @@ fun NowPlayingScreen(
 
         if (isUpNextExpanded && upcoming.isNotEmpty()) {
             val overlayListState = rememberLazyListState()
-            var overlayPreview by remember(upcomingIds) { mutableStateOf(upcoming) }
+            var overlayPreview by remember(upcoming) { mutableStateOf(upcoming) }
             var overlayPullDown by remember { mutableFloatStateOf(0f) }
             val overlayCloseThresholdPx = with(density) { 72.dp.toPx() }
 
@@ -1756,31 +1768,39 @@ fun NowPlayingScreen(
                             key = { _, entry -> entry.instanceId }
                         ) { offset, entry ->
                             val isDragging = overlayDragState.draggingItemIndex == offset
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .dragDropItemOffset(overlayDragState, entry.instanceId)
-                                    .zIndex(if (isDragging) 1f else 0f),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                TrackRow(
-                                    track = entry.track,
-                                    onClick = { if (overlayDragState.draggingItemIndex == null) viewModel.playQueueItem(entry.instanceId) },
-                                    onAddToPlaylistClick = { if (overlayDragState.draggingItemIndex == null) quickAddQueueId = entry.instanceId },
-                                    onMoreClick = { if (overlayDragState.draggingItemIndex == null) menuQueueId = entry.instanceId },
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .dragHandle(overlayDragState, offset),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.DragHandle,
-                                        contentDescription = "Hold and drag to reorder",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            Column(modifier = Modifier.fillMaxWidth()
+                                .dragDropItemOffset(overlayDragState, entry.instanceId)
+                                .zIndex(if (isDragging) 1f else 0f)) {
+                                if (!minimal && overlayPreview.getOrNull(offset - 1)?.recommended != entry.recommended) {
+                                    Text(
+                                        if (entry.recommended) "Recommended" else "Manual queue",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        modifier = Modifier.padding(start = 16.dp, top = 8.dp)
                                     )
+                                }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    TrackRow(
+                                        track = entry.track,
+                                        lightweight = minimal,
+                                        onClick = { if (overlayDragState.draggingItemIndex == null) viewModel.playQueueItem(entry.instanceId) },
+                                        onAddToPlaylistClick = { if (overlayDragState.draggingItemIndex == null) quickAddQueueId = entry.instanceId },
+                                        onMoreClick = { if (overlayDragState.draggingItemIndex == null) menuQueueId = entry.instanceId },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .dragHandle(overlayDragState, offset),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.DragHandle,
+                                            contentDescription = "Hold and drag to reorder",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1793,7 +1813,8 @@ fun NowPlayingScreen(
             LyricsOverlay(
                 lyricsState = lyricsState,
                 positionMs = state.positionMs,
-                albumArtUrl = track?.albumArtUrl,
+                albumArtUrl = if (minimal) null else track?.albumArtUrl,
+                onSeek = if (minimal) null else { time -> viewModel.seekToLyric(track?.id, time) },
                 onClose = { showLyrics = false }
             )
         }
@@ -1835,10 +1856,12 @@ private fun LyricsOverlay(
     lyricsState: ScreenState<List<LyricLine>>,
     positionMs: Long,
     albumArtUrl: String?,
+    onSeek: ((Long) -> Unit)?,
     onClose: () -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        AsyncImage(
+    BackHandler(onBack = onClose)
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        if (!albumArtUrl.isNullOrBlank()) AsyncImage(
             model = albumArtUrl,
             contentDescription = null,
             contentScale = ContentScale.Crop,
@@ -1872,12 +1895,15 @@ private fun LyricsOverlay(
                 is ScreenState.Success -> {
                     val lines = lyricsState.data
                     val listState = rememberLazyListState()
-                    val activeIndex = lines.indexOfLast { it.timestampMs <= positionMs }.coerceAtLeast(0)
+                    val activeIndex = lines.indexOfLast { it.timestampMs <= positionMs }
                     LaunchedEffect(activeIndex) {
-                        listState.animateScrollToItem((activeIndex - 2).coerceAtLeast(0))
+                        if (activeIndex >= 0 && !listState.isScrollInProgress) listState.animateScrollToItem((activeIndex - 2).coerceAtLeast(0))
                     }
                     LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                         itemsIndexed(lines) { index, line ->
+                            val seek = if (onSeek != null && line.timestampMs != Long.MAX_VALUE) {
+                                Modifier.clickable(onClickLabel = "Seek to ${formatMillis(line.timestampMs)}") { onSeek(line.timestampMs) }
+                            } else Modifier
                             Text(
                                 text = line.text,
                                 style = if (index == activeIndex) {
@@ -1890,7 +1916,7 @@ private fun LyricsOverlay(
                                 } else {
                                     Color.White.copy(alpha = 0.75f)
                                 },
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)
+                                modifier = Modifier.fillMaxWidth().then(seek).padding(horizontal = 24.dp, vertical = 8.dp)
                             )
                         }
                     }

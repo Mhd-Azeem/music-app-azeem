@@ -51,6 +51,7 @@ class PlayerViewModel @Inject constructor(
     val pcmBassLevel: StateFlow<Float> = pcmBeatAnalyzer.bassLevel
     val systemVolume: StateFlow<Float> = systemVolumeController.volume
 
+    private var lyricsTrackId: String? = null
     private var lyricsJob: Job? = null
     private val _lyrics = MutableStateFlow<ScreenState<List<LyricLine>>>(ScreenState.Empty)
     val lyrics: StateFlow<ScreenState<List<LyricLine>>> = _lyrics.asStateFlow()
@@ -90,8 +91,9 @@ class PlayerViewModel @Inject constructor(
     fun loadLyrics() {
         val track = state.value.currentTrack ?: return
         lyricsJob?.cancel()
+        lyricsTrackId = track.id
+        _lyrics.value = ScreenState.Loading
         lyricsJob = viewModelScope.launch {
-            _lyrics.value = ScreenState.Loading
             val result = lyricsRepository.getLyrics(
                 trackName = track.name,
                 artistName = track.artistName,
@@ -109,6 +111,13 @@ class PlayerViewModel @Inject constructor(
                 }
             )
         }
+    }
+
+    fun seekToLyric(trackId: String?, time: Long) {
+        val current = state.value
+        if (trackId == null || trackId != current.currentTrack?.id || trackId != lyricsTrackId ||
+            time < 0 || time == Long.MAX_VALUE || _lyrics.value !is ScreenState.Success) return
+        playerController.seekTo(if (current.durationMs > 0) time.coerceAtMost(current.durationMs) else time)
     }
 
     fun startSleepTimer(minutes: Int) = sleepTimerController.startCountdown(minutes * 60_000L)

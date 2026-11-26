@@ -41,12 +41,13 @@ import com.wavelength.music.activation.AdminActivationViewModel
 fun StatisticsScreen(
     onBack: () -> Unit,
     onOpenAdmin: () -> Unit = {},
+    minimal: Boolean = false,
     viewModel: StatisticsViewModel = hiltViewModel(),
     adminViewModel: AdminActivationViewModel = hiltViewModel()
 ) {
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val listeningTime by viewModel.listeningTime.collectAsStateWithLifecycle()
-    val topArtists by viewModel.topArtists.collectAsStateWithLifecycle()
+    val topArtists = if (minimal) emptyList() else viewModel.topArtists.collectAsStateWithLifecycle().value
     val playsLast7Days by viewModel.playsLast7Days.collectAsStateWithLifecycle()
     val playsLast30Days by viewModel.playsLast30Days.collectAsStateWithLifecycle()
     val topTracks by viewModel.topTracks.collectAsStateWithLifecycle()
@@ -135,7 +136,7 @@ fun StatisticsScreen(
                         ) {
                             StatCard(label = "Plays", value = stats.totalPlays.toString(), modifier = Modifier.weight(1f))
                             StatCard(label = "Tracks", value = stats.uniqueTracks.toString(), modifier = Modifier.weight(1f))
-                            StatCard(label = "Artists", value = stats.uniqueArtists.toString(), modifier = Modifier.weight(1f))
+                            if (!minimal) StatCard(label = "Artists", value = stats.uniqueArtists.toString(), modifier = Modifier.weight(1f))
                         }
                     }
 
@@ -150,7 +151,7 @@ fun StatisticsScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             StatCard("Avg plays / track", String.format("%.1f", average), Modifier.weight(1f))
-                            StatCard("Top artist share", "$topArtistShare%", Modifier.weight(1f))
+                            if (!minimal) StatCard("Top artist share", "$topArtistShare%", Modifier.weight(1f))
                         }
                     }
 
