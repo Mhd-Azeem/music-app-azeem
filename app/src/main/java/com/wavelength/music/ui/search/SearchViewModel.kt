@@ -3,6 +3,11 @@ package com.wavelength.music.ui.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wavelength.music.data.model.Track
+import com.wavelength.music.data.model.baseTitleQuery
+import com.wavelength.music.data.model.canonicalSongTitle
+import com.wavelength.music.data.model.normalizeForMatch
+import com.wavelength.music.data.model.requestedVariantTokens
+import com.wavelength.music.data.model.variantSignature
 import com.wavelength.music.data.repository.MusicRepository
 import com.wavelength.music.playback.PlayerController
 import com.wavelength.music.ui.components.ScreenState

@@ -632,12 +632,12 @@ class PlayerController @Inject constructor(
                 if (generation != queueGeneration ||
                     settingsRepository.state.value.experienceMode != AppExperienceMode.NORMAL) return@launch
                 radioPage++
-                val ids = currentQueue.mapTo(hashSetOf()) { it.track.id }
-                val related = results.filter { candidate ->
-                    candidate.audioUrl.isNotBlank() && ids.add(candidate.id) &&
+                val candidates = results.filter { candidate ->
+                    candidate.audioUrl.isNotBlank() &&
                         ((album.isNotBlank() && candidate.albumName.equals(album, ignoreCase = true)) ||
                             (artist.isNotBlank() && candidate.artistName.split(',').any { it.trim().equals(artist, ignoreCase = true) }))
                 }
+                val related = distinctRadioTracks(candidates, currentQueue.map { it.track } + seed)
                 if (related.isNotEmpty()) {
                     appendRecommendations(generation, related)
                     return@launch
