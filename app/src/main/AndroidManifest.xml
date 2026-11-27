@@ -216,6 +216,11 @@
         </service>
 
         <service
+            android:name=".ui.radio.RadioPlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <service
             android:name=".playback.FloatingIslandService"
             android:exported="false" />
 

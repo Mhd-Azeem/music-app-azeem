@@ -3,15 +3,17 @@ package com.wavelength.music.ui.radio
 import android.content.ActivityNotFoundException
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.material3.TextButton
-import androidx.media3.common.AudioAttributes
-import androidx.media3.common.C
+import android.content.ComponentName
+import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,7 +22,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material3.Button
 import androidx.compose.ui.text.style.TextAlign
 import com.wavelength.music.data.repository.VisualThemeMode
@@ -51,6 +52,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,7 +61,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -94,20 +100,6 @@ internal fun ExperienceSwitcher(
     }
 }
 
-private data class Station(val id: String, val name: String, val details: String, val livePage: String, val stream: String)
-
-private val stations = listOf(
-    Station("shakthi", "Shakthi FM", "Tamil · 103.9 / 104.1 FM", "https://shakthifm.com/home.aspx", "https://mbc.thestreamtech.com:8086/stream"),
-    Station("sooriyan", "Sooriyan FM", "Tamil · 103.4 / 103.6 FM", "https://www.sooriyanfm.lk/listenlive.php", "https://radio.lotustechnologieslk.net:8006/"),
-    Station("vasantham", "Vasantham FM", "Tamil · 102.6 / 102.8 FM", "https://www.vasanthamfm.lk/", "https://cp12.serverse.com/proxy/vasanthamfm?mp=/stream"),
-    Station("slbc-tamil", "SLBC Tamil National", "Tamil · 102.1 / 102.3 FM", "https://slbc.lk/", "https://stream-32.zeno.fm/xekhrn4zetzuv"),
-    Station("hiru", "Hiru FM", "Sinhala · 96.1 / 96.3 FM", "https://www.hirufm.lk/listenlive.php", "https://radio.lotustechnologieslk.net:2020/stream/hirufmgarden/stream/1/"),
-    Station("shaa", "Shaa FM", "Sinhala · 90.9 / 91.1 FM", "https://www.shaafm.lk/listenlive.php", "https://radio.lotustechnologieslk.net:2020/stream/shaafmgarden"),
-    Station("neth", "Neth FM", "Sinhala · 94.8 / 95.0 FM", "https://nethfm.com/", "https://cp11.serverse.com/proxy/nethfm/stream"),
-    Station("gold", "Gold FM", "English · 93.0 / 93.2 FM", "https://www.goldfm.lk/", "https://radio.lotustechnologieslk.net:2020/stream/goldfmgarden"),
-    Station("sun", "Sun FM", "English · 98.7 / 98.9 FM", "https://www.sunfm.lk/", "https://radio.lotustechnologieslk.net:2020/stream/sunfmgarden")
-)
-
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 internal fun RadioScreen(
@@ -123,7 +115,6 @@ internal fun RadioScreen(
     var query by rememberSaveable { mutableStateOf("") }
     var expandedPlayer by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
-    BackHandler(enabled = expandedPlayer) { expandedPlayer = false }
     val search = query.trim()
     val matching = remember(search) {
         stations.filter { station ->
@@ -138,39 +129,51 @@ internal fun RadioScreen(
     var current by remember { mutableStateOf<Station?>(null) }
     var status by remember { mutableStateOf("Stopped") }
     var stopAvailable by remember { mutableStateOf(false) }
-    val player = remember(context) {
-        ExoPlayer.Builder(context.applicationContext).build().apply {
-            setAudioAttributes(AudioAttributes.Builder()
-                .setUsage(C.USAGE_MEDIA)
-                .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-                .build(), true)
-        }
+    var controller by remember { mutableStateOf<MediaController?>(null) }
+    DisposableEffect(context) {
+        val token = SessionToken(context, ComponentName(context, RadioPlaybackService::class.java))
+        val future = MediaController.Builder(context, token).buildAsync()
+        future.addListener({
+            if (!future.isCancelled) {
+                controller = runCatching { future.get() }.getOrNull()
+            }
+        }, ContextCompat.getMainExecutor(context))
+        onDispose { MediaController.releaseFuture(future) }
     }
-    DisposableEffect(player) {
-        val listener = object : Player.Listener {
-            override fun onEvents(player: Player, events: Player.Events) {
-                stopAvailable = player.playWhenReady && player.playerError == null &&
-                    player.playbackState != Player.STATE_IDLE && player.playbackState != Player.STATE_ENDED
-                status = when {
-                    player.playerError != null -> "Stream unavailable"
-                    player.isPlaying -> "LIVE"
-                    stopAvailable -> "Connecting…"
-                    else -> "Stopped"
-                }
+    DisposableEffect(controller) {
+        val player = controller ?: return@DisposableEffect onDispose {}
+        fun syncPlayback() {
+            current = stations.firstOrNull { it.id == player.currentMediaItem?.mediaId }
+            stopAvailable = player.playWhenReady && player.playerError == null &&
+                player.playbackState != Player.STATE_IDLE && player.playbackState != Player.STATE_ENDED
+            status = when {
+                player.playerError != null -> "Stream unavailable"
+                player.isPlaying -> "LIVE"
+                stopAvailable -> "Connecting…"
+                else -> "Stopped"
             }
         }
-        player.addListener(listener)
-        onDispose {
-            player.removeListener(listener)
-            player.release()
+        val listener = object : Player.Listener {
+            override fun onEvents(player: Player, events: Player.Events) = syncPlayback()
         }
+        player.addListener(listener)
+        syncPlayback()
+        onDispose { player.removeListener(listener) }
     }
-    val startStation: (Station) -> Unit = { station ->
+    val exitRadio: () -> Unit = {
+        controller?.let {
+            it.pause()
+            it.clearMediaItems()
+        }
+        onOpenMusic()
+    }
+    BackHandler {
+        if (expandedPlayer) expandedPlayer = false else exitRadio()
+    }
+    val startStation: (Station) -> Unit = start@{ station ->
+        val player = controller ?: return@start
         onStartRadio()
-        current = station
-        status = "Connecting…"
-        stopAvailable = true
-        player.setMediaItem(MediaItem.fromUri(station.stream))
+        player.setMediaItem(MediaItem.Builder().setMediaId(station.id).build())
         player.prepare()
         player.play()
         recents = (listOf(station.id) + recents.filter { it != station.id }).take(10)
@@ -181,8 +184,8 @@ internal fun RadioScreen(
     }
     val togglePlayback: (Station) -> Unit = { station ->
         if (stopAvailable) {
-            player.pause()
-            player.stop()
+            controller?.pause()
+            controller?.stop()
         } else {
             startStation(station)
         }
@@ -212,10 +215,10 @@ internal fun RadioScreen(
 
     Scaffold(topBar = {
         if (minimal) {
-            TopAppBar(title = { ExperienceSwitcher(onSwitch = onOpenMusic, radioSelected = true) })
+            TopAppBar(title = { ExperienceSwitcher(onSwitch = exitRadio, radioSelected = true) })
         } else {
             Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
-                StyledExperienceSwitcher(visualThemeMode, onSwitch = onOpenMusic, radioSelected = true)
+                StyledExperienceSwitcher(visualThemeMode, onSwitch = exitRadio, radioSelected = true)
             }
         }
     }, bottomBar = {
@@ -268,44 +271,62 @@ private fun RadioNowPlaying(
     onFavorite: () -> Unit,
     onOpenOfficial: () -> Unit
 ) {
-    Scaffold(topBar = {
-        TopAppBar(
-            title = { Text("Now Playing") },
-            navigationIcon = {
-                IconButton(onClick = onCollapse) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back to stations")
-                }
-            },
-            actions = {
-                IconButton(onClick = onFavorite) {
-                    Icon(
-                        if (saved) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = if (saved) "Remove from Favorites" else "Add to Favorites"
-                    )
-                }
-            }
+    val cover = painterResource(station.cover)
+    Box(Modifier.fillMaxSize().background(Color(0xFF131B29))) {
+        Image(
+            painter = cover,
+            contentDescription = null,
+            modifier = Modifier.matchParentSize(),
+            contentScale = ContentScale.Crop
         )
-    }) { padding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(padding)
-                .verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                Modifier.size(152.dp).background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(32.dp)),
-                contentAlignment = Alignment.Center
+        Box(
+            Modifier.matchParentSize().background(
+                Brush.verticalGradient(listOf(Color(0xD9101724), Color(0xA6101724), Color(0xF0101724)))
+            )
+        )
+        Scaffold(containerColor = Color.Transparent, contentColor = Color.White, topBar = {
+            TopAppBar(
+                title = { Text("Now Playing") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    navigationIconContentColor = Color.White,
+                    titleContentColor = Color.White,
+                    actionIconContentColor = Color.White
+                ),
+                navigationIcon = {
+                    IconButton(onClick = onCollapse) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back to stations")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onFavorite) {
+                        Icon(
+                            if (saved) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = if (saved) "Remove from Favorites" else "Add to Favorites"
+                        )
+                    }
+                }
+            )
+        }) { padding ->
+            Column(
+                modifier = Modifier.fillMaxSize().padding(padding)
+                    .verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(Icons.Filled.Radio, contentDescription = null, modifier = Modifier.size(70.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer)
-            }
-            Text(station.name, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-            Text(station.details, textAlign = TextAlign.Center)
-            Text(status, color = if (status == "LIVE") MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant)
-            Button(onClick = onTogglePlayback) { Text(if (stopAvailable) "Stop" else "Play") }
-            if (status == "Stream unavailable") {
-                TextButton(onClick = onOpenOfficial) { Text("Open official player") }
+                Image(
+                    painter = cover,
+                    contentDescription = null,
+                    modifier = Modifier.size(152.dp).clip(RoundedCornerShape(32.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                Text(station.name, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+                Text(station.details, textAlign = TextAlign.Center)
+                Text(status, color = if (status == "LIVE") Color(0xFF9CDAFF) else Color(0xFFE0E7F2))
+                Button(onClick = onTogglePlayback) { Text(if (stopAvailable) "Stop" else "Play") }
+                if (status == "Stream unavailable") {
+                    TextButton(onClick = onOpenOfficial) { Text("Open official player", color = Color(0xFF9CDAFF)) }
+                }
             }
         }
     }
