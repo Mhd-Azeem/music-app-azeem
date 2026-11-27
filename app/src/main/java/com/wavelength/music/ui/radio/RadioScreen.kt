@@ -99,6 +99,7 @@ private data class Station(val id: String, val name: String, val details: String
 private val stations = listOf(
     Station("shakthi", "Shakthi FM", "Tamil · 103.9 / 104.1 FM", "https://shakthifm.com/home.aspx", "https://mbc.thestreamtech.com:8086/stream"),
     Station("sooriyan", "Sooriyan FM", "Tamil · 103.4 / 103.6 FM", "https://www.sooriyanfm.lk/listenlive.php", "https://radio.lotustechnologieslk.net:8006/"),
+    Station("vasantham", "Vasantham FM", "Tamil · 102.6 / 102.8 FM", "https://www.vasanthamfm.lk/", "https://cp12.serverse.com/proxy/vasanthamfm?mp=/stream"),
     Station("slbc-tamil", "SLBC Tamil National", "Tamil · 102.1 / 102.3 FM", "https://slbc.lk/", "https://stream-32.zeno.fm/xekhrn4zetzuv"),
     Station("hiru", "Hiru FM", "Sinhala · 96.1 / 96.3 FM", "https://www.hirufm.lk/listenlive.php", "https://radio.lotustechnologieslk.net:2020/stream/hirufmgarden/stream/1/"),
     Station("shaa", "Shaa FM", "Sinhala · 90.9 / 91.1 FM", "https://www.shaafm.lk/listenlive.php", "https://radio.lotustechnologieslk.net:2020/stream/shaafmgarden"),
