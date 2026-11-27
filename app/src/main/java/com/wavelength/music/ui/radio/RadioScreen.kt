@@ -178,7 +178,6 @@ internal fun RadioScreen(
     }
     val onListen: (Station) -> Unit = { station ->
         if (current != station || !stopAvailable) startStation(station)
-        expandedPlayer = true
     }
     val togglePlayback: (Station) -> Unit = { station ->
         if (stopAvailable) {

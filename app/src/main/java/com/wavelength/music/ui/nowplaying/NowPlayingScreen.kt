@@ -87,7 +87,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -506,17 +505,21 @@ fun NowPlayingScreen(
     val scope = rememberCoroutineScope()
 
     val upNextListState = rememberLazyListState()
-    val upNextScrolled by remember {
-        derivedStateOf {
-            upNextListState.firstVisibleItemIndex > 0 || upNextListState.firstVisibleItemScrollOffset > 0
-        }
-    }
-    // Expansion is one-way from the compact queue into an overlay. The old two-pull
-    // nested-scroll collapse behavior has been removed: the compact Up Next stays fixed in place,
-    // and the overlay is dismissed only by its close affordances (backdrop, X, or pull-down handle).
     var upNextExpandedLatch by remember { mutableStateOf(false) }
-    LaunchedEffect(upNextScrolled) {
-        if (expandUpNextOnScroll && upNextScrolled) upNextExpandedLatch = true
+    val upNextScrollConnection = remember(expandUpNextOnScroll) {
+        object : NestedScrollConnection {
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
+                // Queue changes can move the list anchor without the user scrolling it.
+                if (expandUpNextOnScroll && source == NestedScrollSource.UserInput && consumed.y < 0f) {
+                    upNextExpandedLatch = true
+                }
+                return Offset.Zero
+            }
+        }
     }
     LaunchedEffect(track?.id) {
         upNextExpandedLatch = false
@@ -1608,7 +1611,7 @@ fun NowPlayingScreen(
                     onCancel = { previewUpcoming = upcoming }
                 )
                 LazyColumn(
-                    modifier = upNextModifier,
+                    modifier = upNextModifier.nestedScroll(upNextScrollConnection),
                     state = upNextListState
                 ) {
                     itemsIndexed(previewUpcoming, key = { _, entry -> entry.instanceId }) { offset, entry ->
